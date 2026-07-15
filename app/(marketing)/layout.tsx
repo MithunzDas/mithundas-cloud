@@ -1,5 +1,6 @@
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { ChatbotPanel } from "@/features/chatbot/chatbot-panel";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -52,6 +53,7 @@ export default function MarketingLayout({
       <Header />
       <main className="flex-1">{children}</main>
       <Footer />
+      <ChatbotPanel />
     </>
   );
 }

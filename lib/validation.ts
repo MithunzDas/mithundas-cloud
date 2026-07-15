@@ -45,3 +45,15 @@ export const LeadSubmissionRequestSchema = z.object({
 });
 
 export type LeadSubmissionRequest = z.infer<typeof LeadSubmissionRequestSchema>;
+
+export const ChatMessageSchema = z.object({
+  role: z.enum(["user", "assistant", "system"]),
+  content: z.string().min(1, "Message content is required")
+});
+
+export const ChatRequestSchema = z.object({
+  messages: z.array(ChatMessageSchema).min(1, "At least one message is required"),
+  leadContext: LeadSubmissionRequestSchema.partial().optional()
+});
+
+export type ChatRequest = z.infer<typeof ChatRequestSchema>;
