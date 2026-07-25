@@ -11,7 +11,7 @@ import { LeadPayload } from "@/services/n8n/n8n";
 
 export async function POST(request: Request) {
   const ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
-  
+
   // Rate Limit check
   const rateLimitResult = await rateLimit(ip, "/api/leads");
   if (!rateLimitResult.success) {
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 
   try {
     const rawBody = await request.json();
-    
+
     // Zod verification
     const parsedData = LeadSubmissionRequestSchema.safeParse(rawBody);
     if (!parsedData.success) {
@@ -63,12 +63,6 @@ export async function POST(request: Request) {
 
     const leadId = `lead_${Math.random().toString(36).substr(2, 9)}`;
 
-    logger.info(`Received qualified lead assessment request for: ${normalizedData.company}`, "lead_intake_received");
-
-    // n8n Hook Signature Generation
-    const payloadStr = JSON.stringify(normalizedData);
-    const signature = signPayload(payloadStr, env.N8N_WEBHOOK_SECRET);
-
     // Construct the full LeadPayload for database storage
     const leadPayload: LeadPayload = {
       leadId,
@@ -84,6 +78,12 @@ export async function POST(request: Request) {
       status: "intake",
       submittedAt: new Date().toISOString()
     };
+
+    logger.info(`Received qualified lead assessment request for: ${normalizedData.company}`, "lead_intake_received");
+
+    // n8n Hook Signature Generation
+    const payloadStr = JSON.stringify(leadPayload);
+    const signature = signPayload(payloadStr, env.N8N_WEBHOOK_SECRET);
 
     // Run all async side-effects in parallel — don't block the response
     const sideEffects: Promise<unknown>[] = [];

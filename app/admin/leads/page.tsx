@@ -19,6 +19,7 @@ import {
   Check,
   ArrowRight,
   TrendingUp,
+  Sparkles,
 } from "lucide-react";
 import { LeadPayload, LeadStatus } from "@/services/n8n/n8n";
 
@@ -433,6 +434,28 @@ export default function AdminLeadsPage() {
                   {selectedLead.status}
                 </span>
               </div>
+
+              {/* AI Assessment Card */}
+              {selectedLead.aiScore !== undefined && selectedLead.aiSummary && (
+                <div className="rounded-lg border border-accent-cyan/20 bg-accent-cyan/5 p-4 space-y-3 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 font-mono text-[10px] text-accent-cyan uppercase font-bold tracking-wider">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      AI Assessment
+                    </div>
+                    <div className={`font-sans text-xs font-bold px-2 py-0.5 rounded-full border ${
+                      selectedLead.aiScore >= 75 ? "bg-accent-green/10 text-accent-green border-accent-green/20" :
+                      selectedLead.aiScore >= 40 ? "bg-status-warning/10 text-status-warning border-status-warning/20" :
+                      "bg-status-error/10 text-status-error border-status-error/20"
+                    }`}>
+                      {selectedLead.aiScore} / 100 Score
+                    </div>
+                  </div>
+                  <p className="text-text-secondary text-[11px] leading-relaxed whitespace-pre-wrap font-sans">
+                    {selectedLead.aiSummary}
+                  </p>
+                </div>
+              )}
 
               {/* Client Info Grid */}
               <div className="grid grid-cols-2 gap-4 text-xs font-sans">

@@ -1,0 +1,89 @@
+{
+  "name": "Client Onboarding Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "onboarding-trigger",
+        "options": {}
+      },
+      "id": "e43b12dc-onboarding-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "YOUR_SENDER_EMAIL@DOMAIN.COM",
+        "toEmail": "={{$json.body.email}}",
+        "subject": "={{ 'Welcome to the project, ' + $json.body.name + '!' }}",
+        "html": "={{ 'Hi ' + $json.body.name + ',<br><br>We are thrilled to start working on <b>' + $json.body.projectScope + '</b>.<br>Your invoice ID is ' + $json.body.invoiceId + ' for the amount of ' + $json.body.invoiceAmount + '.<br><br>Our targeted start date is ' + $json.body.startDate + '.<br><br>Best,<br>Mithun Das' }}"
+      },
+      "id": "email-node-onboarding",
+      "name": "Send Onboarding Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [400, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://mithundas.cloud/api/webhooks/n8n/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "leadId",
+              "value": "={{$json.body.leadId}}"
+            },
+            {
+              "name": "status",
+              "value": "won"
+            }
+          ]
+        }
+      },
+      "id": "webhook-ping-back-onboarding",
+      "name": "Update Status in App",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [600, 200]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send Onboarding Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Onboarding Email": {
+      "main": [
+        [
+          {
+            "node": "Update Status in App",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {}
+}

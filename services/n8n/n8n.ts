@@ -25,6 +25,8 @@ export interface LeadPayload {
   projectRequirement: string;
   whatsapp?: string;
   country?: string;
+  aiScore?: number;
+  aiSummary?: string;
   status: LeadStatus;
   submittedAt: string;
 }
@@ -43,6 +45,7 @@ export interface OnboardingTriggerPayload {
   company: string;
   projectScope: string;
   invoiceAmount: string;
+  invoiceId: string;
   startDate: string;
 }
 

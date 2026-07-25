@@ -34,6 +34,8 @@ interface StatusPayload {
     projectScope: string;
     startDate: string;
   };
+  aiScore?: number;
+  aiSummary?: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -78,7 +80,7 @@ export async function POST(request: Request) {
     switch (payload.action) {
       case "status_update": {
         const newStatus = payload.status as LeadStatus;
-        await updateLeadStatus(payload.leadId, newStatus);
+        await updateLeadStatus(payload.leadId, newStatus, payload.aiScore, payload.aiSummary);
         logger.info(
           `Lead ${payload.leadId} status updated to: ${newStatus}`,
           "webhook_status_update"

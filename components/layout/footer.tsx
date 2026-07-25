@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Zap, Mail, ExternalLink } from "lucide-react";
+import { Mail, ExternalLink } from "lucide-react";
 
 const footerLinks = {
   platform: [
@@ -30,12 +30,17 @@ export function Footer() {
           {/* Brand Column */}
           <div className="md:col-span-1">
             <Link href="/" className="inline-flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-cyan/10">
-                <Zap className="h-4 w-4 text-accent-cyan" strokeWidth={1.75} />
+              <div className="flex h-8 w-8 items-center justify-center rounded-md overflow-hidden bg-background-surface">
+                <img src="/logo.png" alt="Mithun Das AI Logo" className="h-full w-full object-cover" />
               </div>
-              <span className="font-sans text-body font-semibold text-text-primary">
-                Mithun Das
-              </span>
+              <div className="flex flex-col">
+                <span className="font-sans text-body font-semibold text-text-primary">
+                  Mithun Das
+                </span>
+                <span className="font-mono text-[10px] leading-tight text-accent-cyan uppercase tracking-wider font-semibold">
+                  AI Automation
+                </span>
+              </div>
             </Link>
             <p className="mt-3 font-sans text-small text-text-muted leading-relaxed">
               AI Business Automation Engineer. Designing operational AI systems that eliminate
@@ -53,7 +58,7 @@ export function Footer() {
 
             <div className="mt-4 flex flex-wrap gap-2">
               <a
-                href="mailto:mithun.here01@gmail.com"
+                href="mailto:hello@mithundas.cloud"
                 className="flex h-8 items-center gap-1.5 rounded-md border border-border-subtle px-2.5 text-text-muted transition-colors hover:border-border-default hover:text-text-secondary"
                 aria-label="Email"
               >

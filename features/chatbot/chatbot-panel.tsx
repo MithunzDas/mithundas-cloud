@@ -134,12 +134,12 @@ export function ChatbotPanel() {
         );
       case "book_call":
         return (
-          <Link href="/contact" onClick={() => setIsOpen(false)}>
+          <a href="https://calendly.com/mithun-mithundas/15min" target="_blank" rel="noopener noreferrer" onClick={() => setIsOpen(false)}>
             <button className="mt-2 flex items-center gap-1.5 rounded-md bg-accent-green/15 border border-accent-green/30 px-3 py-1.5 font-mono text-[11px] text-accent-green transition-colors hover:bg-accent-green/25">
               <ArrowRight className="h-3 w-3" />
               Book a Call
             </button>
-          </Link>
+          </a>
         );
       default:
         return null;
@@ -149,82 +149,86 @@ export function ChatbotPanel() {
   return (
     <>
       {/* Floating Toggle Button */}
-      <motion.button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-accent-cyan shadow-lg shadow-accent-cyan/20 transition-colors hover:bg-accent-cyan/90 focus:outline-none focus:ring-2 focus:ring-accent-cyan/50 focus:ring-offset-2 focus:ring-offset-background-app"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        aria-label={isOpen ? "Close chat" : "Open AI assistant"}
-      >
-        <AnimatePresence mode="wait">
-          {isOpen ? (
-            <motion.div
-              key="close"
-              initial={{ rotate: -90, opacity: 0 }}
-              animate={{ rotate: 0, opacity: 1 }}
-              exit={{ rotate: 90, opacity: 0 }}
-              transition={{ duration: 0.15 }}
-            >
-              <X className="h-6 w-6 text-text-inverse" strokeWidth={2} />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="open"
-              initial={{ rotate: 90, opacity: 0 }}
-              animate={{ rotate: 0, opacity: 1 }}
-              exit={{ rotate: -90, opacity: 0 }}
-              transition={{ duration: 0.15 }}
-            >
-              <MessageCircle className="h-6 w-6 text-text-inverse" strokeWidth={2} />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.button>
+      <div className="fixed bottom-6 right-6 z-50 group">
+        <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-accent-cyan to-accent-blue opacity-30 blur-md transition-opacity group-hover:opacity-60 animate-pulse"></div>
+        <motion.button
+          onClick={() => setIsOpen(!isOpen)}
+          className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-accent-cyan to-accent-blue shadow-lg transition-transform focus:outline-none"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          aria-label={isOpen ? "Close chat" : "Open AI assistant"}
+        >
+          <AnimatePresence mode="wait">
+            {isOpen ? (
+              <motion.div
+                key="close"
+                initial={{ rotate: -90, opacity: 0 }}
+                animate={{ rotate: 0, opacity: 1 }}
+                exit={{ rotate: 90, opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                <X className="h-6 w-6 text-text-inverse" strokeWidth={2} />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="open"
+                initial={{ rotate: 90, opacity: 0 }}
+                animate={{ rotate: 0, opacity: 1 }}
+                exit={{ rotate: -90, opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                <MessageCircle className="h-6 w-6 text-text-inverse" strokeWidth={2} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.button>
+      </div>
 
       {/* Chat Panel */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed bottom-24 right-5 z-50 flex w-[360px] max-w-[calc(100vw-40px)] flex-col rounded-xl border border-border-subtle bg-background-surface shadow-panel overflow-hidden"
-            style={{ height: "min(520px, calc(100vh - 140px))" }}
+            initial={{ opacity: 0, y: 20, scale: 0.95, filter: "blur(4px)" }}
+            animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+            exit={{ opacity: 0, y: 20, scale: 0.95, filter: "blur(4px)" }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed bottom-24 right-6 z-50 flex w-[380px] max-w-[calc(100vw-48px)] flex-col rounded-2xl border border-white/10 bg-background-app/70 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden"
+            style={{ height: "min(600px, calc(100vh - 140px))" }}
           >
             {/* Header */}
-            <div className="flex items-center gap-3 border-b border-border-subtle bg-background-elevated px-4 py-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-cyan/10">
-                <Sparkles className="h-4 w-4 text-accent-cyan" strokeWidth={1.75} />
+            <div className="relative flex items-center gap-3 border-b border-white/5 bg-background-elevated/40 px-5 py-4 backdrop-blur-md">
+              <div className="absolute top-0 left-0 h-[1px] w-full bg-gradient-to-r from-transparent via-accent-cyan/50 to-transparent"></div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-accent-cyan/20 to-accent-blue/20 border border-white/5 shadow-inner">
+                <Sparkles className="h-4 w-4 text-accent-cyan" strokeWidth={2} />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-sans text-small font-semibold text-text-primary">
+                <h3 className="font-sans text-[15px] font-semibold text-text-primary tracking-wide">
                   AI Operations Assistant
                 </h3>
-                <p className="font-mono text-[10px] text-text-muted">
+                <p className="font-mono text-[10px] text-text-muted mt-0.5">
                   Powered by Mithun Das
                 </p>
               </div>
-              <span className="flex items-center gap-1">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-status-success opacity-40" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-status-success" />
+              <span className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-status-success/10 border border-status-success/20">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-status-success opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-status-success" />
                 </span>
-                <span className="font-mono text-[9px] text-text-muted">ONLINE</span>
+                <span className="font-mono text-[9px] text-status-success font-medium">ONLINE</span>
               </span>
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar">
               {/* Welcome Message */}
               {!hasInteracted && messages.length === 0 && (
-                <div className="space-y-4">
-                  <div className="flex gap-2.5">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent-cyan/10 mt-0.5">
-                      <Bot className="h-3.5 w-3.5 text-accent-cyan" strokeWidth={1.75} />
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="flex gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent-cyan/20 to-accent-blue/20 border border-white/5 mt-0.5">
+                      <Bot className="h-4 w-4 text-accent-cyan" strokeWidth={1.75} />
                     </div>
-                    <div className="rounded-lg rounded-tl-none border border-border-subtle bg-background-inset px-3 py-2.5 max-w-[85%]">
-                      <p className="font-sans text-[13px] text-text-secondary leading-relaxed">
+                    <div className="rounded-2xl rounded-tl-sm border border-white/5 bg-white/5 backdrop-blur-sm px-4 py-3 max-w-[85%] shadow-sm">
+                      <p className="font-sans text-[14px] text-text-primary leading-relaxed">
                         Hello! I&apos;m Mithun&apos;s AI operations assistant. I can explain
                         our automation systems, pricing, or help you schedule a
                         diagnostic consultation.
@@ -233,12 +237,12 @@ export function ChatbotPanel() {
                   </div>
 
                   {/* Quick Suggestion Chips */}
-                  <div className="flex flex-wrap gap-2 pl-9">
+                  <div className="flex flex-wrap gap-2 pl-11">
                     {QUICK_SUGGESTIONS.map((suggestion) => (
                       <button
                         key={suggestion}
                         onClick={() => handleSuggestionClick(suggestion)}
-                        className="rounded-full border border-border-subtle bg-background-elevated px-3 py-1.5 font-mono text-[10px] text-text-secondary transition-colors hover:border-accent-cyan/40 hover:text-accent-cyan"
+                        className="rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 font-mono text-[11px] text-text-secondary transition-all hover:border-accent-cyan/40 hover:bg-accent-cyan/10 hover:text-accent-cyan hover:-translate-y-0.5 shadow-sm"
                       >
                         {suggestion}
                       </button>
@@ -251,32 +255,31 @@ export function ChatbotPanel() {
               {messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`flex gap-2.5 ${msg.role === "user" ? "justify-end" : ""}`}
+                  className={`flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300 ${msg.role === "user" ? "justify-end" : ""
+                    }`}
                 >
                   {msg.role === "assistant" && (
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent-cyan/10 mt-0.5">
-                      <Bot className="h-3.5 w-3.5 text-accent-cyan" strokeWidth={1.75} />
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent-cyan/20 to-accent-blue/20 border border-white/5 mt-0.5 shadow-sm">
+                      <Bot className="h-4 w-4 text-accent-cyan" strokeWidth={1.75} />
                     </div>
                   )}
                   <div
-                    className={`max-w-[85%] rounded-lg px-3 py-2.5 ${
-                      msg.role === "user"
-                        ? "rounded-tr-none bg-accent-cyan/15 border border-accent-cyan/20"
-                        : "rounded-tl-none border border-border-subtle bg-background-inset"
-                    }`}
+                    className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-sm ${msg.role === "user"
+                        ? "rounded-tr-sm bg-gradient-to-br from-accent-cyan to-accent-blue text-text-inverse border border-accent-cyan/50"
+                        : "rounded-tl-sm border border-white/5 bg-white/5 backdrop-blur-sm"
+                      }`}
                   >
                     <p
-                      className={`font-sans text-[13px] leading-relaxed ${
-                        msg.role === "user" ? "text-text-primary" : "text-text-secondary"
-                      }`}
+                      className={`font-sans text-[14px] leading-relaxed ${msg.role === "user" ? "text-text-inverse font-medium" : "text-text-primary"
+                        }`}
                     >
                       {msg.content}
                     </p>
                     {msg.role === "assistant" && getActionButton(msg)}
                   </div>
                   {msg.role === "user" && (
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-border-subtle mt-0.5">
-                      <User className="h-3.5 w-3.5 text-text-muted" strokeWidth={1.75} />
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 border border-white/10 mt-0.5 shadow-sm">
+                      <User className="h-4 w-4 text-text-primary" strokeWidth={1.75} />
                     </div>
                   )}
                 </div>
@@ -284,14 +287,14 @@ export function ChatbotPanel() {
 
               {/* Typing Indicator */}
               {isLoading && (
-                <div className="flex gap-2.5">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent-cyan/10 mt-0.5">
-                    <Bot className="h-3.5 w-3.5 text-accent-cyan" strokeWidth={1.75} />
+                <div className="flex gap-3 animate-in fade-in duration-300">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent-cyan/20 to-accent-blue/20 border border-white/5 mt-0.5">
+                    <Bot className="h-4 w-4 text-accent-cyan" strokeWidth={1.75} />
                   </div>
-                  <div className="rounded-lg rounded-tl-none border border-border-subtle bg-background-inset px-3 py-2.5">
-                    <div className="flex items-center gap-1.5">
-                      <Loader2 className="h-3 w-3 text-accent-cyan animate-spin" />
-                      <span className="font-mono text-[10px] text-text-muted">
+                  <div className="rounded-2xl rounded-tl-sm border border-white/5 bg-white/5 backdrop-blur-sm px-4 py-3 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-3.5 w-3.5 text-accent-cyan animate-spin" />
+                      <span className="font-mono text-[11px] text-text-secondary">
                         Thinking...
                       </span>
                     </div>
@@ -299,13 +302,13 @@ export function ChatbotPanel() {
                 </div>
               )}
 
-              <div ref={messagesEndRef} />
+              <div ref={messagesEndRef} className="h-1" />
             </div>
 
             {/* Input Area */}
             <form
               onSubmit={handleSubmit}
-              className="flex items-center gap-2 border-t border-border-subtle bg-background-elevated px-3 py-2.5"
+              className="relative flex items-center gap-2 border-t border-white/10 bg-background-elevated/60 px-4 py-3 backdrop-blur-md"
             >
               <input
                 ref={inputRef}
@@ -314,15 +317,15 @@ export function ChatbotPanel() {
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Ask about automation systems..."
                 disabled={isLoading}
-                className="flex-1 min-w-0 rounded-md border border-border-subtle bg-background-inset px-3 py-2 font-sans text-[13px] text-text-primary placeholder:text-text-muted focus:border-accent-cyan/50 focus:outline-none focus:ring-1 focus:ring-accent-cyan/30 disabled:opacity-50"
+                className="flex-1 min-w-0 rounded-xl border border-white/10 bg-background-app/50 px-4 py-3 font-sans text-[14px] text-text-primary placeholder:text-text-muted focus:border-accent-cyan/50 focus:outline-none focus:ring-1 focus:ring-accent-cyan/30 disabled:opacity-50 transition-all shadow-inner"
               />
               <button
                 type="submit"
                 disabled={!inputValue.trim() || isLoading}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent-cyan text-text-inverse transition-colors hover:bg-accent-cyan/90 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-accent-cyan to-accent-blue text-text-inverse transition-all hover:brightness-110 hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-md"
                 aria-label="Send message"
               >
-                <Send className="h-4 w-4" strokeWidth={2} />
+                <Send className="h-4 w-4 ml-0.5" strokeWidth={2.5} />
               </button>
             </form>
           </motion.div>

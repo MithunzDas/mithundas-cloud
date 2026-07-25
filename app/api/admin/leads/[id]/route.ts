@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { getLeadById, updateLeadStatus } from "@/lib/db";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { LeadStatus } from "@/services/n8n/n8n";
-import { sendFollowUpEmail, sendOnboardingKit } from "@/services/email/resend";
+import { LeadStatus, triggerOnboarding, triggerFollowUp, pushStatusUpdate } from "@/services/n8n/n8n";
 
 export async function GET(
   request: Request,
@@ -62,29 +61,39 @@ export async function PATCH(
     // Update status in local database
     const updatedLead = await updateLeadStatus(id, status as LeadStatus);
 
-    // Trigger automation side effects directly if admin manually pushes a transition
+    // Dispatch events to n8n for orchestration
     const sideEffects: Promise<unknown>[] = [];
 
     if (status === "won" && onboardingDetails) {
-      // Trigger onboarding email template with invoice + terms + MSA
       sideEffects.push(
-        sendOnboardingKit({
+        triggerOnboarding({
+          leadId: id,
           name: lead.name,
           email: lead.email,
           company: lead.company,
           invoiceAmount: onboardingDetails.invoiceAmount || "$1,500.00",
           invoiceId: onboardingDetails.invoiceId || `INV-${Date.now().toString().slice(-6)}`,
           projectScope: onboardingDetails.projectScope || lead.projectRequirement.slice(0, 100) + "...",
-          startDate: onboardingDetails.startDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+          startDate: onboardingDetails.startDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
         }).catch((err) => {
-          logger.error(`Manual onboarding kit dispatch failed for lead ${id}`, "manual_onboarding_error", err);
+          logger.error(`n8n onboarding dispatch failed for lead ${id}`, "n8n_onboarding_error", err);
         })
       );
     } else if (status === "silent") {
-      // Trigger friendly follow-up email
       sideEffects.push(
-        sendFollowUpEmail(lead, followUpRound || "24h").catch((err) => {
-          logger.error(`Manual follow-up email dispatch failed for lead ${id}`, "manual_followup_error", err);
+        triggerFollowUp(id, lead.email, followUpRound || "24h").catch((err) => {
+          logger.error(`n8n follow-up dispatch failed for lead ${id}`, "n8n_followup_error", err);
+        })
+      );
+    } else {
+      // Push generic status update for other transitions
+      sideEffects.push(
+        pushStatusUpdate({
+          leadId: id,
+          status: status as LeadStatus,
+          updatedAt: new Date().toISOString(),
+        }).catch((err) => {
+          logger.error(`n8n status update dispatch failed for lead ${id}`, "n8n_status_update_error", err);
         })
       );
     }

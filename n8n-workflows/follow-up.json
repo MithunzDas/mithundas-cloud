@@ -1,0 +1,89 @@
+{
+  "name": "Automated Follow-Up Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "follow-up",
+        "options": {}
+      },
+      "id": "e43b12dc-followup-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "YOUR_SENDER_EMAIL@DOMAIN.COM",
+        "toEmail": "={{$json.body.email}}",
+        "subject": "Checking in on your automation project",
+        "html": "Hi there,<br><br>I wanted to quickly follow up regarding the automation project we discussed. Have you had a chance to think about the next steps?<br><br>Best,<br>Mithun Das"
+      },
+      "id": "email-node-123",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [400, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://mithundas.cloud/api/webhooks/n8n/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "leadId",
+              "value": "={{$json.body.leadId}}"
+            },
+            {
+              "name": "status",
+              "value": "contacted"
+            }
+          ]
+        }
+      },
+      "id": "webhook-ping-back-123",
+      "name": "Update Status in App",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [600, 200]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "main": [
+        [
+          {
+            "node": "Update Status in App",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {}
+}

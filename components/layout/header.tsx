@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Zap } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -32,15 +32,17 @@ export function Header() {
       <div className="mx-auto flex h-14 max-w-[1200px] items-center justify-between px-6">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-cyan/10">
-            <Zap className="h-4 w-4 text-accent-cyan" strokeWidth={1.75} />
+          <div className="flex h-8 w-8 items-center justify-center rounded-md overflow-hidden bg-background-surface">
+            <img src="/logo.png" alt="Mithun Das AI Logo" className="h-full w-full object-cover" />
           </div>
-          <span className="font-sans text-body font-semibold text-text-primary">
-            Mithun Das
-          </span>
-          <span className="hidden font-mono text-label text-text-muted sm:inline">
-            AI Automation
-          </span>
+          <div className="flex flex-col">
+            <span className="font-sans text-[17px] leading-tight font-semibold text-text-primary">
+              Mithun Das
+            </span>
+            <span className="hidden font-mono text-[11px] leading-tight text-accent-cyan sm:block uppercase tracking-wider font-semibold">
+              AI Automation
+            </span>
+          </div>
         </Link>
 
         {/* Desktop Navigation */}

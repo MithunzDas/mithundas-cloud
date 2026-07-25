@@ -1,0 +1,352 @@
+{
+  "name": "Lead Handoff Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-handoff",
+        "options": {}
+      },
+      "id": "webhook-node",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        200,
+        200
+      ],
+      "webhookId": "lead-handoff-trigger"
+    },
+    {
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "value": "={{JSON.stringify($json.body)}}",
+        "dataPropertyName": "signature_calculated",
+        "secret": "YOUR_WEBHOOK_SECRET_HERE"
+      },
+      "id": "hmac-node",
+      "name": "Calculate HMAC",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        400,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.signature_calculated}}",
+              "value2": "={{$node[\"Webhook\"].json[\"headers\"][\"x-webhook-signature\"]}}"
+            }
+          ]
+        }
+      },
+      "id": "verify-node",
+      "name": "Verify Signature",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        600,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-4-turbo",
+        "messages": {
+          "messageValues": [
+            {
+              "role": "user",
+              "content": "={{ 'You are Mithun Das, founder of a premium AI automation agency. Analyze this lead: ' + JSON.stringify($('Webhook').first().json.body) + '. 1) Generate a brief internal summary of their project. 2) Generate a lead score (0-100). 3) Write a highly personalized 3-sentence email to this lead. Mention their company name and 1 specific automation idea to solve their problem. End by telling them to pick a time for a video call on your calendar: https://calendly.com/mithun-mithundas/15min. Return ONLY valid JSON in this exact format: {\"score\": 90, \"summary\": \"3 bullet points here\", \"emailDraft\": \"Hi Name, I saw your request for Company...\"}' }}"
+            }
+          ]
+        },
+        "responseFormat": "json_object"
+      },
+      "id": "openai-node",
+      "name": "OpenAI: Summarize Lead",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        800,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0",
+              "name": "Lead ID",
+              "value": "={{ $('Webhook').first().json.body.leadId }}",
+              "type": "string"
+            },
+            {
+              "id": "1",
+              "name": "Name",
+              "value": "={{ $('Webhook').first().json.body.name }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "Email",
+              "value": "={{ $('Webhook').first().json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "Company",
+              "value": "={{ $('Webhook').first().json.body.company }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "Business Type",
+              "value": "={{ $('Webhook').first().json.body.businessType }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "Budget",
+              "value": "={{ $('Webhook').first().json.body.budget }}",
+              "type": "string"
+            },
+            {
+              "id": "6",
+              "name": "Timeline",
+              "value": "={{ $('Webhook').first().json.body.timeline }}",
+              "type": "string"
+            },
+            {
+              "id": "7",
+              "name": "Requirements",
+              "value": "={{ $('Webhook').first().json.body.projectRequirement }}",
+              "type": "string"
+            },
+            {
+              "id": "8",
+              "name": "WhatsApp",
+              "value": "={{ $('Webhook').first().json.body.whatsapp }}",
+              "type": "string"
+            },
+            {
+              "id": "9",
+              "name": "Country",
+              "value": "={{ $('Webhook').first().json.body.country }}",
+              "type": "string"
+            },
+            {
+              "id": "10",
+              "name": "Timestamp",
+              "value": "={{ new Date($('Webhook').first().json.body.submittedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) }}",
+              "type": "string"
+            },
+            {
+              "id": "11",
+              "name": "AI Score",
+              "value": "={{ JSON.parse($json.message.content.replace(/```json\\s*/gi, '').replace(/```/gi, '').trim()).score }}",
+              "type": "string"
+            },
+            {
+              "id": "12",
+              "name": "AI Summary",
+              "value": "={{ (() => { const c = JSON.parse($json.message.content.replace(/```json\\s*/gi, '').replace(/```/gi, '').trim()); return Array.isArray(c.summary) ? c.summary.join(', ') : c.summary; })() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format-data-node",
+      "name": "Format Data for Sheets",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1000,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_MASTER_GOOGLE_SHEET_ID_HERE",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Master Leads",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        }
+      },
+      "id": "google-sheets-master",
+      "name": "Google Sheets (Master)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1200,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "Mithun Das <hello@mithundas.cloud>",
+        "toEmail": "={{$('Webhook').first().json.body.email}}",
+        "subject": "={{ 'Regarding your automation project for ' + $('Webhook').first().json.body.company }}",
+        "html": "={{ '<div style=\"font-family: Georgia, \\'Times New Roman\\', serif; max-width: 600px; margin: 0 auto; background: #ffffff;\"><div style=\"height: 4px; background: linear-gradient(90deg, #0ea5e9, #6366f1, #0ea5e9);\"></div><div style=\"padding: 28px 32px 0 32px;\"><img src=\"https://mithundas.cloud/logo.png\" alt=\"Mithun Das AI\" style=\"max-height: 38px; margin-bottom: 24px;\"></div><div style=\"padding: 0 32px; font-size: 16.5px; color: #1a1a1a; line-height: 1.75; letter-spacing: 0.01em;\">' + (() => { const c = JSON.parse($('OpenAI: Summarize Lead').first().json.message.content.replace(/```json\\s*/gi, '').replace(/```/gi, '').trim()); return c.emailDraft.replace(/\\n/g, '<br><br>'); })() + '</div><div style=\"padding: 28px 32px 8px 32px;\"><a href=\"https://calendly.com/mithun-mithundas/15min\" style=\"display: inline-block; background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #ffffff; text-decoration: none; padding: 13px 28px; border-radius: 8px; font-family: Arial, sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0.5px;\">📅 Book a 15-Min Call</a></div><div style=\"padding: 20px 32px 0 32px;\"><div style=\"border-top: 1px solid #e5e7eb;\"></div></div><div style=\"padding: 20px 32px 28px 32px;\"><table cellpadding=\"0\" cellspacing=\"0\" style=\"border: none;\"><tr><td style=\"padding-right: 16px; border-right: 2px solid #0ea5e9;\"><img src=\"https://mithundas.cloud/logo.png\" alt=\"M\" style=\"width: 44px; height: 44px; border-radius: 8px;\"></td><td style=\"padding-left: 16px;\"><span style=\"font-family: Arial, sans-serif; font-size: 16px; font-weight: 700; color: #111; letter-spacing: -0.3px;\">Mithun Das</span><br><span style=\"font-family: Arial, sans-serif; font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1.5px;\">Founder & Automation Architect</span><br><a href=\"https://mithundas.cloud\" style=\"font-family: Arial, sans-serif; font-size: 13px; color: #0ea5e9; text-decoration: none; font-weight: 600;\">mithundas.cloud</a><span style=\"font-family: Arial, sans-serif; font-size: 13px; color: #ccc;\"> · </span><a href=\"mailto:hello@mithundas.cloud\" style=\"font-family: Arial, sans-serif; font-size: 13px; color: #0ea5e9; text-decoration: none;\">hello@mithundas.cloud</a></td></tr></table></div><div style=\"height: 3px; background: linear-gradient(90deg, #0ea5e9, #6366f1, #0ea5e9);\"></div></div>' }}"
+      },
+      "id": "send-instant-email",
+      "name": "Send AI Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://mithundas.cloud/api/webhooks/n8n/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-webhook-signature",
+              "value": "temp_placeholder"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "leadId",
+              "value": "={{$('Webhook').first().json.body.leadId}}"
+            },
+            {
+              "name": "action",
+              "value": "status_update"
+            },
+            {
+              "name": "status",
+              "value": "qualified"
+            },
+            {
+              "name": "aiScore",
+              "value": "={{JSON.parse($('OpenAI: Summarize Lead').first().json.message.content).score}}"
+            },
+            {
+              "name": "aiSummary",
+              "value": "={{JSON.parse($('OpenAI: Summarize Lead').first().json.message.content).summary}}"
+            }
+          ]
+        }
+      },
+      "id": "update-app-node",
+      "name": "Update Status in App",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1600,
+        200
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Calculate HMAC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate HMAC": {
+      "main": [
+        [
+          {
+            "node": "Verify Signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Signature": {
+      "main": [
+        [
+          {
+            "node": "OpenAI: Summarize Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI: Summarize Lead": {
+      "main": [
+        [
+          {
+            "node": "Format Data for Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Data for Sheets": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets (Master)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets (Master)": {
+      "main": [
+        [
+          {
+            "node": "Send AI Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send AI Email": {
+      "main": [
+        [
+          {
+            "node": "Update Status in App",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {}
+}
