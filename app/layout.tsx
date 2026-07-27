@@ -23,14 +23,42 @@ export const metadata: Metadata = {
     "Operational AI systems for businesses that have outgrown manual workflows. Automation architectures connecting CRM, WhatsApp, email, and AI assistants into reliable business workflows.",
   metadataBase: new URL(siteUrl),
   keywords: [
-    "AI Business Automation",
-    "Workflow Automation Engineer",
-    "n8n Automation Specialist",
-    "WhatsApp Lead Automation",
-    "OpenAI API Integration",
-    "Systems Architecture",
+    // Brand & Identity
     "Mithun Das",
-    "Next.js Automation Platform",
+    "Mithun Das AI Automation",
+    "Mithun Das Engineer",
+
+    // Local & Near Me High-Intent Queries
+    "Automation Engineer near me",
+    "website developers near me",
+    "WhatsApp Meta Developers near me",
+    "n8n developers near me",
+    "AI chatbot developers near me",
+    "web development agency near me",
+    "Next.js developer near me",
+
+    // Core AI & Workflow Automation
+    "n8n developers",
+    "n8n automation agency",
+    "n8n automation specialist",
+    "AI Business Automation Engineer",
+    "AI workflow automation consultant",
+    "OpenAI API integration developer",
+    "AI Software Development",
+
+    // Communication & Lead Automation
+    "WhatsApp API automation expert",
+    "WhatsApp Cloud API developer",
+    "WhatsApp lead automation",
+    "CRM integration developers",
+    "lead qualification automation",
+
+    // Full-Stack Systems & Architecture
+    "Next.js automation platform",
+    "business process automation agency",
+    "intelligent document processing",
+    "custom API integration specialist",
+    "systems architecture engineer",
   ],
   authors: [{ name: "Mithun Das", url: siteUrl }],
   creator: "Mithun Das",
