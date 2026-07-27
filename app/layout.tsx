@@ -63,6 +63,11 @@ export const metadata: Metadata = {
   authors: [{ name: "Mithun Das", url: siteUrl }],
   creator: "Mithun Das",
   publisher: "Mithun Das AI Automation",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/apple-icon.png",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
