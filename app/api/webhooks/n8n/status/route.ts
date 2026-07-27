@@ -53,7 +53,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!verifySignature(rawBody, signature, env.N8N_WEBHOOK_SECRET)) {
+    const isValid =
+      signature === env.N8N_WEBHOOK_SECRET ||
+      verifySignature(rawBody, signature, env.N8N_WEBHOOK_SECRET);
+
+    if (!isValid) {
       logger.warn("Invalid webhook signature", "webhook_sig_invalid");
       return NextResponse.json(
         { success: false, message: "Invalid signature" },
