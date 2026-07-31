@@ -632,18 +632,35 @@ export default function AdminLeadsPage() {
                   <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
                     Upfront Deposit %
                   </label>
-                  <select
-                    value={onboardingForm.depositPercent}
-                    onChange={(e) => setOnboardingForm({ ...onboardingForm, depositPercent: e.target.value })}
-                    className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none font-mono"
-                  >
-                    <option value="20">20% Upfront Deposit</option>
-                    <option value="25">25% Upfront Deposit (Default)</option>
-                    <option value="30">30% Upfront Deposit</option>
-                    <option value="50">50% Upfront Deposit</option>
-                  </select>
+                  <div className="relative flex items-center">
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={onboardingForm.depositPercent}
+                      onChange={(e) => setOnboardingForm({ ...onboardingForm, depositPercent: e.target.value })}
+                      className="w-full rounded border border-border-subtle bg-background-inset p-2 pr-8 text-text-primary focus:outline-none font-mono"
+                      placeholder="25"
+                      required
+                    />
+                    <span className="absolute right-3 text-text-muted font-mono text-xs">%</span>
+                  </div>
                 </div>
               </div>
+
+              {/* Dynamic Deposit Calculation Helper */}
+              {(() => {
+                const numericFee = parseFloat(onboardingForm.invoiceAmount.replace(/[^0-9.]/g, "")) || 0;
+                const pct = parseFloat(onboardingForm.depositPercent) || 0;
+                const depositAmt = (numericFee * pct) / 100;
+                const currencySymbol = onboardingForm.invoiceAmount.includes("₹") ? "₹" : "$";
+                return (
+                  <div className="rounded bg-accent-green/10 border border-accent-green/20 p-2 font-mono text-[11px] text-accent-green flex justify-between items-center">
+                    <span>💳 Upfront Deposit Payable ({pct}%):</span>
+                    <strong className="font-bold text-xs">{currencySymbol}{depositAmt.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                  </div>
+                );
+              })()}
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
