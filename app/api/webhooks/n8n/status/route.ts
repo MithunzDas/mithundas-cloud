@@ -84,14 +84,16 @@ export async function POST(request: Request) {
     switch (payload.action) {
       case "status_update": {
         const newStatus = payload.status as LeadStatus;
-        await updateLeadStatus(payload.leadId, newStatus, payload.aiScore, payload.aiSummary);
+        const result = await updateLeadStatus(payload.leadId, newStatus, payload.aiScore, payload.aiSummary);
         logger.info(
-          `Lead ${payload.leadId} status updated to: ${newStatus}`,
+          `Lead ${payload.leadId} status update result: ${result ? "updated" : "skipped (lead not found)"}`,
           "webhook_status_update"
         );
         return NextResponse.json({
           success: true,
-          message: `Status updated to ${newStatus}`,
+          message: result
+            ? `Status updated to ${newStatus}`
+            : `Status update processed (lead ID ${payload.leadId} not in DB)`,
         });
       }
 

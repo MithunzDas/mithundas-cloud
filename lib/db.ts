@@ -80,6 +80,14 @@ export async function updateLeadStatus(
   aiSummary?: string
 ): Promise<LeadPayload | null> {
   try {
+    const leadExists = await prisma.lead.findUnique({
+      where: { leadId: id }
+    });
+    if (!leadExists) {
+      logger.warn(`Lead ${id} not found in database for status update`, "db_update_not_found");
+      return null;
+    }
+
     const updated = await prisma.lead.update({
       where: { leadId: id },
       data: { 
@@ -100,6 +108,6 @@ export async function updateLeadStatus(
     };
   } catch (error) {
     logger.error(`Failed to update status for lead ${id}`, "db_update_error", error);
-    throw error;
+    return null;
   }
 }
