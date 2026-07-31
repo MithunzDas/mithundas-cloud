@@ -429,8 +429,26 @@ export default function AdminLeadsPage() {
                           {log.category}
                         </span>
                       </td>
-                      <td className="p-4 font-mono font-medium text-text-primary">{log.toEmail}</td>
-                      <td className="p-4 text-text-secondary">{log.subject}</td>
+                      <td className="p-4 font-mono">
+                        <div className="font-medium text-text-primary">{log.toEmail}</div>
+                        {log.leadId && (
+                          <div className="inline-block mt-1 font-mono text-[10px] text-accent-cyan bg-accent-cyan/10 border border-accent-cyan/20 px-1.5 py-0.5 rounded">
+                            {log.leadId}
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-4 text-text-secondary">
+                        {log.subject.includes(" for ") ? (
+                          <span>
+                            {log.subject.split(" for ")[0]} for{" "}
+                            <span className="font-bold text-accent-green bg-accent-green/15 border border-accent-green/30 px-2 py-0.5 rounded inline-block">
+                              {log.subject.split(" for ").slice(1).join(" for ")}
+                            </span>
+                          </span>
+                        ) : (
+                          log.subject
+                        )}
+                      </td>
                       <td className="p-4">
                         <span className={`font-mono text-[10px] uppercase ${log.status === "failed" ? "text-status-error" : "text-accent-green"}`}>
                           {log.status || "sent"}
