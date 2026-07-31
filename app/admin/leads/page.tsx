@@ -735,6 +735,7 @@ export default function AdminLeadsPage() {
           )}
         </div>
       </div>
+      )}
 
       {/* Won Onboarding Modal */}
       {showWonModal && selectedLead && (
