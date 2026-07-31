@@ -3,6 +3,7 @@ import { getLeadById, updateLeadStatus } from "@/lib/db";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { LeadStatus, triggerOnboarding, triggerFollowUp, pushStatusUpdate } from "@/services/n8n/n8n";
+import { sendOnboardingKit } from "@/services/email/resend";
 
 export async function GET(
   request: Request,
@@ -65,21 +66,31 @@ export async function PATCH(
     const sideEffects: Promise<unknown>[] = [];
 
     if (status === "won" && onboardingDetails) {
+      const kitData = {
+        name: lead.name,
+        email: lead.email,
+        company: lead.company,
+        invoiceAmount: onboardingDetails.invoiceAmount || "$1,500.00",
+        invoiceId: onboardingDetails.invoiceId || `INV-${Date.now().toString().slice(-6)}`,
+        projectScope: onboardingDetails.projectScope || lead.projectRequirement.slice(0, 100) + "...",
+        startDate: onboardingDetails.startDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+        country: lead.country || onboardingDetails.country,
+        depositPercent: onboardingDetails.depositPercent ? Number(onboardingDetails.depositPercent) : 25,
+        setupFee: onboardingDetails.setupFee || undefined,
+        monthlyRetainer: onboardingDetails.monthlyRetainer || undefined,
+        paymentLink: onboardingDetails.paymentLink || undefined,
+      };
+
+      sideEffects.push(
+        sendOnboardingKit(kitData).catch((err) => {
+          logger.error(`Resend onboarding email failed for lead ${id}`, "resend_onboarding_error", err);
+        })
+      );
+
       sideEffects.push(
         triggerOnboarding({
           leadId: id,
-          name: lead.name,
-          email: lead.email,
-          company: lead.company,
-          invoiceAmount: onboardingDetails.invoiceAmount || "$1,500.00",
-          invoiceId: onboardingDetails.invoiceId || `INV-${Date.now().toString().slice(-6)}`,
-          projectScope: onboardingDetails.projectScope || lead.projectRequirement.slice(0, 100) + "...",
-          startDate: onboardingDetails.startDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-          country: lead.country || onboardingDetails.country,
-          depositPercent: onboardingDetails.depositPercent ? Number(onboardingDetails.depositPercent) : 25,
-          setupFee: onboardingDetails.setupFee || undefined,
-          monthlyRetainer: onboardingDetails.monthlyRetainer || undefined,
-          paymentLink: onboardingDetails.paymentLink || undefined,
+          ...kitData,
         }).catch((err) => {
           logger.error(`n8n onboarding dispatch failed for lead ${id}`, "n8n_onboarding_error", err);
         })

@@ -164,10 +164,26 @@ export async function sendLeadConfirmation(lead: LeadEmailData): Promise<boolean
 
     if (error) {
       logger.error("Failed to send lead confirmation email", "email_confirmation_error", error);
+      saveEmailLog({
+        leadId: lead.leadId,
+        toEmail: lead.email,
+        fromEmail: env.EMAIL_FROM,
+        subject: `Assessment Received — ${lead.company} | Mithun Das`,
+        category: "confirmation",
+        status: "failed",
+      });
       return false;
     }
 
     logger.info(`Lead confirmation email sent to ${lead.email}`, "email_confirmation_sent");
+    saveEmailLog({
+      leadId: lead.leadId,
+      toEmail: lead.email,
+      fromEmail: env.EMAIL_FROM,
+      subject: `Assessment Received — ${lead.company} | Mithun Das`,
+      category: "confirmation",
+      status: "sent",
+    });
     return true;
   } catch (error) {
     logger.error("Resend API exception during confirmation email", "email_confirmation_exception", error);
@@ -323,10 +339,26 @@ export async function sendFollowUpEmail(
 
     if (error) {
       logger.error(`Failed to send ${followUpRound} follow-up email`, "email_followup_error", error);
+      saveEmailLog({
+        leadId: lead.leadId,
+        toEmail: lead.email,
+        fromEmail: env.EMAIL_FROM,
+        subject: `Following up on your automation assessment — ${lead.company} | Mithun Das`,
+        category: "followup",
+        status: "failed",
+      });
       return false;
     }
 
     logger.info(`${followUpRound} follow-up email sent to ${lead.email}`, "email_followup_sent");
+    saveEmailLog({
+      leadId: lead.leadId,
+      toEmail: lead.email,
+      fromEmail: env.EMAIL_FROM,
+      subject: `Following up on your automation assessment — ${lead.company} | Mithun Das`,
+      category: "followup",
+      status: "sent",
+    });
     return true;
   } catch (error) {
     logger.error(`Resend API exception during ${followUpRound} follow-up`, "email_followup_exception", error);
