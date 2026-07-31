@@ -47,6 +47,11 @@ export interface OnboardingTriggerPayload {
   invoiceAmount: string;
   invoiceId: string;
   startDate: string;
+  country?: string;
+  depositPercent?: number;
+  setupFee?: string;
+  monthlyRetainer?: string;
+  paymentLink?: string;
 }
 
 /* ────────────────────────────────────────────────────── *

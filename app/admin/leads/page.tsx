@@ -39,6 +39,10 @@ export default function AdminLeadsPage() {
     invoiceId: "",
     projectScope: "",
     startDate: "",
+    depositPercent: "25",
+    setupFee: "$150.00",
+    monthlyRetainer: "$200.00/mo",
+    paymentLink: "",
   });
   const [followUpRound, setFollowUpRound] = useState<"24h" | "72h">("24h");
   const [notification, setNotification] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -609,21 +613,67 @@ export default function AdminLeadsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleOnboardingSubmit} className="space-y-4 font-sans text-xs">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
+            <form onSubmit={handleOnboardingSubmit} className="space-y-4 font-sans text-xs max-h-[75vh] overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
                   <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
-                    Invoice Amount
+                    Agreed Project Fee
                   </label>
                   <input
                     type="text"
                     value={onboardingForm.invoiceAmount}
                     onChange={(e) => setOnboardingForm({ ...onboardingForm, invoiceAmount: e.target.value })}
                     className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none"
+                    placeholder="$2,500.00 or ₹1,50,000"
                     required
                   />
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1">
+                  <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
+                    Upfront Deposit %
+                  </label>
+                  <select
+                    value={onboardingForm.depositPercent}
+                    onChange={(e) => setOnboardingForm({ ...onboardingForm, depositPercent: e.target.value })}
+                    className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none font-mono"
+                  >
+                    <option value="20">20% Upfront Deposit</option>
+                    <option value="25">25% Upfront Deposit (Default)</option>
+                    <option value="30">30% Upfront Deposit</option>
+                    <option value="50">50% Upfront Deposit</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
+                    Fixed Setup / Infrastructure Fee
+                  </label>
+                  <input
+                    type="text"
+                    value={onboardingForm.setupFee}
+                    onChange={(e) => setOnboardingForm({ ...onboardingForm, setupFee: e.target.value })}
+                    className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none"
+                    placeholder="$150.00 (API & Host setup)"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
+                    Monthly Support Retainer
+                  </label>
+                  <input
+                    type="text"
+                    value={onboardingForm.monthlyRetainer}
+                    onChange={(e) => setOnboardingForm({ ...onboardingForm, monthlyRetainer: e.target.value })}
+                    className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none"
+                    placeholder="$200.00/mo"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
                   <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
                     Invoice ID
                   </label>
@@ -635,35 +685,47 @@ export default function AdminLeadsPage() {
                     required
                   />
                 </div>
+                <div className="space-y-1">
+                  <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
+                    Target Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={onboardingForm.startDate}
+                    onChange={(e) => setOnboardingForm({ ...onboardingForm, startDate: e.target.value })}
+                    className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none font-mono"
+                    required
+                  />
+                </div>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
-                  Target Start Date
+                  Custom Payment Link (Razorpay / Stripe / PayPal)
                 </label>
                 <input
-                  type="date"
-                  value={onboardingForm.startDate}
-                  onChange={(e) => setOnboardingForm({ ...onboardingForm, startDate: e.target.value })}
-                  className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none font-mono"
-                  required
+                  type="url"
+                  value={onboardingForm.paymentLink}
+                  onChange={(e) => setOnboardingForm({ ...onboardingForm, paymentLink: e.target.value })}
+                  className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none font-mono text-[11px]"
+                  placeholder="https://rzp.io/l/... or https://buy.stripe.com/..."
                 />
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
                   Statement of Work / Scope Description
                 </label>
                 <textarea
                   value={onboardingForm.projectScope}
                   onChange={(e) => setOnboardingForm({ ...onboardingForm, projectScope: e.target.value })}
-                  rows={4}
+                  rows={3}
                   className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none resize-none leading-relaxed"
                   required
                 />
               </div>
 
-              <div className="pt-4 flex justify-end gap-3 border-t border-border-subtle mt-6">
+              <div className="pt-3 flex justify-end gap-3 border-t border-border-subtle mt-4">
                 <button
                   type="button"
                   onClick={() => setShowWonModal(false)}
@@ -675,7 +737,7 @@ export default function AdminLeadsPage() {
                   type="submit"
                   className="rounded bg-accent-green px-4 py-2 font-mono text-[10px] font-bold text-text-inverse hover:bg-accent-green/90"
                 >
-                  Generate Invoice & Onboard
+                  Dispatch Welcome Package &amp; Convert
                 </button>
               </div>
             </form>

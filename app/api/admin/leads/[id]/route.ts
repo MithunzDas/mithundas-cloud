@@ -75,6 +75,11 @@ export async function PATCH(
           invoiceId: onboardingDetails.invoiceId || `INV-${Date.now().toString().slice(-6)}`,
           projectScope: onboardingDetails.projectScope || lead.projectRequirement.slice(0, 100) + "...",
           startDate: onboardingDetails.startDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+          country: lead.country || onboardingDetails.country,
+          depositPercent: onboardingDetails.depositPercent ? Number(onboardingDetails.depositPercent) : 25,
+          setupFee: onboardingDetails.setupFee || undefined,
+          monthlyRetainer: onboardingDetails.monthlyRetainer || undefined,
+          paymentLink: onboardingDetails.paymentLink || undefined,
         }).catch((err) => {
           logger.error(`n8n onboarding dispatch failed for lead ${id}`, "n8n_onboarding_error", err);
         })

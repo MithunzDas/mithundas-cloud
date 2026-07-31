@@ -31,6 +31,8 @@ interface OnboardingKitData {
   startDate: string;
   country?: string;
   depositPercent?: number;
+  setupFee?: string;
+  monthlyRetainer?: string;
   paymentLink?: string;
 }
 
@@ -431,10 +433,12 @@ export async function sendOnboardingKit(data: OnboardingKitData): Promise<boolea
       <tr><td style="padding:20px 24px;">
         <p style="margin:0 0 16px;font-size:11px;color:#22c55e;font-family:monospace;text-transform:uppercase;letter-spacing:1px;">Invoice &amp; Kickoff Summary</p>
         <table width="100%" cellpadding="0" cellspacing="0">
-          <tr><td style="padding:6px 0;font-size:13px;color:#888;width:140px;">Invoice ID</td><td style="padding:6px 0;font-size:14px;color:#06b6d4;font-family:monospace;">${data.invoiceId}</td></tr>
-          <tr><td style="padding:6px 0;font-size:13px;color:#888;">Total Amount</td><td style="padding:6px 0;font-size:16px;color:#22c55e;font-weight:700;">${data.invoiceAmount}</td></tr>
+          <tr><td style="padding:6px 0;font-size:13px;color:#888;width:160px;">Invoice ID</td><td style="padding:6px 0;font-size:14px;color:#06b6d4;font-family:monospace;">${data.invoiceId}</td></tr>
+          <tr><td style="padding:6px 0;font-size:13px;color:#888;">Agreed Project Fee</td><td style="padding:6px 0;font-size:16px;color:#22c55e;font-weight:700;">${data.invoiceAmount}</td></tr>
+          ${data.setupFee ? `<tr><td style="padding:6px 0;font-size:13px;color:#888;">Fixed Setup / API Fee</td><td style="padding:6px 0;font-size:14px;color:#f59e0b;font-weight:600;">${data.setupFee}</td></tr>` : ""}
+          ${data.monthlyRetainer ? `<tr><td style="padding:6px 0;font-size:13px;color:#888;">Monthly Maintenance</td><td style="padding:6px 0;font-size:14px;color:#06b6d4;font-weight:600;">${data.monthlyRetainer}</td></tr>` : ""}
           <tr><td style="padding:6px 0;font-size:13px;color:#888;">Project Scope</td><td style="padding:6px 0;font-size:13px;color:#e0e0e8;">${data.projectScope}</td></tr>
-          <tr><td style="padding:6px 0;font-size:13px;color:#888;">Start Date</td><td style="padding:6px 0;font-size:13px;color:#e0e0e8;">${data.startDate}</td></tr>
+          <tr><td style="padding:6px 0;font-size:13px;color:#888;">Target Start Date</td><td style="padding:6px 0;font-size:13px;color:#e0e0e8;">${data.startDate}</td></tr>
         </table>
       </td></tr>
     </table>
