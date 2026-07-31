@@ -164,7 +164,7 @@ export async function sendLeadConfirmation(lead: LeadEmailData): Promise<boolean
 
     if (error) {
       logger.error("Failed to send lead confirmation email", "email_confirmation_error", error);
-      saveEmailLog({
+      await saveEmailLog({
         leadId: lead.leadId,
         toEmail: lead.email,
         fromEmail: env.EMAIL_FROM,
@@ -176,7 +176,7 @@ export async function sendLeadConfirmation(lead: LeadEmailData): Promise<boolean
     }
 
     logger.info(`Lead confirmation email sent to ${lead.email}`, "email_confirmation_sent");
-    saveEmailLog({
+    await saveEmailLog({
       leadId: lead.leadId,
       toEmail: lead.email,
       fromEmail: env.EMAIL_FROM,
@@ -339,7 +339,7 @@ export async function sendFollowUpEmail(
 
     if (error) {
       logger.error(`Failed to send ${followUpRound} follow-up email`, "email_followup_error", error);
-      saveEmailLog({
+      await saveEmailLog({
         leadId: lead.leadId,
         toEmail: lead.email,
         fromEmail: env.EMAIL_FROM,
@@ -351,7 +351,7 @@ export async function sendFollowUpEmail(
     }
 
     logger.info(`${followUpRound} follow-up email sent to ${lead.email}`, "email_followup_sent");
-    saveEmailLog({
+    await saveEmailLog({
       leadId: lead.leadId,
       toEmail: lead.email,
       fromEmail: env.EMAIL_FROM,
@@ -520,7 +520,7 @@ export async function sendOnboardingKit(data: OnboardingKitData): Promise<boolea
 
     if (error) {
       logger.error("Failed to send onboarding kit email", "email_onboarding_error", error);
-      saveEmailLog({
+      await saveEmailLog({
         toEmail: data.email,
         fromEmail: env.EMAIL_FROM,
         subject: `Welcome aboard — Project Kickoff & Invoice for ${data.company} | Mithun Das`,
@@ -531,7 +531,7 @@ export async function sendOnboardingKit(data: OnboardingKitData): Promise<boolea
     }
 
     logger.info(`Onboarding kit sent to ${data.email} for ${data.company}`, "email_onboarding_sent");
-    saveEmailLog({
+    await saveEmailLog({
       toEmail: data.email,
       fromEmail: env.EMAIL_FROM,
       subject: `Welcome aboard — Project Kickoff & Invoice for ${data.company} | Mithun Das`,

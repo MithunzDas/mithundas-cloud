@@ -115,6 +115,7 @@ export default function AdminLeadsPage() {
     e.preventDefault();
     if (adminSecret.trim()) {
       fetchLeads(adminSecret.trim());
+      fetchEmailLogs(adminSecret.trim());
     }
   };
 
