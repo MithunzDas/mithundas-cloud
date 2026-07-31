@@ -462,10 +462,8 @@ export default function AdminLeadsPage() {
           </div>
         </div>
       ) : (
-
-      {/* Main Panel Content */}
-      <div className="grid gap-8 lg:grid-cols-3">
-        {/* Left/Middle Column - Filter & Table */}
+        <div className="grid gap-8 lg:grid-cols-3">
+          {/* Left/Middle Column - Filter & Table */}
         <div className="lg:col-span-2 space-y-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             {/* Search Input */}
