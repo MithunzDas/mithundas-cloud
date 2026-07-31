@@ -58,13 +58,33 @@ export default function AdminLeadsPage() {
     }
   }, [showWonModal]);
 
+  const [activeTab, setActiveTab] = useState<"leads" | "emails">("leads");
+  const [emailLogs, setEmailLogs] = useState<any[]>([]);
+  const [emailCategoryFilter, setEmailCategoryFilter] = useState<string>("all");
+  const [selectedEmailModal, setSelectedEmailModal] = useState<any | null>(null);
+
   useEffect(() => {
     const savedSecret = localStorage.getItem("mithundas_admin_secret");
     if (savedSecret) {
       setAdminSecret(savedSecret);
       fetchLeads(savedSecret);
+      fetchEmailLogs(savedSecret);
     }
   }, []);
+
+  const fetchEmailLogs = async (secret: string) => {
+    try {
+      const response = await fetch("/api/admin/emails", {
+        headers: { "x-admin-secret": secret },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setEmailLogs(data.emailLogs || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch email logs", err);
+    }
+  };
 
   const fetchLeads = async (secret: string) => {
     setLoading(true);
@@ -314,6 +334,32 @@ export default function AdminLeadsPage() {
         </div>
       </div>
 
+      {/* Navigation Tabs */}
+      <div className="flex items-center gap-4 border-b border-border-subtle mb-8">
+        <button
+          onClick={() => setActiveTab("leads")}
+          className={`flex items-center gap-2 border-b-2 pb-3 font-mono text-xs font-semibold transition-colors ${
+            activeTab === "leads"
+              ? "border-accent-cyan text-accent-cyan"
+              : "border-transparent text-text-muted hover:text-text-primary"
+          }`}
+        >
+          <User className="h-4 w-4" />
+          Leads Pipeline ({leads.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("emails")}
+          className={`flex items-center gap-2 border-b-2 pb-3 font-mono text-xs font-semibold transition-colors ${
+            activeTab === "emails"
+              ? "border-accent-cyan text-accent-cyan"
+              : "border-transparent text-text-muted hover:text-text-primary"
+          }`}
+        >
+          <Mail className="h-4 w-4" />
+          Email Outbox Audit Log ({emailLogs.length})
+        </button>
+      </div>
+
       {notification && (
         <div className={`fixed bottom-5 left-5 z-50 rounded-lg p-4 border shadow-lg font-mono text-xs ${
           notification.type === "success" 
@@ -323,6 +369,99 @@ export default function AdminLeadsPage() {
           {notification.text}
         </div>
       )}
+
+      {activeTab === "emails" ? (
+        /* EMAIL OUTBOX AUDIT LOG VIEW */
+        <div className="space-y-6">
+          <div className="flex items-center justify-between bg-background-surface p-4 rounded-xl border border-border-subtle">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-text-muted" />
+              <span className="font-mono text-xs text-text-muted">Filter Category:</span>
+              {["all", "onboarding", "confirmation", "followup"].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setEmailCategoryFilter(cat)}
+                  className={`rounded-lg px-3 py-1 font-mono text-[11px] uppercase font-semibold transition-all ${
+                    emailCategoryFilter === cat
+                      ? "bg-accent-cyan/20 text-accent-cyan border border-accent-cyan/40"
+                      : "bg-background-inset text-text-muted border border-border-subtle hover:text-text-primary"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => fetchEmailLogs(adminSecret)}
+              className="flex items-center gap-1.5 rounded-lg border border-border-subtle bg-background-inset px-3 py-1.5 font-mono text-xs text-text-secondary hover:text-accent-cyan"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Refresh Outbox
+            </button>
+          </div>
+
+          <div className="rounded-xl border border-border-subtle bg-background-surface overflow-hidden shadow-panel">
+            <table className="w-full text-left font-sans text-xs">
+              <thead className="bg-background-inset font-mono text-[10px] uppercase text-text-muted border-b border-border-subtle">
+                <tr>
+                  <th className="p-4">Category</th>
+                  <th className="p-4">Recipient</th>
+                  <th className="p-4">Subject</th>
+                  <th className="p-4">Status</th>
+                  <th className="p-4">Date Sent</th>
+                  <th className="p-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border-subtle">
+                {emailLogs
+                  .filter((log) => emailCategoryFilter === "all" || log.category === emailCategoryFilter)
+                  .map((log) => (
+                    <tr key={log.id} className="hover:bg-background-inset/50 transition-colors">
+                      <td className="p-4">
+                        <span className={`inline-block rounded px-2 py-0.5 font-mono text-[10px] uppercase font-bold ${
+                          log.category === "onboarding"
+                            ? "bg-accent-green/15 text-accent-green border border-accent-green/30"
+                            : log.category === "followup"
+                            ? "bg-status-warning/15 text-status-warning border border-status-warning/30"
+                            : "bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/30"
+                        }`}>
+                          {log.category}
+                        </span>
+                      </td>
+                      <td className="p-4 font-mono font-medium text-text-primary">{log.toEmail}</td>
+                      <td className="p-4 text-text-secondary">{log.subject}</td>
+                      <td className="p-4">
+                        <span className={`font-mono text-[10px] uppercase ${log.status === "failed" ? "text-status-error" : "text-accent-green"}`}>
+                          {log.status || "sent"}
+                        </span>
+                      </td>
+                      <td className="p-4 font-mono text-[11px] text-text-muted">
+                        {new Date(log.sentAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}
+                      </td>
+                      <td className="p-4 text-right">
+                        {log.htmlContent && (
+                          <button
+                            onClick={() => setSelectedEmailModal(log)}
+                            className="rounded bg-accent-cyan/10 border border-accent-cyan/30 px-3 py-1 font-mono text-[10px] text-accent-cyan hover:bg-accent-cyan/20"
+                          >
+                            Preview HTML Email
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                {emailLogs.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="p-12 text-center font-mono text-xs text-text-muted">
+                      No email audit logs recorded yet. Outgoing emails sent via Resend will appear here in real time!
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
 
       {/* Main Panel Content */}
       <div className="grid gap-8 lg:grid-cols-3">
@@ -758,6 +897,43 @@ export default function AdminLeadsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* HTML Email Live Preview Modal */}
+      {selectedEmailModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background-app/80 backdrop-blur-sm px-4">
+          <div className="w-full max-w-3xl rounded-xl border border-border-subtle bg-background-surface p-6 shadow-panel">
+            <div className="flex items-center justify-between border-b border-border-subtle pb-4 mb-4">
+              <div>
+                <h3 className="font-sans text-small font-bold text-text-primary">
+                  {selectedEmailModal.subject}
+                </h3>
+                <p className="font-mono text-[11px] text-text-muted mt-0.5">
+                  To: {selectedEmailModal.toEmail} • {new Date(selectedEmailModal.sentAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedEmailModal(null)}
+                className="rounded-lg p-1 hover:bg-background-inset text-text-muted hover:text-text-primary"
+              >
+                <X className="h-4 w-4 text-text-muted hover:text-text-primary" />
+              </button>
+            </div>
+
+            <div className="bg-white rounded-lg p-4 max-h-[70vh] overflow-y-auto">
+              <div dangerouslySetInnerHTML={{ __html: selectedEmailModal.htmlContent || "<p style='color:black;'>No HTML content stored.</p>" }} />
+            </div>
+
+            <div className="pt-4 flex justify-end">
+              <button
+                onClick={() => setSelectedEmailModal(null)}
+                className="rounded bg-accent-cyan px-4 py-2 font-mono text-[10px] font-bold text-text-inverse"
+              >
+                Close Preview
+              </button>
+            </div>
           </div>
         </div>
       )}

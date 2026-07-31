@@ -29,3 +29,19 @@ model Lead {
   submittedAt        DateTime @default(now())
   updatedAt          DateTime @default(now()) @updatedAt
 }
+
+model EmailLog {
+  id          String   @id @default(cuid())
+  leadId      String?
+  toEmail     String
+  fromEmail   String
+  subject     String
+  category    String   // "onboarding", "confirmation", "followup", "admin_alert"
+  htmlContent String?  @db.Text
+  status      String   @default("sent") // "sent", "failed"
+  sentAt      DateTime @default(now())
+
+  @@index([toEmail])
+  @@index([leadId])
+}
+

@@ -111,3 +111,62 @@ export async function updateLeadStatus(
     return null;
   }
 }
+
+export interface EmailLogPayload {
+  id?: string;
+  leadId?: string;
+  toEmail: string;
+  fromEmail: string;
+  subject: string;
+  category: string;
+  htmlContent?: string;
+  status?: string;
+  sentAt?: string;
+}
+
+export async function saveEmailLog(data: {
+  leadId?: string;
+  toEmail: string;
+  fromEmail: string;
+  subject: string;
+  category: string;
+  htmlContent?: string;
+  status?: string;
+}): Promise<void> {
+  try {
+    await prisma.emailLog.create({
+      data: {
+        leadId: data.leadId || null,
+        toEmail: data.toEmail,
+        fromEmail: data.fromEmail,
+        subject: data.subject,
+        category: data.category,
+        htmlContent: data.htmlContent || null,
+        status: data.status || "sent",
+      },
+    });
+    logger.info(`Email log saved: ${data.category} to ${data.toEmail}`, "email_log_save_success");
+  } catch (error) {
+    logger.error("Failed to save email log to database", "email_log_save_error", error);
+  }
+}
+
+export async function getEmailLogs(leadId?: string): Promise<EmailLogPayload[]> {
+  try {
+    const logs = await prisma.emailLog.findMany({
+      where: leadId ? { leadId } : undefined,
+      orderBy: { sentAt: "desc" },
+      take: 100,
+    });
+    return logs.map((log) => ({
+      ...log,
+      leadId: log.leadId ?? undefined,
+      htmlContent: log.htmlContent ?? undefined,
+      sentAt: log.sentAt.toISOString(),
+    }));
+  } catch (error) {
+    logger.error("Failed to fetch email logs from database", "email_log_read_error", error);
+    return [];
+  }
+}
+

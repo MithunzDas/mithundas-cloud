@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { saveEmailLog } from "@/lib/db";
 
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 
@@ -487,10 +488,24 @@ export async function sendOnboardingKit(data: OnboardingKitData): Promise<boolea
 
     if (error) {
       logger.error("Failed to send onboarding kit email", "email_onboarding_error", error);
+      saveEmailLog({
+        toEmail: data.email,
+        fromEmail: env.EMAIL_FROM,
+        subject: `Welcome aboard — Project Kickoff & Invoice for ${data.company} | Mithun Das`,
+        category: "onboarding",
+        status: "failed",
+      });
       return false;
     }
 
     logger.info(`Onboarding kit sent to ${data.email} for ${data.company}`, "email_onboarding_sent");
+    saveEmailLog({
+      toEmail: data.email,
+      fromEmail: env.EMAIL_FROM,
+      subject: `Welcome aboard — Project Kickoff & Invoice for ${data.company} | Mithun Das`,
+      category: "onboarding",
+      status: "sent",
+    });
     return true;
   } catch (error) {
     logger.error("Resend API exception during onboarding kit", "email_onboarding_exception", error);
