@@ -1,7 +1,6 @@
 import { Resend } from "resend";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { saveEmailLog } from "@/lib/db";
 
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 
@@ -164,26 +163,10 @@ export async function sendLeadConfirmation(lead: LeadEmailData): Promise<boolean
 
     if (error) {
       logger.error("Failed to send lead confirmation email", "email_confirmation_error", error);
-      await saveEmailLog({
-        leadId: lead.leadId,
-        toEmail: lead.email,
-        fromEmail: env.EMAIL_FROM,
-        subject: `Assessment Received — ${lead.company} | Mithun Das`,
-        category: "confirmation",
-        status: "failed",
-      });
       return false;
     }
 
     logger.info(`Lead confirmation email sent to ${lead.email}`, "email_confirmation_sent");
-    await saveEmailLog({
-      leadId: lead.leadId,
-      toEmail: lead.email,
-      fromEmail: env.EMAIL_FROM,
-      subject: `Assessment Received — ${lead.company} | Mithun Das`,
-      category: "confirmation",
-      status: "sent",
-    });
     return true;
   } catch (error) {
     logger.error("Resend API exception during confirmation email", "email_confirmation_exception", error);
@@ -339,26 +322,10 @@ export async function sendFollowUpEmail(
 
     if (error) {
       logger.error(`Failed to send ${followUpRound} follow-up email`, "email_followup_error", error);
-      await saveEmailLog({
-        leadId: lead.leadId,
-        toEmail: lead.email,
-        fromEmail: env.EMAIL_FROM,
-        subject: `Following up on your automation assessment — ${lead.company} | Mithun Das`,
-        category: "followup",
-        status: "failed",
-      });
       return false;
     }
 
     logger.info(`${followUpRound} follow-up email sent to ${lead.email}`, "email_followup_sent");
-    await saveEmailLog({
-      leadId: lead.leadId,
-      toEmail: lead.email,
-      fromEmail: env.EMAIL_FROM,
-      subject: `Following up on your automation assessment — ${lead.company} | Mithun Das`,
-      category: "followup",
-      status: "sent",
-    });
     return true;
   } catch (error) {
     logger.error(`Resend API exception during ${followUpRound} follow-up`, "email_followup_exception", error);
@@ -520,24 +487,10 @@ export async function sendOnboardingKit(data: OnboardingKitData): Promise<boolea
 
     if (error) {
       logger.error("Failed to send onboarding kit email", "email_onboarding_error", error);
-      await saveEmailLog({
-        toEmail: data.email,
-        fromEmail: env.EMAIL_FROM,
-        subject: `Welcome aboard — Project Kickoff & Invoice for ${data.company} | Mithun Das`,
-        category: "onboarding",
-        status: "failed",
-      });
       return false;
     }
 
     logger.info(`Onboarding kit sent to ${data.email} for ${data.company}`, "email_onboarding_sent");
-    await saveEmailLog({
-      toEmail: data.email,
-      fromEmail: env.EMAIL_FROM,
-      subject: `Welcome aboard — Project Kickoff & Invoice for ${data.company} | Mithun Das`,
-      category: "onboarding",
-      status: "sent",
-    });
     return true;
   } catch (error) {
     logger.error("Resend API exception during onboarding kit", "email_onboarding_exception", error);

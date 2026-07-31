@@ -3,7 +3,6 @@ import { getLeadById, updateLeadStatus } from "@/lib/db";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { LeadStatus, triggerOnboarding, triggerFollowUp, pushStatusUpdate } from "@/services/n8n/n8n";
-import { sendOnboardingKit } from "@/services/email/resend";
 
 export async function GET(
   request: Request,
@@ -80,12 +79,6 @@ export async function PATCH(
         monthlyRetainer: onboardingDetails.monthlyRetainer || undefined,
         paymentLink: onboardingDetails.paymentLink || undefined,
       };
-
-      sideEffects.push(
-        sendOnboardingKit(kitData).catch((err) => {
-          logger.error(`Resend onboarding email failed for lead ${id}`, "resend_onboarding_error", err);
-        })
-      );
 
       sideEffects.push(
         triggerOnboarding({
