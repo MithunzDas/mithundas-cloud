@@ -29,6 +29,9 @@ interface OnboardingKitData {
   invoiceId: string;
   projectScope: string;
   startDate: string;
+  country?: string;
+  depositPercent?: number;
+  paymentLink?: string;
 }
 
 /* ────────────────────────────────────────────────────── *
@@ -339,10 +342,68 @@ export async function sendOnboardingKit(data: OnboardingKitData): Promise<boolea
   }
 
   try {
+    const isIndia = (data.country || "").toLowerCase().includes("india");
+    const depositPct = data.depositPercent || 25;
+
+    const paymentSectionHtml = isIndia
+      ? `
+    <!-- Payment Section: Domestic (India) -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0f;border:1px solid #16a34a;border-radius:8px;margin:24px 0;">
+      <tr><td style="padding:20px 24px;">
+        <p style="margin:0 0 12px;font-size:11px;color:#22c55e;font-family:monospace;text-transform:uppercase;letter-spacing:1px;">💳 Upfront Deposit (${depositPct}% Deposit)</p>
+        <p style="margin:0 0 16px;font-size:13px;color:#e0e0e8;line-height:1.6;">
+          To commence architecture &amp; development, a ${depositPct}% upfront deposit is required.
+        </p>
+
+        ${data.paymentLink ? `
+        <div style="margin-bottom:16px;">
+          <a href="${data.paymentLink}" target="_blank" style="display:inline-block;background:#22c55e;color:#fff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:6px;">
+            Pay via Razorpay / Cards / UPI ➔
+          </a>
+        </div>
+        ` : ""}
+
+        <div style="background:#12121a;padding:14px;border-radius:6px;border:1px solid #1e1e2e;font-size:13px;color:#ccc;font-family:monospace;">
+          <strong style="color:#06b6d4;">Direct UPI / Bank Transfer (0% Fee):</strong><br>
+          • <strong>UPI ID:</strong> <code>mithun.here01@okaxis</code><br>
+          • <strong>Account Holder:</strong> MITHUN DAS<br>
+          • <strong>Bank:</strong> Axis Bank / HDFC Bank<br>
+          • <strong>Note:</strong> Mention Invoice ID <code>${data.invoiceId}</code> in payment remarks.
+        </div>
+      </td></tr>
+    </table>
+    `
+      : `
+    <!-- Payment Section: International (Global) -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0f;border:1px solid #0ea5e9;border-radius:8px;margin:24px 0;">
+      <tr><td style="padding:20px 24px;">
+        <p style="margin:0 0 12px;font-size:11px;color:#0ea5e9;font-family:monospace;text-transform:uppercase;letter-spacing:1px;">💳 Upfront Deposit (${depositPct}% Deposit)</p>
+        <p style="margin:0 0 16px;font-size:13px;color:#e0e0e8;line-height:1.6;">
+          To commence architecture &amp; development, a ${depositPct}% upfront deposit is required.
+        </p>
+
+        ${data.paymentLink ? `
+        <div style="margin-bottom:16px;">
+          <a href="${data.paymentLink}" target="_blank" style="display:inline-block;background:#0ea5e9;color:#fff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:6px;">
+            Pay Deposit via Credit Card / Stripe ➔
+          </a>
+        </div>
+        ` : ""}
+
+        <div style="background:#12121a;padding:14px;border-radius:6px;border:1px solid #1e1e2e;font-size:13px;color:#ccc;font-family:monospace;">
+          <strong style="color:#0ea5e9;">Global Transfer Options:</strong><br>
+          • <strong>PayPal:</strong> <a href="https://paypal.me/mithundas" style="color:#0ea5e9;">paypal.me/mithundas</a><br>
+          • <strong>Wise (USD / EUR / GBP):</strong> Available upon request (0.4% fee)<br>
+          • <strong>Note:</strong> Include Invoice ID <code>${data.invoiceId}</code> in transfer note.
+        </div>
+      </td></tr>
+    </table>
+    `;
+
     const { error } = await resend.emails.send({
       from: env.EMAIL_FROM,
       to: data.email,
-      subject: `Welcome aboard — Project Kickoff for ${data.company} | Mithun Das`,
+      subject: `Welcome aboard — Project Kickoff & Invoice for ${data.company} | Mithun Das`,
       html: `
 <!DOCTYPE html>
 <html lang="en">
@@ -362,32 +423,34 @@ export async function sendOnboardingKit(data: OnboardingKitData): Promise<boolea
       Hi <strong style="color:#fff;">${data.name}</strong>,
     </p>
     <p style="margin:0 0 20px;font-size:15px;color:#e0e0e8;line-height:1.7;">
-      I'm excited to officially kick off the project for <strong style="color:#fff;">${data.company}</strong>! Below you'll find the project details and next steps.
+      I'm excited to officially kick off the project for <strong style="color:#fff;">${data.company}</strong>! Below you'll find the project invoice details, upfront deposit terms, and payment links.
     </p>
 
     <!-- Invoice Summary -->
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0f;border:1px solid #1e1e2e;border-radius:8px;margin:24px 0;">
       <tr><td style="padding:20px 24px;">
-        <p style="margin:0 0 16px;font-size:11px;color:#22c55e;font-family:monospace;text-transform:uppercase;letter-spacing:1px;">Invoice Summary</p>
+        <p style="margin:0 0 16px;font-size:11px;color:#22c55e;font-family:monospace;text-transform:uppercase;letter-spacing:1px;">Invoice &amp; Kickoff Summary</p>
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr><td style="padding:6px 0;font-size:13px;color:#888;width:140px;">Invoice ID</td><td style="padding:6px 0;font-size:14px;color:#06b6d4;font-family:monospace;">${data.invoiceId}</td></tr>
-          <tr><td style="padding:6px 0;font-size:13px;color:#888;">Amount</td><td style="padding:6px 0;font-size:16px;color:#22c55e;font-weight:700;">${data.invoiceAmount}</td></tr>
+          <tr><td style="padding:6px 0;font-size:13px;color:#888;">Total Amount</td><td style="padding:6px 0;font-size:16px;color:#22c55e;font-weight:700;">${data.invoiceAmount}</td></tr>
           <tr><td style="padding:6px 0;font-size:13px;color:#888;">Project Scope</td><td style="padding:6px 0;font-size:13px;color:#e0e0e8;">${data.projectScope}</td></tr>
           <tr><td style="padding:6px 0;font-size:13px;color:#888;">Start Date</td><td style="padding:6px 0;font-size:13px;color:#e0e0e8;">${data.startDate}</td></tr>
         </table>
       </td></tr>
     </table>
 
+    ${paymentSectionHtml}
+
     <!-- Terms -->
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0f;border:1px solid #1e1e2e;border-radius:8px;margin:24px 0;">
       <tr><td style="padding:20px 24px;">
         <p style="margin:0 0 12px;font-size:11px;color:#f59e0b;font-family:monospace;text-transform:uppercase;letter-spacing:1px;">Terms &amp; Conditions</p>
         <ul style="margin:0;padding:0 0 0 20px;font-size:13px;color:#e0e0e8;line-height:2;">
-          <li>50% advance payment required before project commencement</li>
-          <li>Remaining 50% due upon delivery and final approval</li>
+          <li>${depositPct}% advance deposit required before project commencement</li>
+          <li>Remaining balance due upon delivery and final approval</li>
           <li>All deliverables include 30 days of post-delivery support</li>
           <li>Source code and documentation transfer upon full payment</li>
-          <li>Confidentiality and NDA terms apply as per the MSA</li>
+          <li>Confidentiality and NDA terms apply as per the Master Services Agreement</li>
         </ul>
       </td></tr>
     </table>
