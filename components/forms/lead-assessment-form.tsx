@@ -20,6 +20,11 @@ const STEPS = [
 const BUSINESS_TYPES = [
   { value: "service_business", label: "Service Business" },
   { value: "marketing_agency", label: "Marketing Agency" },
+  { value: "saas_startup", label: "SaaS & Tech Startup" },
+  { value: "real_estate", label: "Real Estate & Property Management" },
+  { value: "finance_accounting", label: "Financial Services & Accounting" },
+  { value: "education_edtech", label: "Education & EdTech" },
+  { value: "recruitment_hr", label: "Recruitment & HR Agency" },
   { value: "law_firm", label: "Law Firm" },
   { value: "healthcare_clinic", label: "Healthcare Clinic" },
   { value: "restaurant", label: "Restaurant" },
@@ -28,6 +33,15 @@ const BUSINESS_TYPES = [
   { value: "ecommerce", label: "E-Commerce" },
   { value: "internal_operations", label: "Internal Operations" },
   { value: "other", label: "Other Business" },
+];
+
+const PRIMARY_SERVICES = [
+  { id: "n8n", label: "⚡ n8n / Make Workflow Automation" },
+  { id: "ai_agent", label: "🤖 Custom AI Chatbot & Voice Agent" },
+  { id: "lead_crm", label: "🎯 Lead Qualification & CRM Sync" },
+  { id: "outreach", label: "📱 WhatsApp & Email Automated Outbound" },
+  { id: "cloud_db", label: "🗄️ Database & Cloud API Systems" },
+  { id: "webapp", label: "💻 Custom Next.js / Full-Stack Web App" },
 ];
 
 const BUDGET_RANGES = [
@@ -50,6 +64,7 @@ export function LeadAssessmentForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [formStartTime] = useState(Date.now());
 
   const {
@@ -57,6 +72,8 @@ export function LeadAssessmentForm() {
     handleSubmit,
     control,
     trigger,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<LeadSubmissionRequest>({
     resolver: zodResolver(LeadSubmissionRequestSchema),
@@ -71,9 +88,41 @@ export function LeadAssessmentForm() {
       budget: "500_1500",
       timeline: "this_month",
       consent: false,
-      honeypot: "",
     },
   });
+
+  const toggleServicePill = (serviceLabel: string) => {
+    let updated: string[];
+    if (selectedServices.includes(serviceLabel)) {
+      updated = selectedServices.filter((s) => s !== serviceLabel);
+    } else {
+      updated = [...selectedServices, serviceLabel];
+    }
+    setSelectedServices(updated);
+
+    const currentText = watch("projectRequirement") || "";
+    if (updated.length > 0) {
+      const tagPrefix = `Primary Needs: ${updated.join(" | ")}`;
+      const customNotes = currentText.includes("\n\nDetails: ")
+        ? currentText.split("\n\nDetails: ")[1]
+        : currentText.startsWith("Primary Needs: ")
+        ? ""
+        : currentText;
+
+      const newRequirementText = customNotes
+        ? `${tagPrefix}\n\nDetails: ${customNotes}`
+        : tagPrefix;
+
+      setValue("projectRequirement", newRequirementText, { shouldValidate: true });
+    } else {
+      const customNotes = currentText.includes("\n\nDetails: ")
+        ? currentText.split("\n\nDetails: ")[1]
+        : currentText.startsWith("Primary Needs: ")
+        ? ""
+        : currentText;
+      setValue("projectRequirement", customNotes, { shouldValidate: true });
+    }
+  };
 
   const nextStep = async () => {
     // Determine fields to validate based on current step
@@ -345,8 +394,34 @@ export function LeadAssessmentForm() {
               </div>
 
               <div>
+                <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-2">
+                  Primary Automation Needs <span className="text-text-muted/70 font-normal lowercase">(select all that apply)</span>
+                </label>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {PRIMARY_SERVICES.map((srv) => {
+                    const isSelected = selectedServices.includes(srv.label);
+                    return (
+                      <button
+                        type="button"
+                        key={srv.id}
+                        onClick={() => toggleServicePill(srv.label)}
+                        className={cn(
+                          "flex items-center gap-2 rounded border p-2.5 text-left font-sans text-xs transition-all",
+                          isSelected
+                            ? "border-accent-cyan bg-accent-cyan/15 text-accent-cyan font-semibold shadow-sm"
+                            : "border-border-subtle bg-background-inset text-text-secondary hover:border-text-muted hover:text-text-primary"
+                        )}
+                      >
+                        {srv.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
                 <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted">
-                  What is your workflow bottleneck? <span className="text-accent-red">*</span>
+                  Workflow Bottleneck & Requirement Details <span className="text-accent-red">*</span>
                 </label>
                 <textarea
                   rows={4}

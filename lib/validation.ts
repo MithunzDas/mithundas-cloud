@@ -10,7 +10,12 @@ export const BusinessTypeSchema = z.enum([
   "logistics",
   "ecommerce",
   "internal_operations",
-  "other"
+  "other",
+  "saas_startup",
+  "real_estate",
+  "finance_accounting",
+  "education_edtech",
+  "recruitment_hr"
 ]);
 
 export const BudgetRangeSchema = z.enum([
