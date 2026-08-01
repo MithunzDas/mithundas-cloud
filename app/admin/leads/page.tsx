@@ -432,7 +432,11 @@ export default function AdminLeadsPage() {
                         </span>
                       </td>
                       <td className="p-4 font-mono">
-                        <div className="font-medium text-text-primary">{log.toEmail}</div>
+                        <div className="font-medium text-text-primary">
+                          {log.category === "admin_alert" && (log.toEmail === "hello@mithundas.cloud" || log.toEmail === "mithun@mithundas.cloud" || !log.toEmail)
+                            ? "mithun.here01@gmail.com"
+                            : log.toEmail}
+                        </div>
                         {log.leadId && (
                           <div className="inline-block mt-1 font-mono text-[10px] text-accent-cyan bg-accent-cyan/10 border border-accent-cyan/20 px-1.5 py-0.5 rounded">
                             {log.leadId}
