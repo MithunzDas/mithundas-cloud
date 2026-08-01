@@ -378,7 +378,7 @@ export default function AdminLeadsPage() {
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-text-muted" />
               <span className="font-mono text-xs text-text-muted">Filter Category:</span>
-              {["all", "onboarding", "confirmation", "followup"].map((cat) => (
+              {["all", "onboarding", "confirmation", "followup", "admin_alert"].map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setEmailCategoryFilter(cat)}
@@ -388,7 +388,7 @@ export default function AdminLeadsPage() {
                       : "bg-background-inset text-text-muted border border-border-subtle hover:text-text-primary"
                   }`}
                 >
-                  {cat}
+                  {cat === "admin_alert" ? "ADMIN ALERT" : cat}
                 </button>
               ))}
             </div>
@@ -424,9 +424,11 @@ export default function AdminLeadsPage() {
                             ? "bg-accent-green/15 text-accent-green border border-accent-green/30"
                             : log.category === "followup"
                             ? "bg-status-warning/15 text-status-warning border border-status-warning/30"
+                            : log.category === "admin_alert"
+                            ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
                             : "bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/30"
                         }`}>
-                          {log.category}
+                          {log.category === "admin_alert" ? "ADMIN ALERT" : log.category}
                         </span>
                       </td>
                       <td className="p-4 font-mono">
