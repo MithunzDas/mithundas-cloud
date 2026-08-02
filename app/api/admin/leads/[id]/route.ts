@@ -90,7 +90,17 @@ export async function PATCH(
       );
     } else if (status === "silent") {
       sideEffects.push(
-        triggerFollowUp(id, lead.email, followUpRound || "24h").catch((err) => {
+        triggerFollowUp({
+          leadId: id,
+          email: lead.email,
+          name: lead.name,
+          company: lead.company,
+          businessType: lead.businessType,
+          projectRequirement: lead.projectRequirement,
+          country: lead.country || undefined,
+          whatsapp: lead.whatsapp || undefined,
+          round: (followUpRound as "24h" | "72h") || "24h",
+        }).catch((err) => {
           logger.error(`n8n follow-up dispatch failed for lead ${id}`, "n8n_followup_error", err);
         })
       );

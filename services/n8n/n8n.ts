@@ -130,20 +130,27 @@ export async function pushStatusUpdate(update: StatusUpdatePayload) {
   return dispatchToN8n(statusWebhookUrl, update, "status_update");
 }
 
-/* ────────────────────────────────────────────────────── *
- *  3. Trigger Follow-up Workflow                         *
- * ────────────────────────────────────────────────────── */
+export interface FollowUpTriggerPayload {
+  leadId: string;
+  email: string;
+  name?: string;
+  company?: string;
+  businessType?: string;
+  projectRequirement?: string;
+  country?: string;
+  whatsapp?: string;
+  round: "24h" | "72h";
+}
 
-export async function triggerFollowUp(
-  leadId: string,
-  email: string,
-  round: "24h" | "72h"
-) {
+export async function triggerFollowUp(data: FollowUpTriggerPayload) {
   const followUpUrl = env.N8N_FOLLOWUP_WEBHOOK_URL;
   return dispatchToN8n(
     followUpUrl,
-    { leadId, email, round, triggeredAt: new Date().toISOString() },
-    `followup_${round}`
+    {
+      ...data,
+      triggeredAt: new Date().toISOString(),
+    },
+    `followup_${data.round}`
   );
 }
 
