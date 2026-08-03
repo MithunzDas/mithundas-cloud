@@ -66,13 +66,13 @@ export default function AdminLeadsPage() {
   const [showWonModal, setShowWonModal] = useState(false);
   const [isPolishingScope, setIsPolishingScope] = useState(false);
   const [onboardingForm, setOnboardingForm] = useState({
-    invoiceAmount: "$2,500.00",
+    invoiceAmount: "2,500.00",
     invoiceId: "",
     projectScope: "",
     startDate: "",
     depositPercent: "25",
-    setupFee: "$150.00",
-    monthlyRetainer: "$200.00/mo",
+    setupFee: "150.00",
+    monthlyRetainer: "200.00",
     paymentLink: "",
     currency: "USD",
     currencySymbol: "$",
@@ -823,6 +823,9 @@ export default function AdminLeadsPage() {
                       );
                       setOnboardingForm((prev) => ({
                         ...prev,
+                        invoiceAmount: (prev.invoiceAmount || "2,500.00").replace(/[\$₹€£]|A\$|\/mo|\/month/g, "").trim(),
+                        setupFee: (prev.setupFee || "150.00").replace(/[\$₹€£]|A\$|\/mo|\/month/g, "").trim(),
+                        monthlyRetainer: (prev.monthlyRetainer || "200.00").replace(/[\$₹€£]|A\$|\/mo|\/month/g, "").trim(),
                         projectScope: defaultPolished,
                       }));
                       setShowWonModal(true);
@@ -1102,24 +1105,32 @@ export default function AdminLeadsPage() {
                     <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 border-l-4 border-l-sky-500 mb-3 space-y-1.5 text-[11px]">
                       <div className="font-extrabold text-sky-600 uppercase text-[10px] tracking-wider mb-2">📋 AGREED PROJECT BREAKDOWN</div>
                       <div><strong className="text-slate-500">Statement of Work:</strong> <span className="text-slate-900 font-medium">{onboardingForm.projectScope}</span></div>
-                      <div><strong className="text-slate-500">Agreed Project Fee:</strong> <span className="text-slate-900 font-bold">{onboardingForm.invoiceAmount}</span></div>
                       
                       {(() => {
-                        const setupAmt = parseFloat((onboardingForm.setupFee || "").replace(/[^0-9.]/g, "")) || 0;
-                        const retainerAmt = parseFloat((onboardingForm.monthlyRetainer || "").replace(/[^0-9.]/g, "")) || 0;
-                        const numericFee = parseFloat((onboardingForm.invoiceAmount || "").replace(/[^0-9.]/g, "")) || 0;
+                        const rawFee = (onboardingForm.invoiceAmount || "").replace(/[^0-9.]/g, "");
+                        const rawSetup = (onboardingForm.setupFee || "").replace(/[^0-9.]/g, "");
+                        const rawRetainer = (onboardingForm.monthlyRetainer || "").replace(/[^0-9.]/g, "");
+
+                        const setupAmt = parseFloat(rawSetup) || 0;
+                        const retainerAmt = parseFloat(rawRetainer) || 0;
+                        const numericFee = parseFloat(rawFee) || 0;
                         const pct = parseFloat(onboardingForm.depositPercent) || 0;
                         const depositAmt = (numericFee * pct) / 100;
                         const totalPayable = depositAmt + setupAmt;
                         const sym = onboardingForm.currencySymbol || "$";
 
+                        const displayFee = `${sym}${numericFee ? numericFee.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : rawFee}`;
+                        const displaySetup = `${sym}${setupAmt ? setupAmt.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : rawSetup}`;
+                        const displayRetainer = `${sym}${retainerAmt ? retainerAmt.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : rawRetainer}/mo`;
+
                         return (
                           <>
+                            <div><strong className="text-slate-500">Agreed Project Fee:</strong> <span className="text-slate-900 font-bold">{displayFee}</span></div>
                             {setupAmt > 0 && (
-                              <div><strong className="text-slate-500">Fixed Setup Fee:</strong> <span className="text-slate-700">{onboardingForm.setupFee}</span></div>
+                              <div><strong className="text-slate-500">Fixed Setup Fee:</strong> <span className="text-slate-700">{displaySetup}</span></div>
                             )}
                             {retainerAmt > 0 && (
-                              <div><strong className="text-slate-500">Monthly Retainer:</strong> <span className="text-slate-700">{onboardingForm.monthlyRetainer}</span></div>
+                              <div><strong className="text-slate-500">Monthly Retainer:</strong> <span className="text-slate-700">{displayRetainer}</span></div>
                             )}
                             <div><strong className="text-slate-500">Target Start Date:</strong> <span className="text-sky-600 font-semibold">{onboardingForm.startDate}</span></div>
                             <div><strong className="text-slate-500">Deposit Reference:</strong> <span className="text-slate-500 font-mono">{onboardingForm.invoiceId}</span></div>
