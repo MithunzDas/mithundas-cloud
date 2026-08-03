@@ -759,6 +759,33 @@ export default function AdminLeadsPage() {
 
               {/* Action Buttons / Workflows */}
               <div className="space-y-3 pt-4 border-t border-border-subtle">
+                {/* Custom Video Meeting Link & AI Notetaker */}
+                <div className="rounded-lg border border-accent-cyan/20 bg-accent-cyan/5 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-accent-cyan font-mono text-[9px] font-bold uppercase">
+                      <Video className="h-3.5 w-3.5" />
+                      Custom Video Room (#0 Subscription Fee)
+                    </div>
+                    <span className="font-mono text-[9px] text-accent-green bg-accent-green/10 px-2 py-0.5 rounded border border-accent-green/20">
+                      Unlimited HD Call
+                    </span>
+                  </div>
+                  <p className="font-sans text-[11px] text-text-muted leading-snug">
+                    Launch your branded video room for <strong>{selectedLead.name}</strong> ({selectedLead.company}). Auto-records audio &amp; compiles multi-bullet AI SOW + Technical Implementation Plan.
+                  </p>
+                  <div className="flex gap-2">
+                    <a
+                      href={`/meet/INV-${selectedLead.leadId.slice(0, 6)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex-1 flex justify-center items-center gap-1.5 rounded bg-accent-cyan hover:bg-accent-cyan/90 text-background-app font-mono text-[10px] font-bold py-2 shadow-sm"
+                    >
+                      <Video className="h-3.5 w-3.5" />
+                      Launch Custom Video Room ➔
+                    </a>
+                  </div>
+                </div>
+
                 <div className="font-mono text-[10px] text-text-muted uppercase tracking-wider mb-1">
                   Trigger Automation Operations
                 </div>
