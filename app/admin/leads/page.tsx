@@ -54,6 +54,27 @@ export default function AdminLeadsPage() {
     currency: "USD",
     currencySymbol: "$",
   });
+  const [isProposalPreviewing, setIsProposalPreviewing] = useState(false);
+
+  const handleCurrencyChange = (currencyCode: string) => {
+    const selected = CURRENCIES.find((c) => c.code === currencyCode) || CURRENCIES[0];
+    const oldSymbol = onboardingForm.currencySymbol || "$";
+    const newSymbol = selected.symbol;
+
+    const swapSymbol = (str: string) => {
+      if (!str) return str;
+      return str.replace(/[\$₹€£]|A\$/g, newSymbol);
+    };
+
+    setOnboardingForm((prev) => ({
+      ...prev,
+      currency: selected.code,
+      currencySymbol: newSymbol,
+      invoiceAmount: swapSymbol(prev.invoiceAmount) || `${newSymbol}2,500.00`,
+      setupFee: swapSymbol(prev.setupFee),
+      monthlyRetainer: swapSymbol(prev.monthlyRetainer),
+    }));
+  };
   const [followUpRound, setFollowUpRound] = useState<"24h" | "72h">("24h");
   const [notification, setNotification] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -776,30 +797,28 @@ export default function AdminLeadsPage() {
           <div className="w-full max-w-lg rounded-xl border border-border-subtle bg-background-surface p-6 shadow-panel">
             <div className="flex items-center justify-between border-b border-border-subtle pb-4 mb-5">
               <h3 className="font-sans text-small font-bold text-text-primary">
-                Configure Customer Welcome Package
+                {isProposalPreviewing ? "👁️ Live Proposal Email Preview" : "Configure Customer Welcome Package"}
               </h3>
               <div className="flex items-center gap-3">
                 {/* Multi-Currency Selector */}
-                <select
-                  value={onboardingForm.currency}
-                  onChange={(e) => {
-                    const selected = CURRENCIES.find((c) => c.code === e.target.value) || CURRENCIES[0];
-                    setOnboardingForm((prev) => ({
-                      ...prev,
-                      currency: selected.code,
-                      currencySymbol: selected.symbol,
-                    }));
-                  }}
-                  className="rounded-md border border-accent-cyan/40 bg-accent-cyan/10 px-2 py-1 font-mono text-[11px] text-accent-cyan font-semibold focus:outline-none cursor-pointer"
-                >
-                  {CURRENCIES.map((c) => (
-                    <option key={c.code} value={c.code} className="bg-background-elevated text-text-primary font-mono">
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
+                {!isProposalPreviewing && (
+                  <select
+                    value={onboardingForm.currency}
+                    onChange={(e) => handleCurrencyChange(e.target.value)}
+                    className="rounded-md border border-accent-cyan/40 bg-accent-cyan/10 px-2 py-1 font-mono text-[11px] text-accent-cyan font-semibold focus:outline-none cursor-pointer"
+                  >
+                    {CURRENCIES.map((c) => (
+                      <option key={c.code} value={c.code} className="bg-background-elevated text-text-primary font-mono">
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <button
-                  onClick={() => setShowWonModal(false)}
+                  onClick={() => {
+                    setShowWonModal(false);
+                    setIsProposalPreviewing(false);
+                  }}
                   className="rounded-lg p-1 hover:bg-background-inset text-text-muted hover:text-text-primary"
                 >
                   <X className="h-4 w-4" />
@@ -807,153 +826,257 @@ export default function AdminLeadsPage() {
               </div>
             </div>
 
-            <form onSubmit={handleOnboardingSubmit} className="space-y-4 font-sans text-xs max-h-[75vh] overflow-y-auto pr-1">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
-                    Agreed Project Fee
-                  </label>
-                  <input
-                    type="text"
-                    value={onboardingForm.invoiceAmount}
-                    onChange={(e) => setOnboardingForm({ ...onboardingForm, invoiceAmount: e.target.value })}
-                    className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none"
-                    placeholder={`${onboardingForm.currencySymbol}2,500.00`}
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
-                    Upfront Deposit %
-                  </label>
-                  <div className="relative flex items-center">
+            {!isProposalPreviewing ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setIsProposalPreviewing(true);
+                }}
+                className="space-y-4 font-sans text-xs max-h-[75vh] overflow-y-auto pr-1"
+              >
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
+                      Agreed Project Fee
+                    </label>
                     <input
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={onboardingForm.depositPercent}
-                      onChange={(e) => setOnboardingForm({ ...onboardingForm, depositPercent: e.target.value })}
-                      className="w-full rounded border border-border-subtle bg-background-inset p-2 pr-8 text-text-primary focus:outline-none font-mono"
-                      placeholder="25"
+                      type="text"
+                      value={onboardingForm.invoiceAmount}
+                      onChange={(e) => setOnboardingForm({ ...onboardingForm, invoiceAmount: e.target.value })}
+                      className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none"
+                      placeholder={`${onboardingForm.currencySymbol}2,500.00`}
                       required
                     />
-                    <span className="absolute right-3 text-text-muted font-mono text-xs">%</span>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
+                      Upfront Deposit %
+                    </label>
+                    <div className="relative flex items-center">
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={onboardingForm.depositPercent}
+                        onChange={(e) => setOnboardingForm({ ...onboardingForm, depositPercent: e.target.value })}
+                        className="w-full rounded border border-border-subtle bg-background-inset p-2 pr-8 text-text-primary focus:outline-none font-mono"
+                        placeholder="25"
+                        required
+                      />
+                      <span className="absolute right-3 text-text-muted font-mono text-xs">%</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Dynamic Deposit Calculation Helper */}
-              {(() => {
-                const numericFee = parseFloat(onboardingForm.invoiceAmount.replace(/[^0-9.]/g, "")) || 0;
-                const pct = parseFloat(onboardingForm.depositPercent) || 0;
-                const depositAmt = (numericFee * pct) / 100;
-                const setupAmt = parseFloat(onboardingForm.setupFee.replace(/[^0-9.]/g, "")) || 0;
-                const totalPayable = depositAmt + setupAmt;
-                const currencySymbol = onboardingForm.currencySymbol || (onboardingForm.invoiceAmount.includes("₹") ? "₹" : "$");
-                return (
-                  <div className="rounded bg-accent-green/10 border border-accent-green/20 p-2.5 font-mono text-[11px] text-accent-green flex justify-between items-center">
-                    <span>💳 Total Upfront Payable ({pct}% Deposit + Setup):</span>
-                    <strong className="font-bold text-xs">{currencySymbol}{totalPayable.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                {/* Dynamic Deposit Calculation Helper */}
+                {(() => {
+                  const numericFee = parseFloat(onboardingForm.invoiceAmount.replace(/[^0-9.]/g, "")) || 0;
+                  const pct = parseFloat(onboardingForm.depositPercent) || 0;
+                  const depositAmt = (numericFee * pct) / 100;
+                  const setupAmt = parseFloat(onboardingForm.setupFee.replace(/[^0-9.]/g, "")) || 0;
+                  const totalPayable = depositAmt + setupAmt;
+                  const currencySymbol = onboardingForm.currencySymbol || (onboardingForm.invoiceAmount.includes("₹") ? "₹" : "$");
+                  return (
+                    <div className="rounded bg-accent-green/10 border border-accent-green/20 p-2.5 font-mono text-[11px] text-accent-green flex justify-between items-center">
+                      <span>💳 Total Upfront Payable ({pct}% Deposit + Setup):</span>
+                      <strong className="font-bold text-xs">{currencySymbol}{totalPayable.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                    </div>
+                  );
+                })()}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
+                      Fixed Setup / Infrastructure Fee
+                    </label>
+                    <input
+                      type="text"
+                      value={onboardingForm.setupFee}
+                      onChange={(e) => setOnboardingForm({ ...onboardingForm, setupFee: e.target.value })}
+                      className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none"
+                      placeholder={`${onboardingForm.currencySymbol}150.00 (Optional)`}
+                    />
                   </div>
-                );
-              })()}
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
-                    Fixed Setup / Infrastructure Fee
-                  </label>
-                  <input
-                    type="text"
-                    value={onboardingForm.setupFee}
-                    onChange={(e) => setOnboardingForm({ ...onboardingForm, setupFee: e.target.value })}
-                    className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none"
-                    placeholder="$150.00 (API & Host setup)"
-                  />
+                  <div className="space-y-1">
+                    <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
+                      Monthly Support Retainer
+                    </label>
+                    <input
+                      type="text"
+                      value={onboardingForm.monthlyRetainer}
+                      onChange={(e) => setOnboardingForm({ ...onboardingForm, monthlyRetainer: e.target.value })}
+                      className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none"
+                      placeholder={`${onboardingForm.currencySymbol}200.00/mo (Optional)`}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
-                    Monthly Support Retainer
-                  </label>
-                  <input
-                    type="text"
-                    value={onboardingForm.monthlyRetainer}
-                    onChange={(e) => setOnboardingForm({ ...onboardingForm, monthlyRetainer: e.target.value })}
-                    className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none"
-                    placeholder="$200.00/mo"
-                  />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
+                      Invoice ID
+                    </label>
+                    <input
+                      type="text"
+                      value={onboardingForm.invoiceId}
+                      onChange={(e) => setOnboardingForm({ ...onboardingForm, invoiceId: e.target.value })}
+                      className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none font-mono"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
+                      Target Start Date
+                    </label>
+                    <input
+                      type="date"
+                      value={onboardingForm.startDate}
+                      onChange={(e) => setOnboardingForm({ ...onboardingForm, startDate: e.target.value })}
+                      className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none font-mono"
+                      required
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-1">
                   <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
-                    Invoice ID
+                    Custom Payment Link (Razorpay / Stripe / PayPal)
                   </label>
                   <input
-                    type="text"
-                    value={onboardingForm.invoiceId}
-                    onChange={(e) => setOnboardingForm({ ...onboardingForm, invoiceId: e.target.value })}
-                    className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none font-mono"
+                    type="url"
+                    value={onboardingForm.paymentLink}
+                    onChange={(e) => setOnboardingForm({ ...onboardingForm, paymentLink: e.target.value })}
+                    className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none font-mono text-[11px]"
+                    placeholder="https://rzp.io/l/... or https://buy.stripe.com/..."
                     required
                   />
                 </div>
+
                 <div className="space-y-1">
                   <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
-                    Target Start Date
+                    Statement of Work / Scope Description
                   </label>
-                  <input
-                    type="date"
-                    value={onboardingForm.startDate}
-                    onChange={(e) => setOnboardingForm({ ...onboardingForm, startDate: e.target.value })}
-                    className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none font-mono"
+                  <textarea
+                    value={onboardingForm.projectScope}
+                    onChange={(e) => setOnboardingForm({ ...onboardingForm, projectScope: e.target.value })}
+                    rows={3}
+                    className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none resize-none leading-relaxed"
                     required
                   />
                 </div>
-              </div>
 
-              <div className="space-y-1">
-                <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
-                  Custom Payment Link (Razorpay / Stripe / PayPal)
-                </label>
-                <input
-                  type="url"
-                  value={onboardingForm.paymentLink}
-                  onChange={(e) => setOnboardingForm({ ...onboardingForm, paymentLink: e.target.value })}
-                  className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none font-mono text-[11px]"
-                  placeholder="https://rzp.io/l/... or https://buy.stripe.com/..."
-                />
-              </div>
+                <div className="pt-3 flex justify-end gap-3 border-t border-border-subtle mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowWonModal(false)}
+                    className="rounded px-4 py-2 font-mono text-[10px] font-semibold border border-border-subtle bg-background-surface hover:text-text-primary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="rounded bg-accent-cyan px-4 py-2 font-mono text-[10px] font-bold text-background-app hover:bg-accent-cyan/90 flex items-center gap-1.5"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    Preview Proposal Email
+                  </button>
+                </div>
+              </form>
+            ) : (
+              /* Live Proposal HTML Email Preview Screen */
+              <div className="space-y-4 font-sans text-xs">
+                <div className="rounded-lg bg-background-inset border border-border-subtle p-3 text-[11px] text-text-muted font-mono flex justify-between items-center">
+                  <span>To: <strong className="text-text-primary">{selectedLead.name}</strong> ({selectedLead.email})</span>
+                  <span>Currency: <strong className="text-accent-cyan">{onboardingForm.currency} ({onboardingForm.currencySymbol})</strong></span>
+                </div>
 
-              <div className="space-y-1">
-                <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
-                  Statement of Work / Scope Description
-                </label>
-                <textarea
-                  value={onboardingForm.projectScope}
-                  onChange={(e) => setOnboardingForm({ ...onboardingForm, projectScope: e.target.value })}
-                  rows={3}
-                  className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none resize-none leading-relaxed"
-                  required
-                />
-              </div>
+                <div className="bg-white rounded-lg p-4 max-h-[55vh] overflow-y-auto border border-border-subtle">
+                  <div className="max-w-[540px] mx-auto text-slate-800 font-sans text-xs leading-relaxed">
+                    {/* Top Accent Bar */}
+                    <div className="h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-sky-500 rounded-t mb-3"></div>
+                    
+                    {/* Header */}
+                    <div className="flex items-center gap-2 pb-3 mb-3 border-b border-slate-100">
+                      <img src="https://mithundas.cloud/logo.png" alt="M" className="w-8 h-8 rounded" />
+                      <div>
+                        <div className="font-extrabold text-slate-900 text-sm">Mithun Das</div>
+                        <div className="text-[9px] font-bold text-sky-500 uppercase tracking-widest">AI AUTOMATION</div>
+                      </div>
+                    </div>
 
-              <div className="pt-3 flex justify-end gap-3 border-t border-border-subtle mt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowWonModal(false)}
-                  className="rounded px-4 py-2 font-mono text-[10px] font-semibold border border-border-subtle bg-background-surface hover:text-text-primary"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="rounded bg-accent-green px-4 py-2 font-mono text-[10px] font-bold text-text-inverse hover:bg-accent-green/90"
-                >
-                  Dispatch Welcome Package &amp; Convert
-                </button>
+                    {/* Greeting */}
+                    <p className="mb-2">Hi <strong>{selectedLead.name}</strong>,</p>
+                    <p className="mb-3 text-slate-600">We are thrilled to kick off the custom workflow automation build for <strong>{selectedLead.company}</strong>!</p>
+
+                    {/* Breakdown Box */}
+                    <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 border-l-4 border-l-sky-500 mb-3 space-y-1.5 text-[11px]">
+                      <div className="font-extrabold text-sky-600 uppercase text-[10px] tracking-wider mb-2">📋 AGREED PROJECT BREAKDOWN</div>
+                      <div><strong className="text-slate-500">Statement of Work:</strong> <span className="text-slate-900 font-medium">{onboardingForm.projectScope}</span></div>
+                      <div><strong className="text-slate-500">Agreed Project Fee:</strong> <span className="text-slate-900 font-bold">{onboardingForm.invoiceAmount}</span></div>
+                      {onboardingForm.setupFee && onboardingForm.setupFee !== "$0.00" && (
+                        <div><strong className="text-slate-500">Fixed Setup Fee:</strong> <span className="text-slate-700">{onboardingForm.setupFee}</span></div>
+                      )}
+                      {onboardingForm.monthlyRetainer && onboardingForm.monthlyRetainer !== "$0.00/mo" && (
+                        <div><strong className="text-slate-500">Monthly Retainer:</strong> <span className="text-slate-700">{onboardingForm.monthlyRetainer}</span></div>
+                      )}
+                      <div><strong className="text-slate-500">Target Start Date:</strong> <span className="text-sky-600 font-semibold">{onboardingForm.startDate}</span></div>
+                      <div><strong className="text-slate-500">Deposit Reference:</strong> <span className="text-slate-500 font-mono">{onboardingForm.invoiceId}</span></div>
+
+                      {/* Total Upfront Box */}
+                      {(() => {
+                        const numericFee = parseFloat(onboardingForm.invoiceAmount.replace(/[^0-9.]/g, "")) || 0;
+                        const pct = parseFloat(onboardingForm.depositPercent) || 0;
+                        const depositAmt = (numericFee * pct) / 100;
+                        const setupAmt = parseFloat(onboardingForm.setupFee.replace(/[^0-9.]/g, "")) || 0;
+                        const totalPayable = depositAmt + setupAmt;
+                        const sym = onboardingForm.currencySymbol || "$";
+                        return (
+                          <div className="mt-2.5 p-2 bg-slate-900 text-white rounded flex justify-between items-center font-mono text-[10.5px]">
+                            <span className="text-sky-400 font-bold">💳 Total Upfront Payable ({pct}% + Setup):</span>
+                            <span className="text-emerald-400 font-extrabold text-xs">{sym}{totalPayable.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Payment Link Button */}
+                    {onboardingForm.paymentLink && (
+                      <div className="my-3 text-center">
+                        <a href={onboardingForm.paymentLink} target="_blank" rel="noreferrer" className="inline-block bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-bold px-5 py-2.5 rounded-lg text-xs shadow-sm">
+                          💳 Pay Upfront Deposit &amp; Lock In Start Date
+                        </a>
+                      </div>
+                    )}
+
+                    {/* Signature */}
+                    <div className="pt-3 border-t border-slate-100 mt-3 flex items-center gap-2 text-[10px]">
+                      <img src="https://mithundas.cloud/logo.png" alt="M" className="w-7 h-7 rounded" />
+                      <div>
+                        <div className="font-bold text-slate-900">Mithun Das</div>
+                        <div className="text-slate-500 text-[9px]">Founder &amp; Automation Architect • Mithun Das AI</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-3 flex justify-between items-center border-t border-border-subtle mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsProposalPreviewing(false)}
+                    className="rounded px-4 py-2 font-mono text-[10px] font-semibold border border-border-subtle bg-background-surface hover:text-text-primary flex items-center gap-1"
+                  >
+                    ✏️ Back to Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleOnboardingSubmit}
+                    className="rounded bg-accent-green px-5 py-2 font-mono text-[10px] font-bold text-text-inverse hover:bg-accent-green/90 shadow-sm flex items-center gap-1.5"
+                  >
+                    🚀 Confirm &amp; Dispatch Proposal to Client
+                  </button>
+                </div>
               </div>
-            </form>
+            )}
           </div>
         </div>
       )}
