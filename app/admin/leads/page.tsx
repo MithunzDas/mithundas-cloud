@@ -241,7 +241,7 @@ export default function AdminLeadsPage() {
 
       const formattedInvoiceAmount = `${sym}${rawFee || "0.00"}`;
       const formattedSetupFee = parseFloat(rawSetup) > 0 ? `${sym}${rawSetup}` : "$0.00";
-      const formattedMonthlyRetainer = parseFloat(rawRetainer) > 0 ? `${sym}${rawRetainer}/mo` : "$0.00/mo";
+      const formattedMonthlyRetainer = parseFloat(rawRetainer) > 0 ? `${sym}${rawRetainer}/month` : "$0.00/month";
 
       updateLead(selectedLead.leadId, "won", {
         onboardingDetails: {
@@ -1121,7 +1121,7 @@ export default function AdminLeadsPage() {
 
                         const displayFee = `${sym}${numericFee ? numericFee.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : rawFee}`;
                         const displaySetup = `${sym}${setupAmt ? setupAmt.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : rawSetup}`;
-                        const displayRetainer = `${sym}${retainerAmt ? retainerAmt.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : rawRetainer}/mo`;
+                        const displayRetainer = `${sym}${retainerAmt ? retainerAmt.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : rawRetainer}/month`;
 
                         return (
                           <>
@@ -1161,7 +1161,7 @@ export default function AdminLeadsPage() {
                       <img src="https://mithundas.cloud/logo.png" alt="M" className="w-7 h-7 rounded" />
                       <div>
                         <div className="font-bold text-slate-900">Mithun Das</div>
-                        <div className="text-slate-500 text-[9px]">Founder &amp; Automation Architect • Mithun Das AI</div>
+                        <div className="text-slate-500 text-[9px]">Founder &amp; Automation Architect • Mithun Das AI Automation</div>
                       </div>
                     </div>
                   </div>
