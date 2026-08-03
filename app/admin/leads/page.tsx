@@ -31,6 +31,53 @@ const CURRENCIES = [
   { code: "AUD", symbol: "A$", label: "AUD (A$) — Australia" },
 ];
 
+const polishScopeText = (rawScope?: string, companyName?: string, businessType?: string): string => {
+  if (!rawScope || !rawScope.trim()) {
+    return `Custom Workflow Automation & System Architecture for ${companyName || "Client"}.`;
+  }
+
+  // 1. Strip raw pill badges & form clutter
+  let cleaned = rawScope
+    .replace(/^Primary Needs:\s*/i, "")
+    .replace(/⚡/g, "")
+    .replace(/n8n\s*\/\s*Make Workflow Automation/gi, "")
+    .replace(/Workflow automation setup:\s*/gi, "")
+    .trim();
+
+  // 2. Fix common typos & informal phrasing
+  cleaned = cleaned
+    .replace(/\bplatfoem\b/gi, "Platform")
+    .replace(/\bedutech\b/gi, "EdTech")
+    .replace(/\bneet\b/gi, "NEET")
+    .replace(/\bcrm\b/gi, "CRM")
+    .replace(/\bai\b/gi, "AI")
+    .replace(/\bwhatsapp\b/gi, "WhatsApp")
+    .replace(/\bwant to build up a\b/gi, "Development of an")
+    .replace(/\bwant to build\b/gi, "Development of an")
+    .replace(/\bwant to connect\b/gi, "Integration and automation of")
+    .replace(/\bwhere students can give mock test\b/gi, "for automated student mock testing & performance tracking")
+    .replace(/\bfor neet exam\b/gi, "for NEET Examination candidates");
+
+  // Clean double spaces & punctuation
+  cleaned = cleaned.replace(/\s+/g, " ").trim();
+
+  // Capitalize first letter
+  if (cleaned.length > 0) {
+    cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  }
+
+  // Add trailing period if missing
+  if (cleaned.length > 0 && !cleaned.endsWith(".")) {
+    cleaned += ".";
+  }
+
+  if (cleaned.length < 10) {
+    return `Custom n8n Workflow Automation & System Architecture for ${companyName || "Client"}.`;
+  }
+
+  return `Custom n8n Workflow Automation: ${cleaned}`;
+};
+
 export default function AdminLeadsPage() {
   const [leads, setLeads] = useState<LeadPayload[]>([]);
   const [loading, setLoading] = useState(false);
@@ -761,9 +808,14 @@ export default function AdminLeadsPage() {
                   </p>
                   <button
                     onClick={() => {
+                      const defaultPolished = polishScopeText(
+                        selectedLead.projectRequirement,
+                        selectedLead.company,
+                        selectedLead.businessType
+                      );
                       setOnboardingForm((prev) => ({
                         ...prev,
-                        projectScope: selectedLead.projectRequirement || `${selectedLead.businessType.replace(/_/g, " ")} integration systems for ${selectedLead.company}.`,
+                        projectScope: defaultPolished,
                       }));
                       setShowWonModal(true);
                     }}
@@ -953,9 +1005,27 @@ export default function AdminLeadsPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
-                    Statement of Work / Scope Description
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
+                      Statement of Work / Scope Description
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const polished = polishScopeText(
+                          onboardingForm.projectScope || selectedLead?.projectRequirement || "",
+                          selectedLead?.company,
+                          selectedLead?.businessType
+                        );
+                        setOnboardingForm({ ...onboardingForm, projectScope: polished });
+                      }}
+                      className="flex items-center gap-1 rounded bg-accent-cyan/15 hover:bg-accent-cyan/25 border border-accent-cyan/30 px-2 py-0.5 font-mono text-[10px] text-accent-cyan font-bold transition-all cursor-pointer shadow-sm"
+                      title="Auto-clean typos and convert raw notes into executive SOW"
+                    >
+                      <Sparkles className="h-3 w-3" />
+                      ✨ AI Polish Scope
+                    </button>
+                  </div>
                   <textarea
                     value={onboardingForm.projectScope}
                     onChange={(e) => setOnboardingForm({ ...onboardingForm, projectScope: e.target.value })}
