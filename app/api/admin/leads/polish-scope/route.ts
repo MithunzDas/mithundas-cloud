@@ -3,22 +3,8 @@ import OpenAI from "openai";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
-let openaiClient: OpenAI | null = null;
-if (env.OPENAI_API_KEY) {
-  openaiClient = new OpenAI({
-    apiKey: env.OPENAI_API_KEY,
-  });
-}
-
 export async function POST(req: NextRequest) {
   try {
-    const adminSecret = req.headers.get("x-admin-secret");
-    const ADMIN_SECRET = process.env.ADMIN_SECRET || "mithundas_admin_secret_2026";
-
-    if (adminSecret !== ADMIN_SECRET) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { rawScope, company, businessType } = await req.json();
 
     if (!rawScope || typeof rawScope !== "string" || !rawScope.trim()) {
@@ -27,14 +13,44 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Clean up obvious double prefix clutter if already present
+    const apiKey = process.env.OPENAI_API_KEY || env.OPENAI_API_KEY;
+
+    // Clean up double prefix clutter if already present
     const cleanRaw = rawScope
       .replace(/Custom n8n Workflow Automation:\s*/gi, "")
       .replace(/^Primary Needs:\s*/i, "")
       .replace(/⚡/g, "")
       .trim();
 
-    if (openaiClient) {
+    if (apiKey) {
+      const client = new OpenAI({ apiKey });
+      const response = await client.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are an executive proposal editor for a high-ticket AI Automation Agency (mithundas.cloud). Your job is to convert messy, informal, or typo-filled client project notes into a single, executive-ready Master Service Agreement (SOW) deliverable line (12 to 22 words max).
+
+CRITICAL RULES:
+1. Fix all typos (e.g., "platfoem" -> "Platform", "genaration" -> "Generation", "edutech" -> "EdTech", "neet" -> "NEET").
+2. Remove filler words ("etc", "want to build up", "I development of an an", "Primary Needs:", "⚡", "n8n / Make Workflow Automation").
+3. Format as a formal, executive agency deliverable starting with strong action nouns (e.g. "Automated Meta Ads Lead Intake & Real-Time CRM Pipeline", "End-to-End n8n Workflow Automation & Student Mock Examination Platform").
+4. Output ONLY the clean polished text line without quote marks or prefix tags. No markdown formatting.`,
+          },
+          {
+            role: "user",
+            content: `Company: ${company || "Client"}\nIndustry: ${businessType || "General"}\nRaw Notes: "${cleanRaw}"`,
+          },
+        ],
+        temperature: 0.3,
+        max_tokens: 100,
+      });
+
+      const polished = response.choices[0]?.message?.content?.trim();
+      if (polished) {
+        return NextResponse.json({ polishedScope: polished });
+      }
+    }
       const response = await openaiClient.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [

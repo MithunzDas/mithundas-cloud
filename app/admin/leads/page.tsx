@@ -930,12 +930,12 @@ export default function AdminLeadsPage() {
                   const numericFee = parseFloat(onboardingForm.invoiceAmount.replace(/[^0-9.]/g, "")) || 0;
                   const pct = parseFloat(onboardingForm.depositPercent) || 0;
                   const depositAmt = (numericFee * pct) / 100;
-                  const setupAmt = parseFloat(onboardingForm.setupFee.replace(/[^0-9.]/g, "")) || 0;
+                  const setupAmt = parseFloat((onboardingForm.setupFee || "").replace(/[^0-9.]/g, "")) || 0;
                   const totalPayable = depositAmt + setupAmt;
                   const currencySymbol = onboardingForm.currencySymbol || (onboardingForm.invoiceAmount.includes("₹") ? "₹" : "$");
                   return (
                     <div className="rounded bg-accent-green/10 border border-accent-green/20 p-2.5 font-mono text-[11px] text-accent-green flex justify-between items-center">
-                      <span>💳 Total Upfront Payable ({pct}% Deposit + Setup):</span>
+                      <span>💳 Total Upfront Payable ({pct}% Deposit{setupAmt > 0 ? " + Setup" : ""}):</span>
                       <strong className="font-bold text-xs">{currencySymbol}{totalPayable.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                     </div>
                   );
@@ -1082,28 +1082,35 @@ export default function AdminLeadsPage() {
                       <div className="font-extrabold text-sky-600 uppercase text-[10px] tracking-wider mb-2">📋 AGREED PROJECT BREAKDOWN</div>
                       <div><strong className="text-slate-500">Statement of Work:</strong> <span className="text-slate-900 font-medium">{onboardingForm.projectScope}</span></div>
                       <div><strong className="text-slate-500">Agreed Project Fee:</strong> <span className="text-slate-900 font-bold">{onboardingForm.invoiceAmount}</span></div>
-                      {onboardingForm.setupFee && onboardingForm.setupFee !== "$0.00" && (
-                        <div><strong className="text-slate-500">Fixed Setup Fee:</strong> <span className="text-slate-700">{onboardingForm.setupFee}</span></div>
-                      )}
-                      {onboardingForm.monthlyRetainer && onboardingForm.monthlyRetainer !== "$0.00/mo" && (
-                        <div><strong className="text-slate-500">Monthly Retainer:</strong> <span className="text-slate-700">{onboardingForm.monthlyRetainer}</span></div>
-                      )}
-                      <div><strong className="text-slate-500">Target Start Date:</strong> <span className="text-sky-600 font-semibold">{onboardingForm.startDate}</span></div>
-                      <div><strong className="text-slate-500">Deposit Reference:</strong> <span className="text-slate-500 font-mono">{onboardingForm.invoiceId}</span></div>
-
-                      {/* Total Upfront Box */}
+                      
                       {(() => {
-                        const numericFee = parseFloat(onboardingForm.invoiceAmount.replace(/[^0-9.]/g, "")) || 0;
+                        const setupAmt = parseFloat((onboardingForm.setupFee || "").replace(/[^0-9.]/g, "")) || 0;
+                        const retainerAmt = parseFloat((onboardingForm.monthlyRetainer || "").replace(/[^0-9.]/g, "")) || 0;
+                        const numericFee = parseFloat((onboardingForm.invoiceAmount || "").replace(/[^0-9.]/g, "")) || 0;
                         const pct = parseFloat(onboardingForm.depositPercent) || 0;
                         const depositAmt = (numericFee * pct) / 100;
-                        const setupAmt = parseFloat(onboardingForm.setupFee.replace(/[^0-9.]/g, "")) || 0;
                         const totalPayable = depositAmt + setupAmt;
                         const sym = onboardingForm.currencySymbol || "$";
+
                         return (
-                          <div className="mt-2.5 p-2 bg-slate-900 text-white rounded flex justify-between items-center font-mono text-[10.5px]">
-                            <span className="text-sky-400 font-bold">💳 Total Upfront Payable ({pct}% + Setup):</span>
-                            <span className="text-emerald-400 font-extrabold text-xs">{sym}{totalPayable.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                          </div>
+                          <>
+                            {setupAmt > 0 && (
+                              <div><strong className="text-slate-500">Fixed Setup Fee:</strong> <span className="text-slate-700">{onboardingForm.setupFee}</span></div>
+                            )}
+                            {retainerAmt > 0 && (
+                              <div><strong className="text-slate-500">Monthly Retainer:</strong> <span className="text-slate-700">{onboardingForm.monthlyRetainer}</span></div>
+                            )}
+                            <div><strong className="text-slate-500">Target Start Date:</strong> <span className="text-sky-600 font-semibold">{onboardingForm.startDate}</span></div>
+                            <div><strong className="text-slate-500">Deposit Reference:</strong> <span className="text-slate-500 font-mono">{onboardingForm.invoiceId}</span></div>
+
+                            {/* Total Upfront Box */}
+                            <div className="mt-2.5 p-2 bg-slate-900 text-white rounded flex justify-between items-center font-mono text-[10.5px]">
+                              <span className="text-sky-400 font-bold">
+                                💳 Total Upfront Payable ({pct}% Deposit{setupAmt > 0 ? " + Setup" : ""}):
+                              </span>
+                              <span className="text-emerald-400 font-extrabold text-xs">{sym}{totalPayable.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
+                          </>
                         );
                       })()}
                     </div>
