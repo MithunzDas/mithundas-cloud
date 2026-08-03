@@ -51,33 +51,6 @@ CRITICAL RULES:
         return NextResponse.json({ polishedScope: polished });
       }
     }
-      const response = await openaiClient.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: `You are an executive proposal editor for a high-ticket AI Automation Agency (mithundas.cloud). Your job is to convert messy, informal, or typo-filled client project notes into a single, executive-ready Master Service Agreement (SOW) deliverable line (12 to 22 words max).
-
-CRITICAL RULES:
-1. Fix all typos (e.g., "platfoem" -> "Platform", "genaration" -> "Generation", "edutech" -> "EdTech").
-2. Remove filler words ("etc", "want to build up", "I development of an an", "Primary Needs:", "⚡").
-3. Format as a formal, executive agency deliverable starting with strong action nouns (e.g. "Automated Meta Ads Lead Intake & Real-Time CRM Pipeline", "End-to-End n8n Workflow Automation & Student Mock Examination Platform").
-4. Output ONLY the clean polished text line without quote marks or prefix tags. No markdown formatting.`,
-          },
-          {
-            role: "user",
-            content: `Company: ${company || "Client"}\nIndustry: ${businessType || "General"}\nRaw Notes: "${cleanRaw}"`,
-          },
-        ],
-        temperature: 0.3,
-        max_tokens: 100,
-      });
-
-      const polished = response.choices[0]?.message?.content?.trim();
-      if (polished) {
-        return NextResponse.json({ polishedScope: polished });
-      }
-    }
 
     // Fallback if OpenAI client is not active
     let fallback = cleanRaw
