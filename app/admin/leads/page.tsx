@@ -20,6 +20,7 @@ import {
   ArrowRight,
   TrendingUp,
   Sparkles,
+  Video,
 } from "lucide-react";
 import { LeadPayload, LeadStatus } from "@/services/n8n/n8n";
 
