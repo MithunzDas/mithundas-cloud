@@ -732,7 +732,7 @@ export default function AdminLeadsPage() {
                     onClick={() => {
                       setOnboardingForm((prev) => ({
                         ...prev,
-                        projectScope: `Workflow automation setup: ${selectedLead.businessType.replace(/_/g, " ")} integration systems for ${selectedLead.company}.`,
+                        projectScope: selectedLead.projectRequirement || `${selectedLead.businessType.replace(/_/g, " ")} integration systems for ${selectedLead.company}.`,
                       }));
                       setShowWonModal(true);
                     }}
@@ -816,11 +816,13 @@ export default function AdminLeadsPage() {
                 const numericFee = parseFloat(onboardingForm.invoiceAmount.replace(/[^0-9.]/g, "")) || 0;
                 const pct = parseFloat(onboardingForm.depositPercent) || 0;
                 const depositAmt = (numericFee * pct) / 100;
+                const setupAmt = parseFloat(onboardingForm.setupFee.replace(/[^0-9.]/g, "")) || 0;
+                const totalPayable = depositAmt + setupAmt;
                 const currencySymbol = onboardingForm.invoiceAmount.includes("₹") ? "₹" : "$";
                 return (
-                  <div className="rounded bg-accent-green/10 border border-accent-green/20 p-2 font-mono text-[11px] text-accent-green flex justify-between items-center">
-                    <span>💳 Upfront Deposit Payable ({pct}%):</span>
-                    <strong className="font-bold text-xs">{currencySymbol}{depositAmt.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                  <div className="rounded bg-accent-green/10 border border-accent-green/20 p-2.5 font-mono text-[11px] text-accent-green flex justify-between items-center">
+                    <span>💳 Total Upfront Payable ({pct}% Deposit + Setup):</span>
+                    <strong className="font-bold text-xs">{currencySymbol}{totalPayable.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                   </div>
                 );
               })()}
