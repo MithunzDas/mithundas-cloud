@@ -32,8 +32,8 @@ export async function POST(req: NextRequest) {
           timestamp: new Date().toISOString(),
         }),
       });
-    } catch (e) {
-      logger.warn("Failed to dispatch to n8n lead intake webhook, proceeding locally", "booking_n8n_webhook_warn", e);
+    } catch (e: any) {
+      logger.warn("Failed to dispatch to n8n lead intake webhook, proceeding locally", "booking_n8n_webhook_warn", { message: String(e) });
     }
 
     return NextResponse.json({
