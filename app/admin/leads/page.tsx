@@ -111,21 +111,10 @@ export default function AdminLeadsPage() {
 
   const handleCurrencyChange = (currencyCode: string) => {
     const selected = CURRENCIES.find((c) => c.code === currencyCode) || CURRENCIES[0];
-    const oldSymbol = onboardingForm.currencySymbol || "$";
-    const newSymbol = selected.symbol;
-
-    const swapSymbol = (str: string) => {
-      if (!str) return str;
-      return str.replace(/[\$₹€£]|A\$/g, newSymbol);
-    };
-
     setOnboardingForm((prev) => ({
       ...prev,
       currency: selected.code,
-      currencySymbol: newSymbol,
-      invoiceAmount: swapSymbol(prev.invoiceAmount) || `${newSymbol}2,500.00`,
-      setupFee: swapSymbol(prev.setupFee),
-      monthlyRetainer: swapSymbol(prev.monthlyRetainer),
+      currencySymbol: selected.symbol,
     }));
   };
   const [followUpRound, setFollowUpRound] = useState<"24h" | "72h">("24h");
@@ -242,11 +231,25 @@ export default function AdminLeadsPage() {
     }
   };
 
-  const handleOnboardingSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleOnboardingSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (selectedLead) {
+      const sym = onboardingForm.currencySymbol || "$";
+      const rawFee = onboardingForm.invoiceAmount.replace(/[^0-9.]/g, "");
+      const rawSetup = onboardingForm.setupFee.replace(/[^0-9.]/g, "");
+      const rawRetainer = onboardingForm.monthlyRetainer.replace(/[^0-9.]/g, "");
+
+      const formattedInvoiceAmount = `${sym}${rawFee || "0.00"}`;
+      const formattedSetupFee = parseFloat(rawSetup) > 0 ? `${sym}${rawSetup}` : "$0.00";
+      const formattedMonthlyRetainer = parseFloat(rawRetainer) > 0 ? `${sym}${rawRetainer}/mo` : "$0.00/mo";
+
       updateLead(selectedLead.leadId, "won", {
-        onboardingDetails: onboardingForm,
+        onboardingDetails: {
+          ...onboardingForm,
+          invoiceAmount: formattedInvoiceAmount,
+          setupFee: formattedSetupFee,
+          monthlyRetainer: formattedMonthlyRetainer,
+        },
       });
     }
   };
@@ -896,14 +899,19 @@ export default function AdminLeadsPage() {
                     <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
                       Agreed Project Fee
                     </label>
-                    <input
-                      type="text"
-                      value={onboardingForm.invoiceAmount}
-                      onChange={(e) => setOnboardingForm({ ...onboardingForm, invoiceAmount: e.target.value })}
-                      className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none"
-                      placeholder={`${onboardingForm.currencySymbol}2,500.00`}
-                      required
-                    />
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3 font-mono text-xs text-accent-cyan font-bold select-none pointer-events-none">
+                        {onboardingForm.currencySymbol}
+                      </span>
+                      <input
+                        type="text"
+                        value={onboardingForm.invoiceAmount}
+                        onChange={(e) => setOnboardingForm({ ...onboardingForm, invoiceAmount: e.target.value })}
+                        className="w-full rounded border border-border-subtle bg-background-inset p-2 pl-8 text-text-primary focus:outline-none font-mono"
+                        placeholder="2,500.00"
+                        required
+                      />
+                    </div>
                   </div>
                   <div className="space-y-1">
                     <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
@@ -920,19 +928,19 @@ export default function AdminLeadsPage() {
                         placeholder="25"
                         required
                       />
-                      <span className="absolute right-3 text-text-muted font-mono text-xs">%</span>
+                      <span className="absolute right-3 text-text-muted font-mono text-xs select-none pointer-events-none">%</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Dynamic Deposit Calculation Helper */}
                 {(() => {
-                  const numericFee = parseFloat(onboardingForm.invoiceAmount.replace(/[^0-9.]/g, "")) || 0;
+                  const numericFee = parseFloat((onboardingForm.invoiceAmount || "").replace(/[^0-9.]/g, "")) || 0;
                   const pct = parseFloat(onboardingForm.depositPercent) || 0;
                   const depositAmt = (numericFee * pct) / 100;
                   const setupAmt = parseFloat((onboardingForm.setupFee || "").replace(/[^0-9.]/g, "")) || 0;
                   const totalPayable = depositAmt + setupAmt;
-                  const currencySymbol = onboardingForm.currencySymbol || (onboardingForm.invoiceAmount.includes("₹") ? "₹" : "$");
+                  const currencySymbol = onboardingForm.currencySymbol || "$";
                   return (
                     <div className="rounded bg-accent-green/10 border border-accent-green/20 p-2.5 font-mono text-[11px] text-accent-green flex justify-between items-center">
                       <span>💳 Total Upfront Payable ({pct}% Deposit{setupAmt > 0 ? " + Setup" : ""}):</span>
@@ -946,25 +954,38 @@ export default function AdminLeadsPage() {
                     <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
                       Fixed Setup / Infrastructure Fee
                     </label>
-                    <input
-                      type="text"
-                      value={onboardingForm.setupFee}
-                      onChange={(e) => setOnboardingForm({ ...onboardingForm, setupFee: e.target.value })}
-                      className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none"
-                      placeholder={`${onboardingForm.currencySymbol}150.00 (Optional)`}
-                    />
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3 font-mono text-xs text-text-muted font-bold select-none pointer-events-none">
+                        {onboardingForm.currencySymbol}
+                      </span>
+                      <input
+                        type="text"
+                        value={onboardingForm.setupFee}
+                        onChange={(e) => setOnboardingForm({ ...onboardingForm, setupFee: e.target.value })}
+                        className="w-full rounded border border-border-subtle bg-background-inset p-2 pl-8 text-text-primary focus:outline-none font-mono"
+                        placeholder="150.00 (or 0 for none)"
+                      />
+                    </div>
                   </div>
                   <div className="space-y-1">
                     <label className="font-mono text-[10px] text-text-muted uppercase font-semibold">
                       Monthly Support Retainer
                     </label>
-                    <input
-                      type="text"
-                      value={onboardingForm.monthlyRetainer}
-                      onChange={(e) => setOnboardingForm({ ...onboardingForm, monthlyRetainer: e.target.value })}
-                      className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none"
-                      placeholder={`${onboardingForm.currencySymbol}200.00/mo (Optional)`}
-                    />
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3 font-mono text-xs text-text-muted font-bold select-none pointer-events-none">
+                        {onboardingForm.currencySymbol}
+                      </span>
+                      <input
+                        type="text"
+                        value={onboardingForm.monthlyRetainer}
+                        onChange={(e) => setOnboardingForm({ ...onboardingForm, monthlyRetainer: e.target.value })}
+                        className="w-full rounded border border-border-subtle bg-background-inset p-2 pl-8 pr-14 text-text-primary focus:outline-none font-mono"
+                        placeholder="200.00 (or 0 for none)"
+                      />
+                      <span className="absolute right-3 font-mono text-xs text-text-muted font-semibold select-none pointer-events-none">
+                        /month
+                      </span>
+                    </div>
                   </div>
                 </div>
 
