@@ -23,6 +23,14 @@ import {
 } from "lucide-react";
 import { LeadPayload, LeadStatus } from "@/services/n8n/n8n";
 
+const CURRENCIES = [
+  { code: "USD", symbol: "$", label: "USD ($) — Global" },
+  { code: "INR", symbol: "₹", label: "INR (₹) — India" },
+  { code: "EUR", symbol: "€", label: "EUR (€) — Europe" },
+  { code: "GBP", symbol: "£", label: "GBP (£) — UK" },
+  { code: "AUD", symbol: "A$", label: "AUD (A$) — Australia" },
+];
+
 export default function AdminLeadsPage() {
   const [leads, setLeads] = useState<LeadPayload[]>([]);
   const [loading, setLoading] = useState(false);
@@ -43,6 +51,8 @@ export default function AdminLeadsPage() {
     setupFee: "$150.00",
     monthlyRetainer: "$200.00/mo",
     paymentLink: "",
+    currency: "USD",
+    currencySymbol: "$",
   });
   const [followUpRound, setFollowUpRound] = useState<"24h" | "72h">("24h");
   const [notification, setNotification] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -768,12 +778,33 @@ export default function AdminLeadsPage() {
               <h3 className="font-sans text-small font-bold text-text-primary">
                 Configure Customer Welcome Package
               </h3>
-              <button
-                onClick={() => setShowWonModal(false)}
-                className="rounded-lg p-1 hover:bg-background-inset text-text-muted hover:text-text-primary"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-3">
+                {/* Multi-Currency Selector */}
+                <select
+                  value={onboardingForm.currency}
+                  onChange={(e) => {
+                    const selected = CURRENCIES.find((c) => c.code === e.target.value) || CURRENCIES[0];
+                    setOnboardingForm((prev) => ({
+                      ...prev,
+                      currency: selected.code,
+                      currencySymbol: selected.symbol,
+                    }));
+                  }}
+                  className="rounded-md border border-accent-cyan/40 bg-accent-cyan/10 px-2 py-1 font-mono text-[11px] text-accent-cyan font-semibold focus:outline-none cursor-pointer"
+                >
+                  {CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code} className="bg-background-elevated text-text-primary font-mono">
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => setShowWonModal(false)}
+                  className="rounded-lg p-1 hover:bg-background-inset text-text-muted hover:text-text-primary"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleOnboardingSubmit} className="space-y-4 font-sans text-xs max-h-[75vh] overflow-y-auto pr-1">
@@ -787,7 +818,7 @@ export default function AdminLeadsPage() {
                     value={onboardingForm.invoiceAmount}
                     onChange={(e) => setOnboardingForm({ ...onboardingForm, invoiceAmount: e.target.value })}
                     className="w-full rounded border border-border-subtle bg-background-inset p-2 text-text-primary focus:outline-none"
-                    placeholder="$2,500.00 or ₹1,50,000"
+                    placeholder={`${onboardingForm.currencySymbol}2,500.00`}
                     required
                   />
                 </div>
@@ -818,7 +849,7 @@ export default function AdminLeadsPage() {
                 const depositAmt = (numericFee * pct) / 100;
                 const setupAmt = parseFloat(onboardingForm.setupFee.replace(/[^0-9.]/g, "")) || 0;
                 const totalPayable = depositAmt + setupAmt;
-                const currencySymbol = onboardingForm.invoiceAmount.includes("₹") ? "₹" : "$";
+                const currencySymbol = onboardingForm.currencySymbol || (onboardingForm.invoiceAmount.includes("₹") ? "₹" : "$");
                 return (
                   <div className="rounded bg-accent-green/10 border border-accent-green/20 p-2.5 font-mono text-[11px] text-accent-green flex justify-between items-center">
                     <span>💳 Total Upfront Payable ({pct}% Deposit + Setup):</span>

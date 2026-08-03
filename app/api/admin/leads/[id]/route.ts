@@ -74,6 +74,8 @@ export async function PATCH(
         projectScope: onboardingDetails.projectScope || lead.projectRequirement.slice(0, 100) + "...",
         startDate: onboardingDetails.startDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
         country: lead.country || onboardingDetails.country,
+        currency: onboardingDetails.currency || "USD",
+        currencySymbol: onboardingDetails.currencySymbol || "$",
         depositPercent: onboardingDetails.depositPercent ? Number(onboardingDetails.depositPercent) : 25,
         setupFee: onboardingDetails.setupFee || undefined,
         monthlyRetainer: onboardingDetails.monthlyRetainer || undefined,
