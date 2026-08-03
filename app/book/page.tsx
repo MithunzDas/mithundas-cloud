@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Calendar as CalendarIcon,
   Clock,
@@ -23,22 +24,25 @@ const TIMEZONES = [
   { label: "UK GMT / BST", value: "Europe/London" },
   { label: "Europe CET (Paris/Berlin)", value: "Europe/Paris" },
   { label: "Australia Sydney (AEST)", value: "Australia/Sydney" },
-  { label: "India (IST)", value: "Asia/Kolkata" },
+  { label: "India (IST)", value: "Asia/Kolkata font-bold text-sky-400" },
   { label: "Singapore / Asia (SGT)", value: "Asia/Singapore" },
   { label: "Dubai / UAE (GST)", value: "Asia/Dubai" },
 ];
 
+// 12:00 PM IST (noon) to 02:30 AM IST (late night) - 15 Active Hours
 const AVAILABLE_SLOTS_IST = [
-  "10:00 AM",
-  "11:30 AM",
-  "02:00 PM",
-  "03:30 PM",
-  "05:00 PM",
-  "06:30 PM",
-  "08:00 PM",
+  "12:00 PM", "12:30 PM", "01:00 PM", "01:30 PM",
+  "02:00 PM", "02:30 PM", "03:00 PM", "03:30 PM",
+  "04:00 PM", "04:30 PM", "05:00 PM", "05:30 PM",
+  "06:00 PM", "06:30 PM", "07:00 PM", "07:30 PM",
+  "08:00 PM", "08:30 PM", "09:00 PM", "09:30 PM",
+  "10:00 PM", "10:30 PM", "11:00 PM", "11:30 PM",
+  "12:00 AM", "12:30 AM", "01:00 AM", "01:30 AM",
+  "02:00 AM", "02:30 AM"
 ];
 
-export default function BookDiscoveryCallPage() {
+function BookDiscoveryCallContent() {
+  const searchParams = useSearchParams();
   const [selectedTimeZone, setSelectedTimeZone] = useState("America/New_York");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
@@ -53,11 +57,11 @@ export default function BookDiscoveryCallPage() {
     name: "",
     email: "",
     company: "",
-    businessType: "General",
+    businessType: "",
     projectRequirement: "",
   });
 
-  // Auto-detect client local timezone on mount
+  // Auto-detect timezone and auto-fill URL query parameters if coming from Email 1
   useEffect(() => {
     try {
       const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -73,15 +77,55 @@ export default function BookDiscoveryCallPage() {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     setSelectedDate(tomorrow.toISOString().split("T")[0]);
-  }, []);
 
-  // Generate next 10 dates for selection
+    // Parse URL query parameters if lead comes from Email 1 link
+    if (searchParams) {
+      const qName = searchParams.get("name");
+      const qEmail = searchParams.get("email");
+      const qCompany = searchParams.get("company");
+      const qType = searchParams.get("businessType");
+      const qReq = searchParams.get("requirement") || searchParams.get("req");
+
+      if (qName || qEmail || qCompany) {
+        setFormData({
+          name: qName || "",
+          email: qEmail || "",
+          company: qCompany || "",
+          businessType: qType || "General",
+          projectRequirement: qReq || "",
+        });
+      }
+    }
+  }, [searchParams]);
+
+  // Convert IST slot into client's local selected timezone
+  const convertISTSlotToLocal = (slotIST: string, dateStr: string, targetTz: string) => {
+    try {
+      const [timeStr, modifier] = slotIST.split(" ");
+      let [hours, minutes] = timeStr.split(":").map(Number);
+      if (modifier === "PM" && hours < 12) hours += 12;
+      if (modifier === "AM" && hours === 12) hours = 0;
+
+      const baseDate = dateStr || new Date().toISOString().split("T")[0];
+      const istDate = new Date(`${baseDate}T${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00+05:30`);
+      
+      return istDate.toLocaleTimeString("en-US", {
+        timeZone: targetTz,
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    } catch (e) {
+      return slotIST;
+    }
+  };
+
+  // Generate next 9 dates for quick chips
   const getNextDates = () => {
     const dates = [];
     const today = new Date();
-    for (let i = 1; i <= 10; i++) {
+    for (let i = 1; i <= 9; i++) {
       const d = new Date(today);
-      d.getDate();
       d.setDate(today.getDate() + i);
       // Skip Sundays
       if (d.getDay() !== 0) {
@@ -121,31 +165,17 @@ export default function BookDiscoveryCallPage() {
         }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setBookingConfirmation({
-          bookingId,
-          meetUrl,
-          date: selectedDate,
-          time: selectedTimeSlot,
-          timeZone: selectedTimeZone,
-          name: formData.name,
-          company: formData.company,
-        });
-        setStep(3);
-      } else {
-        // Fallback for direct UI presentation
-        setBookingConfirmation({
-          bookingId,
-          meetUrl,
-          date: selectedDate,
-          time: selectedTimeSlot,
-          timeZone: selectedTimeZone,
-          name: formData.name,
-          company: formData.company,
-        });
-        setStep(3);
-      }
+      setBookingConfirmation({
+        bookingId,
+        meetUrl,
+        date: selectedDate,
+        time: selectedTimeSlot,
+        timeZone: selectedTimeZone,
+        name: formData.name,
+        company: formData.company,
+        email: formData.email,
+      });
+      setStep(3);
     } catch (err) {
       console.error("Failed to submit booking", err);
       setBookingConfirmation({
@@ -156,6 +186,7 @@ export default function BookDiscoveryCallPage() {
         timeZone: selectedTimeZone,
         name: formData.name,
         company: formData.company,
+        email: formData.email,
       });
       setStep(3);
     } finally {
@@ -188,7 +219,7 @@ export default function BookDiscoveryCallPage() {
         <div className="text-center mb-8 space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-400 font-mono text-xs font-semibold">
             <Sparkles className="h-3.5 w-3.5" />
-            <span>30-Minute High-Ticket Architecture Discovery Call</span>
+            <span>15-Minute High-Ticket Architecture Discovery Call</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
             Schedule Your AI Workflow Discovery Session
@@ -207,7 +238,7 @@ export default function BookDiscoveryCallPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-slate-900/90 border border-slate-800">
                 <div className="flex items-center gap-2 text-xs font-mono text-slate-300">
                   <Globe className="h-4 w-4 text-sky-400" />
-                  <span>Detected Time Zone:</span>
+                  <span>Your Time Zone:</span>
                 </div>
                 <select
                   value={selectedTimeZone}
@@ -222,13 +253,28 @@ export default function BookDiscoveryCallPage() {
                 </select>
               </div>
 
-              {/* Date Selection Carousel */}
+              {/* Date Selection Carousel + Custom Future Calendar Picker */}
               <div className="space-y-2">
-                <label className="text-xs font-mono font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                  <CalendarIcon className="h-3.5 w-3.5 text-sky-400" />
-                  1. Select Discovery Date
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-mono font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                    <CalendarIcon className="h-3.5 w-3.5 text-sky-400" />
+                    1. Select Discovery Date
+                  </label>
+                  
+                  {/* Custom Future Date Input */}
+                  <div className="flex items-center gap-2 text-xs font-mono">
+                    <span className="text-slate-500 hidden sm:inline">Or pick any future date:</span>
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      min={new Date().toISOString().split("T")[0]}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-sky-400 focus:outline-none focus:border-sky-400 font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5">
                   {getNextDates().map((d) => {
                     const isSelected = selectedDate === d.rawDate;
                     return (
@@ -251,28 +297,36 @@ export default function BookDiscoveryCallPage() {
                 </div>
               </div>
 
-              {/* Time Slot Picker */}
+              {/* Time Slot Picker (15 Active Hours Converted to Client Local Timezone) */}
               <div className="space-y-2 pt-2">
-                <label className="text-xs font-mono font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                  <Clock className="h-3.5 w-3.5 text-sky-400" />
-                  2. Select Available Time Slot
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  {AVAILABLE_SLOTS_IST.map((slot) => {
-                    const isSelected = selectedTimeSlot === slot;
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-mono font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                    <Clock className="h-3.5 w-3.5 text-sky-400" />
+                    2. Select Available Time Slot
+                  </label>
+                  <span className="text-[10px] font-mono text-slate-500">Active Availability: 12:00 PM – 03:00 AM IST</span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-h-64 overflow-y-auto pr-1">
+                  {AVAILABLE_SLOTS_IST.map((slotIST) => {
+                    const localTimeStr = convertISTSlotToLocal(slotIST, selectedDate, selectedTimeZone);
+                    const isSelected = selectedTimeSlot === slotIST;
                     return (
                       <button
-                        key={slot}
+                        key={slotIST}
                         type="button"
-                        onClick={() => setSelectedTimeSlot(slot)}
-                        className={`py-3 px-4 rounded-xl border text-xs font-mono transition-all flex items-center justify-center gap-2 ${
+                        onClick={() => setSelectedTimeSlot(slotIST)}
+                        className={`py-2.5 px-3 rounded-xl border text-xs font-mono transition-all flex flex-col items-center justify-center gap-0.5 ${
                           isSelected
                             ? "bg-emerald-500/20 border-emerald-400 text-emerald-300 font-bold shadow-md shadow-emerald-900/20"
                             : "bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white"
                         }`}
                       >
-                        <Clock className="h-3.5 w-3.5 opacity-60" />
-                        <span>{slot}</span>
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="h-3 w-3 opacity-60 text-sky-400" />
+                          <span>{localTimeStr}</span>
+                        </div>
+                        <span className="text-[9px] text-slate-500">({slotIST} IST)</span>
                       </button>
                     );
                   })}
@@ -294,7 +348,7 @@ export default function BookDiscoveryCallPage() {
             </div>
           )}
 
-          {/* STEP 2: Client Intake Form */}
+          {/* STEP 2: Client Intake Form (Auto-filled for Email 1 Leads, Blank for Cold Leads) */}
           {step === 2 && (
             <form onSubmit={handleBookingSubmit} className="space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
@@ -423,7 +477,7 @@ export default function BookDiscoveryCallPage() {
               <div className="space-y-1">
                 <h2 className="text-xl font-extrabold text-white">Discovery Call Confirmed! 🎉</h2>
                 <p className="text-xs text-slate-400">
-                  Hi <strong>{bookingConfirmation.name}</strong>, your 30-minute session for <strong>{bookingConfirmation.company}</strong> is scheduled.
+                  Hi <strong>{bookingConfirmation.name}</strong>, your 15-minute session for <strong>{bookingConfirmation.company}</strong> is scheduled.
                 </p>
               </div>
 
@@ -476,5 +530,17 @@ export default function BookDiscoveryCallPage() {
         <p>© 2026 Mithun Das AI Automation. All rights reserved. · <a href="https://mithundas.cloud" className="text-sky-400 hover:underline">mithundas.cloud</a></p>
       </footer>
     </div>
+  );
+}
+
+export default function BookDiscoveryCallPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen w-full bg-[#080b11] flex items-center justify-center text-sky-400 font-mono text-xs">
+        Loading Discovery Booking Page...
+      </div>
+    }>
+      <BookDiscoveryCallContent />
+    </Suspense>
   );
 }
