@@ -183,23 +183,43 @@ function BookDiscoveryCallContent() {
     return slotIST.includes("AM") && (slotIST.startsWith("12:") || slotIST.startsWith("01:") || slotIST.startsWith("02:"));
   };
 
-  // Generate 10 quick dates INCLUDING TODAY (skip Sundays)
-  const getNextDates = () => {
+  // Generate 10 quick dates dynamically starting from baseDateStr (or Today)
+  const getNextDates = (baseDateStr?: string) => {
     const dates = [];
-    const today = new Date();
-    for (let i = 0; i < 10; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
+    const todayStr = new Date().toISOString().split("T")[0];
+    
+    // Parse base date to prevent UTC offset shifts
+    let base = new Date();
+    if (baseDateStr) {
+      const parts = baseDateStr.split("-").map(Number);
+      if (parts.length === 3) {
+        base = new Date(parts[0], parts[1] - 1, parts[2]);
+      }
+    }
+
+    let count = 0;
+    let i = 0;
+    while (count < 10 && i < 30) {
+      const d = new Date(base);
+      d.setDate(base.getDate() + i);
+      i++;
+
       // Skip Sundays
       if (d.getDay() !== 0) {
-        const isToday = i === 0;
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        const rawDate = `${year}-${month}-${day}`;
+        const isToday = rawDate === todayStr;
+
         dates.push({
-          rawDate: d.toISOString().split("T")[0],
+          rawDate,
           dayName: isToday ? "TODAY" : d.toLocaleDateString("en-US", { weekday: "short" }),
           dayNum: d.getDate(),
           monthName: d.toLocaleDateString("en-US", { month: "short" }),
           isToday,
         });
+        count++;
       }
     }
     return dates;
@@ -369,7 +389,7 @@ function BookDiscoveryCallContent() {
                 </div>
 
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5">
-                  {getNextDates().map((d) => {
+                  {getNextDates(selectedDate).map((d) => {
                     const isSelected = selectedDate === d.rawDate;
                     return (
                       <button
