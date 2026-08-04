@@ -525,9 +525,14 @@ function BookDiscoveryCallContent() {
 
                   <div className="flex items-start justify-between border-b border-slate-800/80 pb-2.5">
                     <span className="text-slate-400">⏰ Your Local Time:</span>
-                    <span className="text-emerald-400 font-bold text-sm text-right">
-                      {convertISTSlotToLocal(selectedTimeSlot, selectedDate, selectedTimeZone)}
-                    </span>
+                    <div className="text-right">
+                      <span className="text-emerald-400 font-extrabold text-sm block">
+                        {convertISTSlotToLocal(selectedTimeSlot, selectedDate, selectedTimeZone)}
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-500 block font-normal">
+                        (Host Time: {selectedTimeSlot} IST)
+                      </span>
+                    </div>
                   </div>
 
                   <div className="flex items-start justify-between border-b border-slate-800/80 pb-2.5">
@@ -546,7 +551,7 @@ function BookDiscoveryCallContent() {
                 <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 text-[11px] font-mono text-sky-300 leading-relaxed flex items-start gap-2">
                   <Sparkles className="h-4 w-4 text-sky-400 shrink-0 mt-0.5" />
                   <span>
-                    You are scheduling a <strong>15-Minute Architecture Discovery Call</strong> with Mithun at <strong>{convertISTSlotToLocal(selectedTimeSlot, selectedDate, selectedTimeZone)}</strong>.
+                    You are scheduling a <strong>15-Minute Architecture Discovery Call</strong> with Mithun at <strong>{convertISTSlotToLocal(selectedTimeSlot, selectedDate, selectedTimeZone)}</strong> <span className="text-slate-400">({selectedTimeSlot} IST)</span>.
                   </span>
                 </div>
 
