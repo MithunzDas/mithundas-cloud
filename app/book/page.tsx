@@ -353,7 +353,7 @@ function BookDiscoveryCallContent() {
             <img src="https://mithundas.cloud/logo.png" alt="Mithun Das AI" className="h-9 w-9 rounded-xl border border-sky-500/30 shadow-md shadow-sky-500/10" />
             <div>
               <span className="font-extrabold text-base tracking-tight text-white block leading-none">Mithun Das</span>
-              <span className="text-[10px] font-mono text-sky-400 tracking-wider uppercase font-bold block mt-0.5">AI AUTOMATION ARCHITECT</span>
+              <span className="text-[10px] font-mono text-sky-400 tracking-wider uppercase font-bold block mt-0.5">AI AUTOMATION</span>
             </div>
           </a>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
