@@ -375,7 +375,7 @@ function BookDiscoveryCallContent() {
             Schedule Your AI Workflow Discovery Session
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto">
-            Select a date &amp; time in your local timezone. We will map out your exact n8n/Make automation pipeline &amp; issue a Master Service Agreement.
+            Select a date &amp; time in your local timezone to discuss your business bottlenecks, streamline your operations, and engineer a tailored solution.
           </p>
         </div>
 
