@@ -17,6 +17,8 @@ import {
   ChevronRight,
   AlertCircle,
   Lock,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 const TIMEZONES = [
@@ -31,16 +33,20 @@ const TIMEZONES = [
   { label: "Dubai / UAE (GST)", value: "Asia/Dubai" },
 ];
 
-// 12:00 PM IST (noon) to 02:30 AM IST (late night) - 15 Active Hours
-const AVAILABLE_SLOTS_IST = [
+// 12:00 PM IST to 07:30 PM IST (Afternoon & Evening Group)
+const AFTERNOON_EVENING_SLOTS_IST = [
   "12:00 PM", "12:30 PM", "01:00 PM", "01:30 PM",
   "02:00 PM", "02:30 PM", "03:00 PM", "03:30 PM",
   "04:00 PM", "04:30 PM", "05:00 PM", "05:30 PM",
   "06:00 PM", "06:30 PM", "07:00 PM", "07:30 PM",
+];
+
+// 08:00 PM IST to 02:30 AM IST (Night & Late Night Group)
+const NIGHT_LATENIGHT_SLOTS_IST = [
   "08:00 PM", "08:30 PM", "09:00 PM", "09:30 PM",
   "10:00 PM", "10:30 PM", "11:00 PM", "11:30 PM",
   "12:00 AM", "12:30 AM", "01:00 AM", "01:30 AM",
-  "02:00 AM", "02:30 AM"
+  "02:00 AM", "02:30 AM",
 ];
 
 function BookDiscoveryCallContent() {
@@ -166,6 +172,11 @@ function BookDiscoveryCallContent() {
     return bookedSlots.some((s) => s.date === dateStr && s.time === slotIST);
   };
 
+  // Check if slot is late night (12 AM to 2:30 AM IST)
+  const isLateNightSlot = (slotIST: string) => {
+    return slotIST.includes("AM") && (slotIST.startsWith("12:") || slotIST.startsWith("01:") || slotIST.startsWith("02:"));
+  };
+
   // Generate 10 quick dates INCLUDING TODAY (skip Sundays)
   const getNextDates = () => {
     const dates = [];
@@ -233,10 +244,56 @@ function BookDiscoveryCallContent() {
     } catch (err: any) {
       console.error("Booking error:", err);
       setBookingError(err.message || "Slot conflict detected. Please select another slot.");
-      fetchBookedSlots(); // Refresh booked slots
+      fetchBookedSlots();
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const renderSlotButton = (slotIST: string) => {
+    const localTimeStr = convertISTSlotToLocal(slotIST, selectedDate, selectedTimeZone);
+    const isSelected = selectedTimeSlot === slotIST;
+    const isTooSoon = isSlotTooSoonOrPast(slotIST, selectedDate);
+    const isBooked = isSlotBooked(slotIST, selectedDate);
+    const isLateNight = isLateNightSlot(slotIST);
+    const isDisabled = isTooSoon || isBooked;
+
+    return (
+      <button
+        key={slotIST}
+        type="button"
+        disabled={isDisabled}
+        onClick={() => setSelectedTimeSlot(slotIST)}
+        className={`py-2.5 px-3 rounded-xl border text-xs font-mono transition-all flex flex-col items-center justify-center gap-0.5 ${
+          isBooked
+            ? "bg-red-950/40 border-red-900/50 text-red-400/60 cursor-not-allowed opacity-60"
+            : isTooSoon
+            ? "bg-slate-950/60 border-slate-900 text-slate-600 cursor-not-allowed opacity-40"
+            : isSelected
+            ? "bg-emerald-500/20 border-emerald-400 text-emerald-300 font-bold shadow-md shadow-emerald-900/20"
+            : "bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white"
+        }`}
+      >
+        <div className="flex items-center gap-1.5">
+          {isBooked ? (
+            <Lock className="h-3 w-3 text-red-400" />
+          ) : (
+            <Clock className="h-3 w-3 opacity-60 text-sky-400" />
+          )}
+          <span>{localTimeStr}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-[9px] text-slate-500">
+            {isBooked ? "[BOOKED]" : isTooSoon ? "[TOO SOON / PAST]" : `(${slotIST} IST)`}
+          </span>
+          {isLateNight && !isDisabled && (
+            <span className="text-[8px] font-mono text-amber-400/90 bg-amber-500/10 px-1 py-0.2 rounded border border-amber-500/20">
+              Late Night
+            </span>
+          )}
+        </div>
+      </button>
+    );
   };
 
   return (
@@ -344,56 +401,40 @@ function BookDiscoveryCallContent() {
                 </div>
               </div>
 
-              {/* Time Slot Picker (2-Hour Buffer + Conflict Check) */}
-              <div className="space-y-2 pt-2">
+              {/* Time Slot Picker (Categorized into Afternoon/Evening & Night/Late Night) */}
+              <div className="space-y-4 pt-2">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <label className="text-xs font-mono font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                     <Clock className="h-3.5 w-3.5 text-sky-400" />
                     2. Select Available Time Slot
                   </label>
-                  <span className="text-[10px] font-mono text-slate-400">
-                    🔒 Requires 2-hour prep buffer &amp; prevents double booking
+                  <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                    Active Availability: 12:00 PM – 03:00 AM IST (15 Hours)
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-h-72 overflow-y-auto pr-1">
-                  {AVAILABLE_SLOTS_IST.map((slotIST) => {
-                    const localTimeStr = convertISTSlotToLocal(slotIST, selectedDate, selectedTimeZone);
-                    const isSelected = selectedTimeSlot === slotIST;
-                    const isTooSoon = isSlotTooSoonOrPast(slotIST, selectedDate);
-                    const isBooked = isSlotBooked(slotIST, selectedDate);
-                    const isDisabled = isTooSoon || isBooked;
+                <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
+                  {/* Category 1: Afternoon & Evening (12:00 PM – 07:30 PM IST) */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 font-mono text-[10px] font-bold text-sky-400 uppercase tracking-wider">
+                      <Sun className="h-3.5 w-3.5 text-amber-400" />
+                      <span>Afternoon &amp; Evening Sessions (12:00 PM – 07:30 PM IST)</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                      {AFTERNOON_EVENING_SLOTS_IST.map((slotIST) => renderSlotButton(slotIST))}
+                    </div>
+                  </div>
 
-                    return (
-                      <button
-                        key={slotIST}
-                        type="button"
-                        disabled={isDisabled}
-                        onClick={() => setSelectedTimeSlot(slotIST)}
-                        className={`py-2.5 px-3 rounded-xl border text-xs font-mono transition-all flex flex-col items-center justify-center gap-0.5 ${
-                          isBooked
-                            ? "bg-red-950/40 border-red-900/50 text-red-400/60 cursor-not-allowed opacity-60"
-                            : isTooSoon
-                            ? "bg-slate-950/60 border-slate-900 text-slate-600 cursor-not-allowed opacity-40"
-                            : isSelected
-                            ? "bg-emerald-500/20 border-emerald-400 text-emerald-300 font-bold shadow-md shadow-emerald-900/20"
-                            : "bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white"
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          {isBooked ? (
-                            <Lock className="h-3 w-3 text-red-400" />
-                          ) : (
-                            <Clock className="h-3 w-3 opacity-60 text-sky-400" />
-                          )}
-                          <span>{localTimeStr}</span>
-                        </div>
-                        <span className="text-[9px] text-slate-500">
-                          {isBooked ? "[BOOKED]" : isTooSoon ? "[TOO SOON / PAST]" : `(${slotIST} IST)`}
-                        </span>
-                      </button>
-                    );
-                  })}
+                  {/* Category 2: Night & Late Night (08:00 PM – 02:30 AM IST) */}
+                  <div className="space-y-2 pt-2 border-t border-slate-800">
+                    <div className="flex items-center gap-2 font-mono text-[10px] font-bold text-indigo-400 uppercase tracking-wider">
+                      <Moon className="h-3.5 w-3.5 text-indigo-400" />
+                      <span>Night &amp; Late Night Sessions (08:00 PM – 03:00 AM IST)</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                      {NIGHT_LATENIGHT_SLOTS_IST.map((slotIST) => renderSlotButton(slotIST))}
+                    </div>
+                  </div>
                 </div>
               </div>
 
