@@ -349,16 +349,16 @@ function BookDiscoveryCallContent() {
       {/* Header Bar */}
       <header className="border-b border-sky-500/20 bg-[#0f172a]/90 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="https://mithundas.cloud/logo.png" alt="Mithun Das AI" className="h-9 w-9 rounded-xl border border-sky-500/30" />
+          <a href="https://mithundas.cloud" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
+            <img src="https://mithundas.cloud/logo.png" alt="Mithun Das AI" className="h-9 w-9 rounded-xl border border-sky-500/30 shadow-md shadow-sky-500/10" />
             <div>
               <span className="font-extrabold text-base tracking-tight text-white block leading-none">Mithun Das</span>
-              <span className="text-[10px] font-mono text-sky-400 tracking-widest uppercase font-bold">AI AUTOMATION ARCHITECT</span>
+              <span className="text-[10px] font-mono text-sky-400 tracking-wider uppercase font-bold block mt-0.5">AI AUTOMATION ARCHITECT</span>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
+          </a>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="text-xs font-mono text-slate-300">Accepting Q3 Client Projects</span>
+            <span className="text-xs font-mono text-emerald-300 font-medium">Accepting Q3 Client Projects</span>
           </div>
         </div>
       </header>
