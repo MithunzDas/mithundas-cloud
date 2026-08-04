@@ -336,25 +336,6 @@ function BookDiscoveryCallContent() {
           {/* STEP 1: Date & Time Slot Selection */}
           {step === 1 && (
             <div className="space-y-6">
-              {/* Timezone Selector Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-slate-900/90 border border-slate-800">
-                <div className="flex items-center gap-2 text-xs font-mono text-slate-300">
-                  <Globe className="h-4 w-4 text-sky-400" />
-                  <span>Your Time Zone:</span>
-                </div>
-                <select
-                  value={selectedTimeZone}
-                  onChange={(e) => setSelectedTimeZone(e.target.value)}
-                  className="rounded-lg border border-sky-500/30 bg-[#080b11] px-3 py-2 text-xs font-mono text-sky-300 focus:outline-none focus:border-sky-400"
-                >
-                  {TIMEZONES.map((tz) => (
-                    <option key={tz.value} value={tz.value}>
-                      {tz.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               {/* Date Selection Carousel + Custom Future Calendar Picker */}
               <div className="space-y-2">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -399,6 +380,25 @@ function BookDiscoveryCallContent() {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Timezone Selector Box (Moved right above Section 2) */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 my-2">
+                <div className="flex items-center gap-2 text-xs font-mono text-slate-300">
+                  <Globe className="h-4 w-4 text-sky-400" />
+                  <span>Your Time Zone:</span>
+                </div>
+                <select
+                  value={selectedTimeZone}
+                  onChange={(e) => setSelectedTimeZone(e.target.value)}
+                  className="rounded-lg border border-sky-500/30 bg-[#080b11] px-3 py-2 text-xs font-mono text-sky-300 focus:outline-none focus:border-sky-400"
+                >
+                  {TIMEZONES.map((tz) => (
+                    <option key={tz.value} value={tz.value}>
+                      {tz.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Time Slot Picker (Categorized into Afternoon/Evening & Night/Late Night) */}
