@@ -53,6 +53,7 @@ function BookDiscoveryCallContent() {
   const searchParams = useSearchParams();
   const [selectedTimeZone, setSelectedTimeZone] = useState("America/New_York");
   const [selectedDate, setSelectedDate] = useState("");
+  const [chipBaseDate, setChipBaseDate] = useState("");
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
   const [bookedSlots, setBookedSlots] = useState<{ date: string; time: string }[]>([]);
   const [bookingError, setBookingError] = useState<string | null>(null);
@@ -101,6 +102,7 @@ function BookDiscoveryCallContent() {
     // Default to Today's date
     const todayStr = new Date().toISOString().split("T")[0];
     setSelectedDate(todayStr);
+    setChipBaseDate(todayStr);
 
     // Parse URL query parameters if lead comes from Email 1 link
     if (searchParams) {
@@ -181,6 +183,20 @@ function BookDiscoveryCallContent() {
   // Check if slot is late night (12 AM to 2:30 AM IST)
   const isLateNightSlot = (slotIST: string) => {
     return slotIST.includes("AM") && (slotIST.startsWith("12:") || slotIST.startsWith("01:") || slotIST.startsWith("02:"));
+  };
+
+  // Handle date input selection from calendar picker input
+  const handleCalendarInputChange = (newDateStr: string) => {
+    if (!newDateStr) return;
+    setSelectedDate(newDateStr);
+
+    // Only shift the 10 quick chips if the newly picked calendar date is OUTSIDE the currently visible 10 chips
+    const visibleChips = getNextDates(chipBaseDate || new Date().toISOString().split("T")[0]);
+    const isVisibleInChips = visibleChips.some((c) => c.rawDate === newDateStr);
+
+    if (!isVisibleInChips) {
+      setChipBaseDate(newDateStr);
+    }
   };
 
   // Generate 10 quick dates dynamically starting from baseDateStr (or Today)
@@ -382,14 +398,14 @@ function BookDiscoveryCallContent() {
                       type="date"
                       value={selectedDate}
                       min={new Date().toISOString().split("T")[0]}
-                      onChange={(e) => setSelectedDate(e.target.value)}
+                      onChange={(e) => handleCalendarInputChange(e.target.value)}
                       className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-sky-400 focus:outline-none focus:border-sky-400 font-mono"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5">
-                  {getNextDates(selectedDate).map((d) => {
+                  {getNextDates(chipBaseDate || selectedDate).map((d) => {
                     const isSelected = selectedDate === d.rawDate;
                     return (
                       <button
