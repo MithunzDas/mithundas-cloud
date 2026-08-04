@@ -15,6 +15,8 @@ import {
   ArrowRight,
   ShieldCheck,
   ChevronRight,
+  AlertCircle,
+  Lock,
 } from "lucide-react";
 
 const TIMEZONES = [
@@ -24,7 +26,7 @@ const TIMEZONES = [
   { label: "UK GMT / BST", value: "Europe/London" },
   { label: "Europe CET (Paris/Berlin)", value: "Europe/Paris" },
   { label: "Australia Sydney (AEST)", value: "Australia/Sydney" },
-  { label: "India (IST)", value: "Asia/Kolkata font-bold text-sky-400" },
+  { label: "India (IST)", value: "Asia/Kolkata" },
   { label: "Singapore / Asia (SGT)", value: "Asia/Singapore" },
   { label: "Dubai / UAE (GST)", value: "Asia/Dubai" },
 ];
@@ -46,7 +48,9 @@ function BookDiscoveryCallContent() {
   const [selectedTimeZone, setSelectedTimeZone] = useState("America/New_York");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
-  
+  const [bookedSlots, setBookedSlots] = useState<{ date: string; time: string }[]>([]);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+
   // Step navigation: 1 = Date/Time, 2 = Intake Info, 3 = Confirmation
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,8 +65,23 @@ function BookDiscoveryCallContent() {
     projectRequirement: "",
   });
 
-  // Auto-detect timezone and auto-fill URL query parameters if coming from Email 1
+  // Fetch booked slots to prevent double booking
+  const fetchBookedSlots = async () => {
+    try {
+      const res = await fetch("/api/book");
+      if (res.ok) {
+        const data = await res.json();
+        setBookedSlots(data.bookedSlots || []);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch existing booked slots", err);
+    }
+  };
+
+  // Auto-detect timezone, fetch booked slots, and parse URL query parameters
   useEffect(() => {
+    fetchBookedSlots();
+
     try {
       const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const match = TIMEZONES.find((tz) => tz.value === userTz);
@@ -73,10 +92,9 @@ function BookDiscoveryCallContent() {
       console.log("Could not auto-detect timezone", e);
     }
 
-    // Default to tomorrow's date
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    setSelectedDate(tomorrow.toISOString().split("T")[0]);
+    // Default to Today's date
+    const todayStr = new Date().toISOString().split("T")[0];
+    setSelectedDate(todayStr);
 
     // Parse URL query parameters if lead comes from Email 1 link
     if (searchParams) {
@@ -120,20 +138,50 @@ function BookDiscoveryCallContent() {
     }
   };
 
-  // Generate next 9 dates for quick chips
+  // Check if slot has passed or is within 2-hour preparation buffer for TODAY
+  const isSlotTooSoonOrPast = (slotIST: string, dateStr: string) => {
+    try {
+      const todayStr = new Date().toISOString().split("T")[0];
+      if (dateStr !== todayStr) return false; // Only filter today
+
+      const [timeStr, modifier] = slotIST.split(" ");
+      let [hours, minutes] = timeStr.split(":").map(Number);
+      if (modifier === "PM" && hours < 12) hours += 12;
+      if (modifier === "AM" && hours === 12) hours = 0;
+
+      // Slot date in IST (+05:30)
+      const slotDate = new Date(`${dateStr}T${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00+05:30`);
+      
+      // Current time + 2 Hours Preparation Buffer (120 mins)
+      const minBookableTime = new Date(Date.now() + 2 * 60 * 60 * 1000);
+
+      return slotDate.getTime() < minBookableTime.getTime();
+    } catch (e) {
+      return false;
+    }
+  };
+
+  // Check if slot is already booked by another client
+  const isSlotBooked = (slotIST: string, dateStr: string) => {
+    return bookedSlots.some((s) => s.date === dateStr && s.time === slotIST);
+  };
+
+  // Generate 10 quick dates INCLUDING TODAY (skip Sundays)
   const getNextDates = () => {
     const dates = [];
     const today = new Date();
-    for (let i = 1; i <= 9; i++) {
+    for (let i = 0; i < 10; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       // Skip Sundays
       if (d.getDay() !== 0) {
+        const isToday = i === 0;
         dates.push({
           rawDate: d.toISOString().split("T")[0],
-          dayName: d.toLocaleDateString("en-US", { weekday: "short" }),
+          dayName: isToday ? "TODAY" : d.toLocaleDateString("en-US", { weekday: "short" }),
           dayNum: d.getDate(),
           monthName: d.toLocaleDateString("en-US", { month: "short" }),
+          isToday,
         });
       }
     }
@@ -143,6 +191,7 @@ function BookDiscoveryCallContent() {
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setBookingError(null);
 
     const bookingId = `INV-${Math.floor(100000 + Math.random() * 900000)}`;
     const meetUrl = `https://mithundas.cloud/meet/${bookingId}`;
@@ -165,6 +214,11 @@ function BookDiscoveryCallContent() {
         }),
       });
 
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || "Failed to process booking");
+      }
+
       setBookingConfirmation({
         bookingId,
         meetUrl,
@@ -176,19 +230,10 @@ function BookDiscoveryCallContent() {
         email: formData.email,
       });
       setStep(3);
-    } catch (err) {
-      console.error("Failed to submit booking", err);
-      setBookingConfirmation({
-        bookingId,
-        meetUrl,
-        date: selectedDate,
-        time: selectedTimeSlot,
-        timeZone: selectedTimeZone,
-        name: formData.name,
-        company: formData.company,
-        email: formData.email,
-      });
-      setStep(3);
+    } catch (err: any) {
+      console.error("Booking error:", err);
+      setBookingError(err.message || "Slot conflict detected. Please select another slot.");
+      fetchBookedSlots(); // Refresh booked slots
     } finally {
       setIsSubmitting(false);
     }
@@ -255,21 +300,21 @@ function BookDiscoveryCallContent() {
 
               {/* Date Selection Carousel + Custom Future Calendar Picker */}
               <div className="space-y-2">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <label className="text-xs font-mono font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                     <CalendarIcon className="h-3.5 w-3.5 text-sky-400" />
-                    1. Select Discovery Date
+                    1. Select Discovery Date (Includes Today)
                   </label>
                   
                   {/* Custom Future Date Input */}
                   <div className="flex items-center gap-2 text-xs font-mono">
-                    <span className="text-slate-500 hidden sm:inline">Or pick any future date:</span>
+                    <span className="text-slate-500">Or pick future date:</span>
                     <input
                       type="date"
                       value={selectedDate}
                       min={new Date().toISOString().split("T")[0]}
                       onChange={(e) => setSelectedDate(e.target.value)}
-                      className="rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-sky-400 focus:outline-none focus:border-sky-400 font-mono"
+                      className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-sky-400 focus:outline-none focus:border-sky-400 font-mono"
                     />
                   </div>
                 </div>
@@ -288,7 +333,9 @@ function BookDiscoveryCallContent() {
                             : "bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
                         }`}
                       >
-                        <span className="text-[11px] uppercase font-mono">{d.dayName}</span>
+                        <span className={`text-[11px] uppercase font-mono ${d.isToday ? "text-amber-400 font-bold" : ""}`}>
+                          {d.dayName}
+                        </span>
                         <span className="text-lg font-extrabold my-0.5">{d.dayNum}</span>
                         <span className="text-[10px] font-mono text-slate-500">{d.monthName}</span>
                       </button>
@@ -297,36 +344,53 @@ function BookDiscoveryCallContent() {
                 </div>
               </div>
 
-              {/* Time Slot Picker (15 Active Hours Converted to Client Local Timezone) */}
+              {/* Time Slot Picker (2-Hour Buffer + Conflict Check) */}
               <div className="space-y-2 pt-2">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <label className="text-xs font-mono font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                     <Clock className="h-3.5 w-3.5 text-sky-400" />
                     2. Select Available Time Slot
                   </label>
-                  <span className="text-[10px] font-mono text-slate-500">Active Availability: 12:00 PM – 03:00 AM IST</span>
+                  <span className="text-[10px] font-mono text-slate-400">
+                    🔒 Requires 2-hour prep buffer &amp; prevents double booking
+                  </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-h-64 overflow-y-auto pr-1">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-h-72 overflow-y-auto pr-1">
                   {AVAILABLE_SLOTS_IST.map((slotIST) => {
                     const localTimeStr = convertISTSlotToLocal(slotIST, selectedDate, selectedTimeZone);
                     const isSelected = selectedTimeSlot === slotIST;
+                    const isTooSoon = isSlotTooSoonOrPast(slotIST, selectedDate);
+                    const isBooked = isSlotBooked(slotIST, selectedDate);
+                    const isDisabled = isTooSoon || isBooked;
+
                     return (
                       <button
                         key={slotIST}
                         type="button"
+                        disabled={isDisabled}
                         onClick={() => setSelectedTimeSlot(slotIST)}
                         className={`py-2.5 px-3 rounded-xl border text-xs font-mono transition-all flex flex-col items-center justify-center gap-0.5 ${
-                          isSelected
+                          isBooked
+                            ? "bg-red-950/40 border-red-900/50 text-red-400/60 cursor-not-allowed opacity-60"
+                            : isTooSoon
+                            ? "bg-slate-950/60 border-slate-900 text-slate-600 cursor-not-allowed opacity-40"
+                            : isSelected
                             ? "bg-emerald-500/20 border-emerald-400 text-emerald-300 font-bold shadow-md shadow-emerald-900/20"
                             : "bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white"
                         }`}
                       >
                         <div className="flex items-center gap-1.5">
-                          <Clock className="h-3 w-3 opacity-60 text-sky-400" />
+                          {isBooked ? (
+                            <Lock className="h-3 w-3 text-red-400" />
+                          ) : (
+                            <Clock className="h-3 w-3 opacity-60 text-sky-400" />
+                          )}
                           <span>{localTimeStr}</span>
                         </div>
-                        <span className="text-[9px] text-slate-500">({slotIST} IST)</span>
+                        <span className="text-[9px] text-slate-500">
+                          {isBooked ? "[BOOKED]" : isTooSoon ? "[TOO SOON / PAST]" : `(${slotIST} IST)`}
+                        </span>
                       </button>
                     );
                   })}
@@ -348,9 +412,16 @@ function BookDiscoveryCallContent() {
             </div>
           )}
 
-          {/* STEP 2: Client Intake Form (Auto-filled for Email 1 Leads, Blank for Cold Leads) */}
+          {/* STEP 2: Client Intake Form */}
           {step === 2 && (
             <form onSubmit={handleBookingSubmit} className="space-y-4">
+              {bookingError && (
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 font-mono text-xs flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{bookingError}</span>
+                </div>
+              )}
+
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                 <div className="text-xs font-mono text-sky-400 font-bold uppercase tracking-wider flex items-center gap-2">
                   <User className="h-4 w-4" />
