@@ -144,11 +144,11 @@ function BookDiscoveryCallContent() {
     }
   };
 
-  // Check if slot has passed or is within 2-hour preparation buffer for TODAY
-  const isSlotTooSoonOrPast = (slotIST: string, dateStr: string) => {
+  // Determine if a slot is PAST, TOO SOON (within 2-hour prep buffer), or AVAILABLE
+  const getSlotStatus = (slotIST: string, dateStr: string) => {
     try {
       const todayStr = new Date().toISOString().split("T")[0];
-      if (dateStr !== todayStr) return false; // Only filter today
+      if (dateStr !== todayStr) return "AVAILABLE";
 
       const [timeStr, modifier] = slotIST.split(" ");
       let [hours, minutes] = timeStr.split(":").map(Number);
@@ -157,13 +157,19 @@ function BookDiscoveryCallContent() {
 
       // Slot date in IST (+05:30)
       const slotDate = new Date(`${dateStr}T${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00+05:30`);
-      
+      const now = new Date();
       // Current time + 2 Hours Preparation Buffer (120 mins)
-      const minBookableTime = new Date(Date.now() + 2 * 60 * 60 * 1000);
+      const minBookableTime = new Date(now.getTime() + 2 * 60 * 60 * 1000);
 
-      return slotDate.getTime() < minBookableTime.getTime();
+      if (slotDate.getTime() < now.getTime()) {
+        return "PAST";
+      }
+      if (slotDate.getTime() < minBookableTime.getTime()) {
+        return "TOO_SOON";
+      }
+      return "AVAILABLE";
     } catch (e) {
-      return false;
+      return "AVAILABLE";
     }
   };
 
@@ -253,10 +259,13 @@ function BookDiscoveryCallContent() {
   const renderSlotButton = (slotIST: string) => {
     const localTimeStr = convertISTSlotToLocal(slotIST, selectedDate, selectedTimeZone);
     const isSelected = selectedTimeSlot === slotIST;
-    const isTooSoon = isSlotTooSoonOrPast(slotIST, selectedDate);
+    const slotStatus = getSlotStatus(slotIST, selectedDate);
     const isBooked = isSlotBooked(slotIST, selectedDate);
     const isLateNight = isLateNightSlot(slotIST);
-    const isDisabled = isTooSoon || isBooked;
+
+    const isPast = slotStatus === "PAST";
+    const isTooSoon = slotStatus === "TOO_SOON";
+    const isDisabled = isPast || isTooSoon || isBooked;
 
     return (
       <button
@@ -267,8 +276,10 @@ function BookDiscoveryCallContent() {
         className={`py-2.5 px-3 rounded-xl border text-xs font-mono transition-all flex flex-col items-center justify-center gap-0.5 ${
           isBooked
             ? "bg-red-950/40 border-red-900/50 text-red-400/60 cursor-not-allowed opacity-60"
+            : isPast
+            ? "bg-slate-950/80 border-slate-900 text-slate-600/70 cursor-not-allowed opacity-30"
             : isTooSoon
-            ? "bg-slate-950/60 border-slate-900 text-slate-600 cursor-not-allowed opacity-40"
+            ? "bg-amber-950/20 border-amber-900/40 text-amber-400/70 cursor-not-allowed opacity-60"
             : isSelected
             ? "bg-emerald-500/20 border-emerald-400 text-emerald-300 font-bold shadow-md shadow-emerald-900/20"
             : "bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white"
@@ -283,8 +294,8 @@ function BookDiscoveryCallContent() {
           <span>{localTimeStr}</span>
         </div>
         <div className="flex items-center gap-1">
-          <span className="text-[9px] text-slate-500">
-            {isBooked ? "[BOOKED]" : isTooSoon ? "[TOO SOON / PAST]" : `(${slotIST} IST)`}
+          <span className={`text-[9px] ${isTooSoon ? "text-amber-400/90 font-bold" : "text-slate-500"}`}>
+            {isBooked ? "[BOOKED]" : isPast ? "[PAST]" : isTooSoon ? "[TOO SOON]" : `(${slotIST} IST)`}
           </span>
           {isLateNight && !isDisabled && (
             <span className="text-[8px] font-mono text-amber-400/90 bg-amber-500/10 px-1 py-0.2 rounded border border-amber-500/20">
