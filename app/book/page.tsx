@@ -55,6 +55,7 @@ function BookDiscoveryCallContent() {
   const [selectedDate, setSelectedDate] = useState("");
   const [chipBaseDate, setChipBaseDate] = useState("");
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
+  const [showTimeConfirmationModal, setShowTimeConfirmationModal] = useState(false);
   const [bookedSlots, setBookedSlots] = useState<{ date: string; time: string }[]>([]);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
@@ -490,12 +491,85 @@ function BookDiscoveryCallContent() {
                 <button
                   type="button"
                   disabled={!selectedDate || !selectedTimeSlot}
-                  onClick={() => setStep(2)}
+                  onClick={() => setShowTimeConfirmationModal(true)}
                   className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 px-6 py-3 font-bold text-white text-xs shadow-lg shadow-sky-500/25 hover:brightness-110 active:scale-95 disabled:opacity-40 transition-all"
                 >
                   <span>Enter Project Details</span>
                   <ChevronRight className="h-4 w-4" />
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* Sleek Time Slot Confirmation Modal */}
+          {showTimeConfirmationModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+              <div className="max-w-md w-full rounded-2xl bg-[#0f172a] border border-sky-500/30 p-6 shadow-2xl space-y-5">
+                <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
+                  <div className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-400">
+                    <Clock className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold text-white">Confirm Discovery Session Time</h3>
+                    <p className="text-xs font-mono text-slate-400">Please verify your booking details in your local timezone</p>
+                  </div>
+                </div>
+
+                <div className="rounded-xl bg-[#080b11] border border-slate-800 p-4 space-y-3 font-mono text-xs">
+                  <div className="flex items-start justify-between border-b border-slate-800/80 pb-2.5">
+                    <span className="text-slate-400">📅 Selected Date:</span>
+                    <span className="text-white font-bold text-right">
+                      {new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", year: "numeric" })}
+                    </span>
+                  </div>
+
+                  <div className="flex items-start justify-between border-b border-slate-800/80 pb-2.5">
+                    <span className="text-slate-400">⏰ Your Local Time:</span>
+                    <span className="text-emerald-400 font-bold text-sm text-right">
+                      {convertISTSlotToLocal(selectedTimeSlot, selectedDate, selectedTimeZone)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-start justify-between border-b border-slate-800/80 pb-2.5">
+                    <span className="text-slate-400">🌐 Your Time Zone:</span>
+                    <span className="text-sky-300 text-right font-bold">
+                      {TIMEZONES.find((t) => t.value === selectedTimeZone)?.label || selectedTimeZone}
+                    </span>
+                  </div>
+
+                  <div className="flex items-start justify-between">
+                    <span className="text-slate-400">👤 Host:</span>
+                    <span className="text-slate-200 font-bold text-right">Mithun Das (AI Automation Architect)</span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 text-[11px] font-mono text-sky-300 leading-relaxed flex items-start gap-2">
+                  <Sparkles className="h-4 w-4 text-sky-400 shrink-0 mt-0.5" />
+                  <span>
+                    You are scheduling a <strong>15-Minute Architecture Discovery Call</strong> with Mithun at <strong>{convertISTSlotToLocal(selectedTimeSlot, selectedDate, selectedTimeZone)}</strong>.
+                  </span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowTimeConfirmationModal(false)}
+                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-900 text-xs font-mono text-slate-300 hover:text-white hover:bg-slate-800 transition-all"
+                  >
+                    Change Time
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowTimeConfirmationModal(false);
+                      setStep(2);
+                    }}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-2.5 font-extrabold text-slate-950 text-xs shadow-lg shadow-emerald-500/20 hover:brightness-110 active:scale-95 transition-all"
+                  >
+                    <span>Proceed to Enter Details</span>
+                    <ChevronRight className="h-4 w-4 text-slate-950" />
+                  </button>
+                </div>
               </div>
             </div>
           )}
