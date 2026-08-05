@@ -62,6 +62,7 @@ function BookDiscoveryCallContent() {
   // Step navigation: 1 = Date/Time, 2 = Intake Info, 3 = Confirmation
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingSOW, setIsGeneratingSOW] = useState(false);
   const [bookingConfirmation, setBookingConfirmation] = useState<any>(null);
 
   // Form inputs
@@ -240,6 +241,32 @@ function BookDiscoveryCallContent() {
       }
     }
     return dates;
+  };
+
+  const handleGenerateSOW = async () => {
+    if (isGeneratingSOW) return;
+    setIsGeneratingSOW(true);
+    try {
+      const response = await fetch("/api/book/generate-sow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          company: formData.company,
+          businessType: formData.businessType,
+          rawRequirement: formData.projectRequirement,
+        }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.sowText) {
+          setFormData((prev) => ({ ...prev, projectRequirement: data.sowText }));
+        }
+      }
+    } catch (err) {
+      console.error("AI SOW generation error:", err);
+    } finally {
+      setIsGeneratingSOW(false);
+    }
   };
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
@@ -663,15 +690,26 @@ function BookDiscoveryCallContent() {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[11px] font-mono text-slate-400">Brief Overview of Bottlenecks or Requirements *</label>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-[11px] font-mono text-slate-400">Brief Overview of Bottlenecks or Requirements *</label>
+                  <button
+                    type="button"
+                    onClick={handleGenerateSOW}
+                    disabled={isGeneratingSOW}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-500/10 border border-sky-500/30 text-[11px] font-mono text-sky-400 font-semibold hover:bg-sky-500/20 active:scale-95 transition-all disabled:opacity-50"
+                  >
+                    <Sparkles className={`h-3 w-3 ${isGeneratingSOW ? "animate-spin text-sky-400" : "text-sky-400"}`} />
+                    <span>{isGeneratingSOW ? "Architecting SOW..." : "✨ Refine with AI SOW Generator"}</span>
+                  </button>
+                </div>
                 <textarea
                   required
-                  rows={3}
+                  rows={5}
                   value={formData.projectRequirement}
                   onChange={(e) => setFormData({ ...formData, projectRequirement: e.target.value })}
                   placeholder="e.g. We want to automate our student mock exam evaluation and Meta lead qualification using n8n and OpenAI..."
-                  className="w-full rounded-xl border border-slate-800 bg-[#080b11] p-3 text-xs text-white placeholder:text-slate-600 focus:border-sky-500 focus:outline-none leading-relaxed resize-none"
+                  className="w-full rounded-xl border border-slate-800 bg-[#080b11] p-3 text-xs text-white placeholder:text-slate-600 focus:border-sky-500 focus:outline-none leading-relaxed resize-none font-sans"
                 />
               </div>
 
