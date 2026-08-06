@@ -60,33 +60,65 @@ export async function POST(req: NextRequest) {
       meetingStartISO = new Date().toISOString();
     }
 
-    // Pass booking payload to dedicated n8n booking webhook
+    // Pass booking payload to dedicated n8n booking webhook & lead intake webhook
     const n8nBookingWebhookUrl = process.env.N8N_BOOKING_WEBHOOK_URL || "https://n8n.mithundas.cloud/webhook/meeting-booked";
+    const n8nLeadWebhookUrl = process.env.N8N_LEAD_WEBHOOK_URL || "https://n8n.mithundas.cloud/webhook/lead-intake";
 
-    try {
-      await fetch(n8nBookingWebhookUrl, {
+    const webhookPayload = JSON.stringify({
+      event: "meeting_booked",
+      source: "custom_booking_page",
+      bookingId: newBooking.bookingId,
+      leadId: newBooking.bookingId,
+      name,
+      email,
+      company,
+      businessType: businessType || "General",
+      projectRequirement,
+      date,
+      time,
+      timeZone,
+      meetUrl,
+      hostEmail: "mithun.here01@gmail.com",
+      bookedAt: new Date().toISOString(),
+      meetingStartISO,
+    });
+
+    // Fire webhook side-effects in parallel
+    const webhookPromises: Promise<unknown>[] = [];
+
+    // 1. Dedicated Meeting Webhook
+    webhookPromises.push(
+      fetch(n8nBookingWebhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          event: "meeting_booked",
-          bookingId: newBooking.bookingId,
-          name,
-          email,
-          company,
-          businessType: businessType || "General",
-          projectRequirement,
-          date,
-          time,
-          timeZone,
-          meetUrl,
-          hostEmail: "mithun.here01@gmail.com",
-          bookedAt: new Date().toISOString(),
-          meetingStartISO,
-        }),
-      });
-    } catch (e: any) {
-      logger.warn("Failed to dispatch to n8n booking webhook, proceeding locally", "booking_n8n_webhook_warn", { message: String(e) });
+        body: webhookPayload,
+      })
+        .then((res) => {
+          logger.info(`Booking webhook dispatch to ${n8nBookingWebhookUrl} returned status ${res.status}`, "booking_n8n_webhook_status");
+        })
+        .catch((e) => {
+          logger.warn(`Failed to dispatch to booking webhook ${n8nBookingWebhookUrl}`, "booking_n8n_webhook_err", { message: String(e) });
+        })
+    );
+
+    // 2. Also dispatch to Lead Webhook if distinct URL is provided
+    if (n8nLeadWebhookUrl && n8nLeadWebhookUrl !== n8nBookingWebhookUrl) {
+      webhookPromises.push(
+        fetch(n8nLeadWebhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: webhookPayload,
+        })
+          .then((res) => {
+            logger.info(`Booking lead webhook dispatch to ${n8nLeadWebhookUrl} returned status ${res.status}`, "lead_n8n_webhook_status");
+          })
+          .catch((e) => {
+            logger.warn(`Failed to dispatch to lead webhook ${n8nLeadWebhookUrl}`, "lead_n8n_webhook_err", { message: String(e) });
+          })
+      );
     }
+
+    await Promise.allSettled(webhookPromises);
 
     return NextResponse.json({
       success: true,
