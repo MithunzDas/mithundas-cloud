@@ -194,7 +194,7 @@ export async function getBookedSlotsFromDB(): Promise<{ date: string; time: stri
     });
     return bookings;
   } catch (error) {
-    logger.warn("Falling back to local booking check", "db_booking_read_warn", error);
+    logger.warn("Falling back to local booking check", "db_booking_read_warn", { message: String(error) });
     return [];
   }
 }
