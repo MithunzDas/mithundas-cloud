@@ -170,3 +170,69 @@ export async function getEmailLogs(leadId?: string): Promise<EmailLogPayload[]> 
   }
 }
 
+export interface BookingPayload {
+  id?: string;
+  bookingId: string;
+  name: string;
+  email: string;
+  company: string;
+  businessType?: string;
+  projectRequirement?: string;
+  date: string;
+  time: string;
+  timeZone?: string;
+  meetUrl: string;
+  status?: string;
+  createdAt?: string;
+}
+
+export async function getBookedSlotsFromDB(): Promise<{ date: string; time: string; bookingId: string }[]> {
+  try {
+    const bookings = await (prisma as any).booking.findMany({
+      where: { status: "confirmed" },
+      select: { date: true, time: true, bookingId: true },
+    });
+    return bookings;
+  } catch (error) {
+    logger.warn("Falling back to local booking check", "db_booking_read_warn", error);
+    return [];
+  }
+}
+
+export async function saveBookingToDB(booking: BookingPayload): Promise<void> {
+  try {
+    await (prisma as any).booking.create({
+      data: {
+        bookingId: booking.bookingId,
+        name: booking.name,
+        email: booking.email,
+        company: booking.company,
+        businessType: booking.businessType || "General",
+        projectRequirement: booking.projectRequirement || "",
+        date: booking.date,
+        time: booking.time,
+        timeZone: booking.timeZone || "Asia/Kolkata",
+        meetUrl: booking.meetUrl,
+        status: booking.status || "confirmed",
+      },
+    });
+    logger.info(`Booking ${booking.bookingId} saved to database`, "db_booking_save_success");
+  } catch (error) {
+    logger.error(`Failed to save booking ${booking.bookingId}`, "db_booking_save_error", error);
+  }
+}
+
+export async function cancelBookingInDB(bookingId: string): Promise<boolean> {
+  try {
+    await (prisma as any).booking.update({
+      where: { bookingId },
+      data: { status: "cancelled" },
+    });
+    logger.info(`Booking ${bookingId} marked as cancelled in database`, "db_booking_cancel_success");
+    return true;
+  } catch (error) {
+    logger.error(`Failed to cancel booking ${bookingId}`, "db_booking_cancel_error", error);
+    return false;
+  }
+}
+

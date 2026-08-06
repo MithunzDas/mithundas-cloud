@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
+import { getBookedSlotsFromDB, saveBookingToDB } from "@/lib/db";
 
 // In-memory booked slots store (persists across API requests in server instance)
 interface BookedSlot {
@@ -8,13 +9,16 @@ interface BookedSlot {
   bookingId: string;
 }
 
-const bookedSlotsStore: BookedSlot[] = [
-  // Example initial seed if needed
-];
+const bookedSlotsStore: BookedSlot[] = [];
 
 export async function GET() {
+  const dbSlots = await getBookedSlotsFromDB();
+  const allSlots = [...bookedSlotsStore, ...dbSlots];
+  const uniqueSlots = Array.from(new Set(allSlots.map((s) => `${s.date}_${s.time}`)))
+    .map((key) => allSlots.find((s) => `${s.date}_${s.time}` === key)!);
+
   return NextResponse.json({
-    bookedSlots: bookedSlotsStore,
+    bookedSlots: uniqueSlots,
   });
 }
 
@@ -27,8 +31,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required booking fields" }, { status: 400 });
     }
 
+    const dbSlots = await getBookedSlotsFromDB();
+    const allSlots = [...bookedSlotsStore, ...dbSlots];
+
     // Check for double booking conflict
-    const isAlreadyBooked = bookedSlotsStore.some(
+    const isAlreadyBooked = allSlots.some(
       (slot) => slot.date === date && slot.time === time
     );
 
@@ -39,13 +46,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Store booked slot
+    const assignedBookingId = bookingId || `INV-${Date.now().toString().slice(-6)}`;
     const newBooking: BookedSlot = {
       date,
       time,
-      bookingId: bookingId || `INV-${Date.now().toString().slice(-6)}`,
+      bookingId: assignedBookingId,
     };
     bookedSlotsStore.push(newBooking);
+
+    // Save to Database persistently
+    await saveBookingToDB({
+      bookingId: assignedBookingId,
+      name,
+      email,
+      company,
+      businessType: businessType || "General",
+      projectRequirement: projectRequirement || "",
+      date,
+      time,
+      timeZone: timeZone || "Asia/Kolkata",
+      meetUrl: meetUrl || `https://mithundas.cloud/meet/${assignedBookingId}`,
+    }).catch((e) => logger.warn("Failed to persist booking in DB", "booking_db_warn", { message: String(e) }));
 
     // Calculate meeting start ISO timestamp from date + time (IST)
     let meetingStartISO = "";

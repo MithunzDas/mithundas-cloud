@@ -76,6 +76,29 @@
     },
     {
       "parameters": {
+        "calendar": "primary",
+        "summary": "={{ 'Discovery Session — ' + $('Meeting Booked Webhook').first().json.body.company + ' (' + $('Meeting Booked Webhook').first().json.body.name + ')' }}",
+        "description": "={{ 'AI Discovery Session for ' + $('Meeting Booked Webhook').first().json.body.company + '\\n\\nVideo Room: ' + $('Meeting Booked Webhook').first().json.body.meetUrl + '\\n\\nSOW / Requirements:\\n' + $('Meeting Booked Webhook').first().json.body.projectRequirement }}",
+        "start": "={{ $('Meeting Booked Webhook').first().json.body.meetingStartISO }}",
+        "end": "={{ new Date(new Date($('Meeting Booked Webhook').first().json.body.meetingStartISO).getTime() + 15 * 60 * 1000).toISOString() }}",
+        "attendees": [
+          "={{ $('Meeting Booked Webhook').first().json.body.email }}"
+        ],
+        "options": {
+          "sendUpdates": "all"
+        }
+      },
+      "id": "google-calendar-create",
+      "name": "Google Calendar: Create Event & Invite",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "position": [
+        580,
+        450
+      ]
+    },
+    {
+      "parameters": {
         "jsCode": "const item = $('Meeting Booked Webhook').first().json.body || {};\nconst bookedAt = new Date(item.bookedAt || new Date()).getTime();\nconst meetingStart = new Date(item.meetingStartISO || new Date()).getTime();\nconst hoursDiff = (meetingStart - bookedAt) / (1000 * 60 * 60);\n\nreturn [{\n  json: {\n    ...item,\n    hoursDiff,\n    isWithin24Hours: hoursDiff <= 24,\n    reminder1HourISO: new Date(meetingStart - 60 * 60 * 1000).toISOString(),\n    reminder10MinISO: new Date(meetingStart - 10 * 60 * 1000).toISOString()\n  }\n}];"
       },
       "id": "calculate-reminders",
@@ -233,6 +256,17 @@
       ]
     },
     "Email: Host Notification (mithun.here01@gmail.com)": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar: Create Event & Invite",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar: Create Event & Invite": {
       "main": [
         [
           {

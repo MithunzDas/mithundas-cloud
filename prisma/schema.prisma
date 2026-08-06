@@ -45,3 +45,23 @@ model EmailLog {
   @@index([leadId])
 }
 
+model Booking {
+  id                 String   @id @default(cuid())
+  bookingId          String   @unique
+  name               String
+  email              String
+  company            String
+  businessType       String   @default("General")
+  projectRequirement String   @db.Text
+  date               String   // YYYY-MM-DD
+  time               String   // HH:MM AM/PM
+  timeZone           String   @default("Asia/Kolkata")
+  meetUrl            String
+  status             String   @default("confirmed") // "confirmed", "cancelled"
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([date, time])
+  @@index([email])
+}
+
