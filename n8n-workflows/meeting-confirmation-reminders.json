@@ -206,17 +206,35 @@
             "node": "Telegram: Meeting Alert Bot",
             "type": "main",
             "index": 0
-          },
+          }
+        ]
+      ]
+    },
+    "Telegram: Meeting Alert Bot": {
+      "main": [
+        [
           {
             "node": "Email: Client Confirmation",
             "type": "main",
             "index": 0
-          },
+          }
+        ]
+      ]
+    },
+    "Email: Client Confirmation": {
+      "main": [
+        [
           {
             "node": "Email: Host Notification (mithun.here01@gmail.com)",
             "type": "main",
             "index": 0
-          },
+          }
+        ]
+      ]
+    },
+    "Email: Host Notification (mithun.here01@gmail.com)": {
+      "main": [
+        [
           {
             "node": "Calculate Reminder Schedules",
             "type": "main",
