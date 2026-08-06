@@ -1,0 +1,302 @@
+{
+  "name": "Mithun Das — Meeting Confirmation & Automated Reminder Engine",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "meeting-booked",
+        "options": {}
+      },
+      "id": "webhook-meeting-booked",
+      "name": "Meeting Booked Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot<YOUR_MEETING_BOT_TOKEN>/sendMessage",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"chat_id\": \"<YOUR_MEETING_TELEGRAM_CHAT_ID>\",\n  \"text\": \"🎉 NEW DISCOVERY CALL BOOKED!\\n\\n👤 Client: \" + ($json.body.name || '') +\n    \"\\n🏢 Company: \" + ($json.body.company || '') +\n    \"\\n💼 Industry: \" + ($json.body.businessType || 'General') +\n    \"\\n✉️ Email: \" + ($json.body.email || '') +\n    \"\\n📅 Scheduled Date: \" + ($json.body.date || '') + \" @ \" + ($json.body.time || '') + \" (\" + ($json.body.timeZone || 'IST') + \")\" +\n    \"\\n🆔 Reference: \" + ($json.body.bookingId || '') +\n    \"\\n\\n🎥 Video Room Link:\\n\" + ($json.body.meetUrl || '') +\n    \"\\n\\n📋 SOW / Requirements:\\n\" + ($json.body.projectRequirement || 'None')\n}) }}"
+      },
+      "id": "telegram-meeting-alert",
+      "name": "Telegram: Meeting Alert Bot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        450,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "Mithun Das <mithun@mithundas.cloud>",
+        "toEmail": "={{$('Meeting Booked Webhook').first().json.body.email}}",
+        "subject": "={{ 'Discovery Session Confirmed — ' + $('Meeting Booked Webhook').first().json.body.company + ' | Mithun Das' }}",
+        "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; color: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;\"><div style=\"height: 4px; background: linear-gradient(90deg, #0ea5e9, #6366f1, #0ea5e9);\"></div><div style=\"padding: 24px 32px; border-bottom: 1px solid #f1f5f9;\"><table cellpadding=\"0\" cellspacing=\"0\" style=\"border: none;\"><tr><td style=\"padding-right: 12px;\"><img src=\"https://mithundas.cloud/logo.png\" alt=\"M\" style=\"width: 38px; height: 38px; border-radius: 8px;\"></td><td><span style=\"font-size: 16px; font-weight: 800; color: #0f172a;\">Mithun Das</span><br><span style=\"font-size: 10px; color: #0ea5e9; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;\">AI AUTOMATION</span></td></tr></table></div><div style=\"padding: 28px 32px;\"><h2 style=\"font-size: 20px; color: #0f172a; margin-top: 0;\">Your Discovery Session is Confirmed! 🎉</h2><p style=\"font-size: 15px; color: #334155; line-height: 1.6;\">Hi <b>${$json.body.name}</b>,</p><p style=\"font-size: 15px; color: #334155; line-height: 1.6;\">Thank you for scheduling your AI Architecture Discovery Session for <b>${$json.body.company}</b>. Below are your meeting details:</p><div style=\"background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin: 20px 0; font-family: monospace; font-size: 13px;\"><p style=\"margin: 4px 0;\"><b>📅 Date & Time:</b> ${$json.body.date} @ ${$json.body.time} (${$json.body.timeZone})</p><p style=\"margin: 4px 0;\"><b>🆔 Reference:</b> ${$json.body.bookingId}</p><p style=\"margin: 4px 0;\"><b>🎥 Video Room:</b> <a href=\"${$json.body.meetUrl}\" style=\"color: #0ea5e9; font-weight: bold;\">${$json.body.meetUrl}</a></p></div><div style=\"text-align: center; margin: 28px 0;\"><a href=\"${$json.body.meetUrl}\" style=\"display: inline-block; background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 700; font-size: 15px;\">🚀 Join Video Meeting Room Now</a></div></div><div style=\"height: 3px; background: linear-gradient(90deg, #0ea5e9, #6366f1, #0ea5e9);\"></div></div>` }}"
+      },
+      "id": "email-client-confirmation",
+      "name": "Email: Client Confirmation",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "Mithun Das AI Automation <mithun@mithundas.cloud>",
+        "toEmail": "mithun.here01@gmail.com",
+        "subject": "={{ '📅 NEW MEETING: ' + $('Meeting Booked Webhook').first().json.body.company + ' (' + $('Meeting Booked Webhook').first().json.body.name + ')' }}",
+        "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; color: #1e293b; padding: 24px;\"><h2 style=\"color: #0ea5e9;\">🎉 New Meeting Booked!</h2><p><b>Client Name:</b> ${$json.body.name}</p><p><b>Company:</b> ${$json.body.company} (${$json.body.businessType})</p><p><b>Email:</b> ${$json.body.email}</p><p><b>Scheduled:</b> ${$json.body.date} @ ${$json.body.time} (${$json.body.timeZone})</p><p><b>Video Room Link:</b> <a href=\"${$json.body.meetUrl}\">${$json.body.meetUrl}</a></p><hr><p><b>Project SOW / Bottlenecks:</b></p><pre style=\"background: #f1f5f9; padding: 12px; border-radius: 6px;\">${$json.body.projectRequirement}</pre></div>` }}"
+      },
+      "id": "email-host-notification",
+      "name": "Email: Host Notification (mithun.here01@gmail.com)",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        450,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json.body;\nconst bookedAt = new Date(item.bookedAt || new Date()).getTime();\nconst meetingStart = new Date(item.meetingStartISO).getTime();\nconst hoursDiff = (meetingStart - bookedAt) / (1000 * 60 * 60);\n\nreturn [{\n  json: {\n    ...item,\n    hoursDiff,\n    isWithin24Hours: hoursDiff <= 24,\n    reminder1HourISO: new Date(meetingStart - 60 * 60 * 1000).toISOString(),\n    reminder15MinISO: new Date(meetingStart - 15 * 60 * 1000).toISOString()\n  }\n}];"
+      },
+      "id": "calculate-reminders",
+      "name": "Calculate Reminder Schedules",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.isWithin24Hours }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-scheduled-within-24h",
+      "name": "Is Scheduled Within 24 Hours?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        920,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "amount": "={{ Math.max(0, (new Date($json.reminder15MinISO).getTime() - Date.now()) / 1000) }}",
+        "unit": "seconds"
+      },
+      "id": "wait-15min-branch1",
+      "name": "Wait Until 15-Min Before Call",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        1150,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "Mithun Das <mithun@mithundas.cloud>",
+        "toEmail": "={{ $json.email }}, mithun.here01@gmail.com",
+        "subject": "={{ '⏰ Starting in 15 Mins: Discovery Session for ' + $json.company }}",
+        "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px;\"><h2>⏰ Your Meeting Starts in 15 Minutes!</h2><p>Hi ${$json.name}, your AI discovery session for <b>${$json.company}</b> is starting in 15 minutes.</p><p><a href=\"${$json.meetUrl}\" style=\"background: #0ea5e9; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;\">🚀 Click Here to Join Meeting Room</a></p></div>` }}"
+      },
+      "id": "send-15min-reminder-branch1",
+      "name": "Send 15-Min Reminder Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        1380,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "amount": "={{ Math.max(0, (new Date($json.reminder1HourISO).getTime() - Date.now()) / 1000) }}",
+        "unit": "seconds"
+      },
+      "id": "wait-1hour-branch2",
+      "name": "Wait Until 1 Hour Before Call",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        1150,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "Mithun Das <mithun@mithundas.cloud>",
+        "toEmail": "={{ $json.email }}, mithun.here01@gmail.com",
+        "subject": "={{ '⌛ 1 Hour Reminder: Discovery Session for ' + $json.company }}",
+        "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px;\"><h2>⌛ 1 Hour Until Your Discovery Session</h2><p>Hi ${$json.name}, just a friendly reminder that your discovery call for <b>${$json.company}</b> is in 1 hour.</p><p>Meeting Link: <a href=\"${$json.meetUrl}\">${$json.meetUrl}</a></p></div>` }}"
+      },
+      "id": "send-1hour-reminder-branch2",
+      "name": "Send 1-Hour Reminder Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        1380,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "amount": "={{ Math.max(0, (new Date($json.reminder15MinISO).getTime() - Date.now()) / 1000) }}",
+        "unit": "seconds"
+      },
+      "id": "wait-15min-branch2",
+      "name": "Wait Until 15-Min Before Call (Branch 2)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "Mithun Das <mithun@mithundas.cloud>",
+        "toEmail": "={{ $json.email }}, mithun.here01@gmail.com",
+        "subject": "={{ '⏰ Starting in 15 Mins: Discovery Session for ' + $json.company }}",
+        "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px;\"><h2>⏰ Starting in 15 Minutes!</h2><p>Hi ${$json.name}, your meeting room is ready.</p><p><a href=\"${$json.meetUrl}\" style=\"background: #0ea5e9; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;\">🚀 Click Here to Join Meeting Room</a></p></div>` }}"
+      },
+      "id": "send-15min-reminder-branch2",
+      "name": "Send 15-Min Final Reminder Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        1820,
+        420
+      ]
+    }
+  ],
+  "connections": {
+    "Meeting Booked Webhook": {
+      "main": [
+        [
+          {
+            "node": "Telegram: Meeting Alert Bot",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email: Client Confirmation",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email: Host Notification (mithun.here01@gmail.com)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Calculate Reminder Schedules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Reminder Schedules": {
+      "main": [
+        [
+          {
+            "node": "Is Scheduled Within 24 Hours?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Scheduled Within 24 Hours?": {
+      "main": [
+        [
+          {
+            "node": "Wait Until 15-Min Before Call",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait Until 1 Hour Before Call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Until 15-Min Before Call": {
+      "main": [
+        [
+          {
+            "node": "Send 15-Min Reminder Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Until 1 Hour Before Call": {
+      "main": [
+        [
+          {
+            "node": "Send 1-Hour Reminder Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send 1-Hour Reminder Email": {
+      "main": [
+        [
+          {
+            "node": "Wait Until 15-Min Before Call (Branch 2)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Until 15-Min Before Call (Branch 2)": {
+      "main": [
+        [
+          {
+            "node": "Send 15-Min Final Reminder Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

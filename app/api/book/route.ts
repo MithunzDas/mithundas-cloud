@@ -47,30 +47,45 @@ export async function POST(req: NextRequest) {
     };
     bookedSlotsStore.push(newBooking);
 
-    // Pass booking payload to n8n webhook or internal database handler
-    const n8nWebhookUrl = process.env.N8N_LEAD_WEBHOOK_URL || "https://n8n.mithundas.cloud/webhook/lead-intake";
+    // Calculate meeting start ISO timestamp from date + time (IST)
+    let meetingStartISO = "";
+    try {
+      const [timeStr, modifier] = time.split(" ");
+      let [hours, minutes] = timeStr.split(":").map(Number);
+      if (modifier === "PM" && hours < 12) hours += 12;
+      if (modifier === "AM" && hours === 12) hours = 0;
+      const istDate = new Date(`${date}T${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00+05:30`);
+      meetingStartISO = istDate.toISOString();
+    } catch (e) {
+      meetingStartISO = new Date().toISOString();
+    }
+
+    // Pass booking payload to dedicated n8n booking webhook
+    const n8nBookingWebhookUrl = process.env.N8N_BOOKING_WEBHOOK_URL || "https://n8n.mithundas.cloud/webhook/meeting-booked";
 
     try {
-      await fetch(n8nWebhookUrl, {
+      await fetch(n8nBookingWebhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          source: "custom_booking_page",
-          leadId: newBooking.bookingId,
+          event: "meeting_booked",
+          bookingId: newBooking.bookingId,
           name,
           email,
           company,
           businessType: businessType || "General",
-          projectRequirement: `[Discovery Call Scheduled for ${date} @ ${time} (${timeZone})] ${projectRequirement || ""}`,
-          meetUrl,
-          scheduledDate: date,
-          scheduledTime: time,
+          projectRequirement,
+          date,
+          time,
           timeZone,
-          timestamp: new Date().toISOString(),
+          meetUrl,
+          hostEmail: "mithun.here01@gmail.com",
+          bookedAt: new Date().toISOString(),
+          meetingStartISO,
         }),
       });
     } catch (e: any) {
-      logger.warn("Failed to dispatch to n8n lead intake webhook, proceeding locally", "booking_n8n_webhook_warn", { message: String(e) });
+      logger.warn("Failed to dispatch to n8n booking webhook, proceeding locally", "booking_n8n_webhook_warn", { message: String(e) });
     }
 
     return NextResponse.json({
