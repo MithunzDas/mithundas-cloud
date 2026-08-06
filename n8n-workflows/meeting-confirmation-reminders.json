@@ -63,7 +63,7 @@
         "fromEmail": "Mithun Das AI Automation <mithun@mithundas.cloud>",
         "toEmail": "mithun.here01@gmail.com",
         "subject": "={{ '📅 NEW MEETING: ' + $('Meeting Booked Webhook').first().json.body.company + ' (' + $('Meeting Booked Webhook').first().json.body.name + ')' }}",
-        "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; color: #1e293b; padding: 24px;\"><h2 style=\"color: #0ea5e9;\">🎉 New Meeting Booked!</h2><p><b>Client Name:</b> ${$json.body.name}</p><p><b>Company:</b> ${$json.body.company} (${$json.body.businessType})</p><p><b>Email:</b> ${$json.body.email}</p><p><b>Scheduled:</b> ${$json.body.date} @ ${$json.body.time} (${$json.body.timeZone})</p><p><b>Video Room Link:</b> <a href=\"${$json.body.meetUrl}\">${$json.body.meetUrl}</a></p><hr><p><b>Project SOW / Bottlenecks:</b></p><pre style=\"background: #f1f5f9; padding: 12px; border-radius: 6px;\">${$json.body.projectRequirement}</pre></div>` }}"
+        "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; color: #1e293b; padding: 24px;\"><h2 style=\"color: #0ea5e9;\">🎉 New Meeting Booked!</h2><p><b>Client Name:</b> ${$json.body.name}</p><p><b>Company:</b> ${$json.body.company} (${$json.body.businessType})</p><p><b>Email:</b> ${$json.body.email}</p><p><b>Scheduled:</b> ${$json.body.date} @ ${$json.body.time} (${$json.body.timeZone})</p><p><b>Video Room Link:</b> <a href=\"${$json.meetUrl}\">${$json.meetUrl}</a></p><hr><p><b>Project SOW / Bottlenecks:</b></p><pre style=\"background: #f1f5f9; padding: 12px; border-radius: 6px;\">${$json.body.projectRequirement}</pre></div>` }}"
       },
       "id": "email-host-notification",
       "name": "Email: Host Notification (mithun.here01@gmail.com)",
@@ -76,7 +76,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const item = $('Meeting Booked Webhook').first().json.body || {};\nconst bookedAt = new Date(item.bookedAt || new Date()).getTime();\nconst meetingStart = new Date(item.meetingStartISO || new Date()).getTime();\nconst hoursDiff = (meetingStart - bookedAt) / (1000 * 60 * 60);\n\nreturn [{\n  json: {\n    ...item,\n    hoursDiff,\n    isWithin24Hours: hoursDiff <= 24,\n    reminder1HourISO: new Date(meetingStart - 60 * 60 * 1000).toISOString(),\n    reminder15MinISO: new Date(meetingStart - 15 * 60 * 1000).toISOString()\n  }\n}];"
+        "jsCode": "const item = $('Meeting Booked Webhook').first().json.body || {};\nconst bookedAt = new Date(item.bookedAt || new Date()).getTime();\nconst meetingStart = new Date(item.meetingStartISO || new Date()).getTime();\nconst hoursDiff = (meetingStart - bookedAt) / (1000 * 60 * 60);\n\nreturn [{\n  json: {\n    ...item,\n    hoursDiff,\n    isWithin24Hours: hoursDiff <= 24,\n    reminder1HourISO: new Date(meetingStart - 60 * 60 * 1000).toISOString(),\n    reminder10MinISO: new Date(meetingStart - 10 * 60 * 1000).toISOString()\n  }\n}];"
       },
       "id": "calculate-reminders",
       "name": "Calculate Reminder Schedules",
@@ -109,11 +109,11 @@
     },
     {
       "parameters": {
-        "amount": "={{ Math.max(0, (new Date($json.reminder15MinISO).getTime() - Date.now()) / 1000) }}",
+        "amount": "={{ Math.max(0, (new Date($json.reminder10MinISO).getTime() - Date.now()) / 1000) }}",
         "unit": "seconds"
       },
       "id": "wait-15min-branch1",
-      "name": "Wait Until 15-Min Before Call",
+      "name": "Wait Until 10-Min Before Call",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1,
       "position": [
@@ -125,11 +125,11 @@
       "parameters": {
         "fromEmail": "Mithun Das <mithun@mithundas.cloud>",
         "toEmail": "={{ $json.email }}, mithun.here01@gmail.com",
-        "subject": "={{ '⏰ Starting in 15 Mins: Discovery Session for ' + $json.company }}",
-        "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px;\"><h2>⏰ Your Meeting Starts in 15 Minutes!</h2><p>Hi ${$json.name}, your AI discovery session for <b>${$json.company}</b> is starting in 15 minutes.</p><p><a href=\"${$json.meetUrl}\" style=\"background: #0ea5e9; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;\">🚀 Click Here to Join Meeting Room</a></p></div>` }}"
+        "subject": "={{ '⏰ Starting in 10 Mins: Discovery Session for ' + $json.company }}",
+        "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px;\"><h2>⏰ Starting in 10 Minutes!</h2><p>Hi ${$json.name}, your discovery session for <b>${$json.company}</b> starts in 10 minutes.</p><p><a href=\"${$json.meetUrl}\" style=\"background: #0ea5e9; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;\">🚀 Click Here to Join Meeting Room</a></p></div>` }}"
       },
       "id": "send-15min-reminder-branch1",
-      "name": "Send 15-Min Reminder Email",
+      "name": "Send 10-Min Reminder Email",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
       "position": [
@@ -155,7 +155,7 @@
       "parameters": {
         "fromEmail": "Mithun Das <mithun@mithundas.cloud>",
         "toEmail": "={{ $json.email }}, mithun.here01@gmail.com",
-        "subject": "={{ '⌛ 1 Hour Reminder: Discovery Session for ' + $json.company }}",
+        "subject": "={{ '⌛ 1 Hour Until Your Discovery Session — ' + $json.company }}",
         "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px;\"><h2>⌛ 1 Hour Until Your Discovery Session</h2><p>Hi ${$json.name}, just a friendly reminder that your discovery call for <b>${$json.company}</b> is in 1 hour.</p><p>Meeting Link: <a href=\"${$json.meetUrl}\">${$json.meetUrl}</a></p></div>` }}"
       },
       "id": "send-1hour-reminder-branch2",
@@ -169,11 +169,11 @@
     },
     {
       "parameters": {
-        "amount": "={{ Math.max(0, (new Date($json.reminder15MinISO).getTime() - Date.now()) / 1000) }}",
+        "amount": "={{ Math.max(0, (new Date($json.reminder10MinISO).getTime() - Date.now()) / 1000) }}",
         "unit": "seconds"
       },
       "id": "wait-15min-branch2",
-      "name": "Wait Until 15-Min Before Call (Branch 2)",
+      "name": "Wait Until 10-Min Before Call (Branch 2)",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1,
       "position": [
@@ -185,11 +185,11 @@
       "parameters": {
         "fromEmail": "Mithun Das <mithun@mithundas.cloud>",
         "toEmail": "={{ $json.email }}, mithun.here01@gmail.com",
-        "subject": "={{ '⏰ Starting in 15 Mins: Discovery Session for ' + $json.company }}",
-        "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px;\"><h2>⏰ Starting in 15 Minutes!</h2><p>Hi ${$json.name}, your meeting room is ready.</p><p><a href=\"${$json.meetUrl}\" style=\"background: #0ea5e9; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;\">🚀 Click Here to Join Meeting Room</a></p></div>` }}"
+        "subject": "={{ '⏰ Starting in 10 Mins: Discovery Session for ' + $json.company }}",
+        "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px;\"><h2>⏰ Starting in 10 Minutes!</h2><p>Hi ${$json.name}, your meeting room is ready.</p><p><a href=\"${$json.meetUrl}\" style=\"background: #0ea5e9; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;\">🚀 Click Here to Join Meeting Room</a></p></div>` }}"
       },
       "id": "send-15min-reminder-branch2",
-      "name": "Send 15-Min Final Reminder Email",
+      "name": "Send 10-Min Final Reminder Email",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
       "position": [
