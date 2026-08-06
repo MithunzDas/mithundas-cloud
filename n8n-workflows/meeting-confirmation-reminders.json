@@ -76,7 +76,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first().json.body;\nconst bookedAt = new Date(item.bookedAt || new Date()).getTime();\nconst meetingStart = new Date(item.meetingStartISO).getTime();\nconst hoursDiff = (meetingStart - bookedAt) / (1000 * 60 * 60);\n\nreturn [{\n  json: {\n    ...item,\n    hoursDiff,\n    isWithin24Hours: hoursDiff <= 24,\n    reminder1HourISO: new Date(meetingStart - 60 * 60 * 1000).toISOString(),\n    reminder15MinISO: new Date(meetingStart - 15 * 60 * 1000).toISOString()\n  }\n}];"
+        "jsCode": "const item = $('Meeting Booked Webhook').first().json.body || {};\nconst bookedAt = new Date(item.bookedAt || new Date()).getTime();\nconst meetingStart = new Date(item.meetingStartISO || new Date()).getTime();\nconst hoursDiff = (meetingStart - bookedAt) / (1000 * 60 * 60);\n\nreturn [{\n  json: {\n    ...item,\n    hoursDiff,\n    isWithin24Hours: hoursDiff <= 24,\n    reminder1HourISO: new Date(meetingStart - 60 * 60 * 1000).toISOString(),\n    reminder15MinISO: new Date(meetingStart - 15 * 60 * 1000).toISOString()\n  }\n}];"
       },
       "id": "calculate-reminders",
       "name": "Calculate Reminder Schedules",
