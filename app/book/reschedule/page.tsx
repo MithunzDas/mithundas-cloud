@@ -242,7 +242,7 @@ function RescheduleContent() {
               value={selectedDate}
               min={new Date().toISOString().split("T")[0]}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full rounded-xl border border-slate-800 bg-[#080b11] p-3 text-xs font-mono text-sky-400 focus:outline-none focus:border-sky-500"
+              className="w-full rounded-xl border border-sky-500/30 bg-[#080b11] p-3 text-xs font-mono text-sky-300 focus:outline-none focus:border-sky-400 [color-scheme:dark] cursor-pointer shadow-inner"
             />
           </div>
 

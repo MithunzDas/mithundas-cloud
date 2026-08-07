@@ -438,7 +438,7 @@ function BookDiscoveryCallContent() {
                       value={selectedDate}
                       min={new Date().toISOString().split("T")[0]}
                       onChange={(e) => handleCalendarInputChange(e.target.value)}
-                      className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-sky-400 focus:outline-none focus:border-sky-400 font-mono"
+                      className="rounded-lg border border-sky-500/30 bg-slate-900 px-2.5 py-1 text-xs text-sky-300 focus:outline-none focus:border-sky-400 font-mono [color-scheme:dark] cursor-pointer"
                     />
                   </div>
                 </div>
