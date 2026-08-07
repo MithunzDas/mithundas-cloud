@@ -104,6 +104,33 @@ function RescheduleContent() {
     }
   };
 
+  // Determine if a slot is PAST, TOO SOON (within 2-hour prep buffer), or AVAILABLE
+  const getSlotStatus = (slotIST: string, dateStr: string) => {
+    try {
+      const todayStr = new Date().toISOString().split("T")[0];
+      if (dateStr !== todayStr) return "AVAILABLE";
+
+      const [timeStr, modifier] = slotIST.split(" ");
+      let [hours, minutes] = timeStr.split(":").map(Number);
+      if (modifier === "PM" && hours < 12) hours += 12;
+      if (modifier === "AM" && hours === 12) hours = 0;
+
+      const slotDate = new Date(`${dateStr}T${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00+05:30`);
+      const now = new Date();
+      const minBookableTime = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+
+      if (slotDate.getTime() < now.getTime()) {
+        return "PAST";
+      }
+      if (slotDate.getTime() < minBookableTime.getTime()) {
+        return "TOO_SOON";
+      }
+      return "AVAILABLE";
+    } catch (e) {
+      return "AVAILABLE";
+    }
+  };
+
   const isSlotBooked = (slotIST: string, dateStr: string) => {
     const normSlot = slotIST.replace(/^0/, "").toUpperCase().trim();
     return bookedSlots.some(
@@ -148,27 +175,43 @@ function RescheduleContent() {
   const renderSlotButton = (slotIST: string) => {
     const localTimeStr = convertISTSlotToLocal(slotIST, selectedDate, selectedTimeZone);
     const isSelected = selectedTimeSlot === slotIST;
+    const slotStatus = getSlotStatus(slotIST, selectedDate);
+    const isPast = slotStatus === "PAST";
+    const isTooSoon = slotStatus === "TOO_SOON";
     const isBooked = isSlotBooked(slotIST, selectedDate);
+    const isDisabled = isPast || isTooSoon || isBooked;
 
     return (
       <button
         key={slotIST}
         type="button"
-        disabled={isBooked}
+        disabled={isDisabled}
         onClick={() => setSelectedTimeSlot(slotIST)}
         className={`py-2.5 px-3 rounded-xl border text-xs font-mono transition-all flex flex-col items-center justify-center gap-0.5 ${
           isBooked
             ? "bg-red-950/40 border-red-900/50 text-red-400/60 cursor-not-allowed opacity-60"
+            : isPast
+            ? "bg-slate-950/80 border-slate-900 text-slate-600/70 cursor-not-allowed opacity-30"
+            : isTooSoon
+            ? "bg-amber-950/20 border-amber-900/40 text-amber-400/70 cursor-not-allowed opacity-60"
             : isSelected
             ? "bg-emerald-500/20 border-emerald-400 text-emerald-300 font-bold shadow-md shadow-emerald-900/20"
             : "bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white"
         }`}
       >
         <div className="flex items-center gap-1.5">
-          {isBooked ? <Lock className="h-3 w-3 text-red-400" /> : <Clock className="h-3 w-3 opacity-60 text-sky-400" />}
+          {isBooked ? (
+            <Lock className="h-3 w-3 text-red-400" />
+          ) : (
+            <Clock className="h-3 w-3 opacity-60 text-sky-400" />
+          )}
           <span>{localTimeStr}</span>
         </div>
-        <span className="text-[9px] text-slate-500">{isBooked ? "[BOOKED]" : `(${slotIST} IST)`}</span>
+        <div className="flex items-center gap-1">
+          <span className={`text-[9px] ${isTooSoon ? "text-amber-400/90 font-bold" : "text-slate-500"}`}>
+            {isBooked ? "[BOOKED]" : isPast ? "[PAST]" : isTooSoon ? "[TOO SOON]" : `(${slotIST} IST)`}
+          </span>
+        </div>
       </button>
     );
   };
