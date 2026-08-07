@@ -34,9 +34,12 @@ export async function POST(req: NextRequest) {
     const dbSlots = await getBookedSlotsFromDB();
     const allSlots = [...bookedSlotsStore, ...dbSlots];
 
-    // Check for double booking conflict
+    // Check for double booking conflict (with normalized time string comparison)
+    const normalize = (t: string) => (t || "").replace(/^0/, "").toUpperCase().trim();
+    const requestedTimeNorm = normalize(time);
+
     const isAlreadyBooked = allSlots.some(
-      (slot) => slot.date === date && slot.time === time
+      (slot) => slot.date === date && normalize(slot.time) === requestedTimeNorm
     );
 
     if (isAlreadyBooked) {

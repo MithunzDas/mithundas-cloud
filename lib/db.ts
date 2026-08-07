@@ -266,9 +266,28 @@ export async function getBookedSlotsFromDB(): Promise<{ date: string; time: stri
 }
 
 export async function saveBookingToDB(booking: BookingPayload): Promise<void> {
-  // Always save locally to file cache first
+  // 1. Always save locally to file cache first
   saveLocalSlot({ date: booking.date, time: booking.time, bookingId: booking.bookingId });
 
+  // 2. Always persist into Lead table (which exists in production PostgreSQL DB)
+  try {
+    await saveLead({
+      leadId: booking.bookingId,
+      name: booking.name,
+      email: booking.email,
+      company: booking.company,
+      businessType: booking.businessType || "General",
+      budget: "Discovery Call",
+      timeline: "Scheduled",
+      projectRequirement: `[Discovery Call Scheduled for ${booking.date} @ ${booking.time} (${booking.timeZone || "Asia/Kolkata"})] ${booking.projectRequirement || ""}`,
+      status: "contacted",
+      submittedAt: new Date().toISOString(),
+    });
+  } catch (e) {
+    logger.warn("Failed to persist booking as Lead record", "db_lead_booking_warn", { message: String(e) });
+  }
+
+  // 3. Try optional Booking table
   try {
     await (prisma as any).booking.create({
       data: {
@@ -294,7 +313,7 @@ export async function saveBookingToDB(booking: BookingPayload): Promise<void> {
 export async function cancelBookingInDB(bookingId: string): Promise<boolean> {
   let cancelled = false;
   
-  // Remove from local file cache
+  // 1. Remove from local file cache
   try {
     const current = getLocalSlots().filter((s) => s.bookingId !== bookingId);
     const data = JSON.stringify(current, null, 2);
@@ -303,6 +322,22 @@ export async function cancelBookingInDB(bookingId: string): Promise<boolean> {
     cancelled = true;
   } catch (e) {}
 
+  // 2. Clear Lead record in DB if exists
+  try {
+    const lead = await prisma.lead.findUnique({ where: { leadId: bookingId } });
+    if (lead) {
+      await prisma.lead.update({
+        where: { leadId: bookingId },
+        data: {
+          status: "cancelled",
+          projectRequirement: lead.projectRequirement.replace(/\[Discovery Call Scheduled for [^\]]+\]\s*/i, ""),
+        },
+      });
+      cancelled = true;
+    }
+  } catch (e) {}
+
+  // 3. Try optional Booking table
   try {
     await (prisma as any).booking.update({
       where: { bookingId },
