@@ -45,7 +45,10 @@ export async function POST(req: NextRequest) {
     }
 
     // ===== STEP 3: FIRE N8N WEBHOOKS FIRST (highest priority) =====
-    const n8nRescheduleWebhookUrl = process.env.N8N_RESCHEDULE_WEBHOOK_URL || "https://n8n.srv1594654.hstgr.cloud/webhook/meeting-rescheduled";
+    const sanitizeUrl = (url?: string) => (url || "").replace("n8n.mithundas.cloud", "n8n.srv1594654.hstgr.cloud");
+
+    const directRescheduleUrl = "https://n8n.srv1594654.hstgr.cloud/webhook/meeting-rescheduled";
+    const n8nRescheduleWebhookUrl = sanitizeUrl(process.env.N8N_RESCHEDULE_WEBHOOK_URL) || directRescheduleUrl;
     const n8nRescheduleTestUrl = "https://n8n.srv1594654.hstgr.cloud/webhook-test/meeting-rescheduled";
 
     const reschedulePayload = JSON.stringify({
@@ -69,7 +72,7 @@ export async function POST(req: NextRequest) {
       bookedAt: new Date().toISOString(),
     });
 
-    const rescheduleUrlsToHit = Array.from(new Set([n8nRescheduleWebhookUrl, n8nRescheduleTestUrl]));
+    const rescheduleUrlsToHit = Array.from(new Set([directRescheduleUrl, n8nRescheduleWebhookUrl, n8nRescheduleTestUrl]));
     const webhookResults = await Promise.allSettled(
       rescheduleUrlsToHit.map((url) =>
         fetch(url, {

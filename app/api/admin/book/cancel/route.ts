@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Dispatch cancellation event to n8n
-    const n8nCancelWebhookUrl = process.env.N8N_CANCEL_WEBHOOK_URL || "https://n8n.srv1594654.hstgr.cloud/webhook/meeting-cancelled";
+    const rawCancelUrl = process.env.N8N_CANCEL_WEBHOOK_URL || "https://n8n.srv1594654.hstgr.cloud/webhook/meeting-cancelled";
+    const n8nCancelWebhookUrl = rawCancelUrl.replace("n8n.mithundas.cloud", "n8n.srv1594654.hstgr.cloud");
 
     try {
       await fetch(n8nCancelWebhookUrl, {
