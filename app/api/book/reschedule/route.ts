@@ -59,27 +59,38 @@ export async function POST(req: NextRequest) {
       meetingStartISO = new Date().toISOString();
     }
 
-    // 5. Dispatch reschedule webhook to n8n
+    // 5. Dispatch reschedule webhook to n8n (both production & test mode)
     const n8nRescheduleWebhookUrl = process.env.N8N_RESCHEDULE_WEBHOOK_URL || "https://n8n.mithundas.cloud/webhook/meeting-rescheduled";
-    try {
-      await fetch(n8nRescheduleWebhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          event: "meeting_rescheduled",
-          bookingId,
-          newDate,
-          newTime,
-          newTimeZone: newTimeZone || "Asia/Kolkata",
-          meetUrl,
-          reason: reason || "Rescheduled by client/host",
-          rescheduledAt: new Date().toISOString(),
-          meetingStartISO,
-        }),
-      });
-    } catch (e: any) {
-      logger.warn(`Failed to dispatch n8n reschedule webhook: ${String(e)}`, "booking_reschedule_n8n_warn");
-    }
+    const n8nRescheduleTestUrl = "https://n8n.mithundas.cloud/webhook-test/meeting-rescheduled";
+
+    const reschedulePayload = JSON.stringify({
+      event: "meeting_rescheduled",
+      bookingId,
+      newDate,
+      newTime,
+      newTimeZone: newTimeZone || "Asia/Kolkata",
+      meetUrl,
+      reason: reason || "Rescheduled by client/host",
+      rescheduledAt: new Date().toISOString(),
+      meetingStartISO,
+    });
+
+    const rescheduleUrlsToHit = Array.from(new Set([n8nRescheduleWebhookUrl, n8nRescheduleTestUrl]));
+    await Promise.allSettled(
+      rescheduleUrlsToHit.map((url) =>
+        fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: reschedulePayload,
+        })
+          .then((res) => {
+            logger.info(`Reschedule webhook dispatch to ${url} returned status ${res.status}`, "reschedule_n8n_webhook_status");
+          })
+          .catch((e) => {
+            logger.warn(`Failed to dispatch n8n reschedule webhook to ${url}: ${String(e)}`, "booking_reschedule_n8n_warn");
+          })
+      )
+    );
 
     return NextResponse.json({
       success: true,
