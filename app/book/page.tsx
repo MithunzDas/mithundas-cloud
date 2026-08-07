@@ -126,6 +126,13 @@ function BookDiscoveryCallContent() {
     }
   }, [searchParams]);
 
+  // Fetch booked slots periodically and on date change to guarantee real-time slot locking
+  useEffect(() => {
+    fetchBookedSlots();
+    const interval = setInterval(fetchBookedSlots, 10000);
+    return () => clearInterval(interval);
+  }, [selectedDate]);
+
   // Convert IST slot into client's local selected timezone
   const convertISTSlotToLocal = (slotIST: string, dateStr: string, targetTz: string) => {
     try {
@@ -177,9 +184,13 @@ function BookDiscoveryCallContent() {
     }
   };
 
-  // Check if slot is already booked by another client
+  // Check if slot is already booked by another client (with normalized time comparison)
   const isSlotBooked = (slotIST: string, dateStr: string) => {
-    return bookedSlots.some((s) => s.date === dateStr && s.time === slotIST);
+    if (!slotIST || !dateStr) return false;
+    const normSlot = slotIST.replace(/^0/, "").toUpperCase().trim();
+    return bookedSlots.some(
+      (s) => s.date === dateStr && s.time.replace(/^0/, "").toUpperCase().trim() === normSlot
+    );
   };
 
   // Check if slot is late night (12 AM to 2:30 AM IST)
