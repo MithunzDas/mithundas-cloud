@@ -83,9 +83,9 @@ export async function POST(req: NextRequest) {
     }
 
     // ===== STEP 1: FIRE N8N WEBHOOKS FIRST (highest priority) =====
-    const n8nBookingWebhookUrl = process.env.N8N_BOOKING_WEBHOOK_URL || "https://n8n.mithundas.cloud/webhook/meeting-booked";
-    const n8nTestWebhookUrl = "https://n8n.mithundas.cloud/webhook-test/meeting-booked";
-    const n8nLeadWebhookUrl = process.env.N8N_LEAD_WEBHOOK_URL || "https://n8n.mithundas.cloud/webhook/lead-intake";
+    const n8nBookingWebhookUrl = process.env.N8N_BOOKING_WEBHOOK_URL || "https://n8n.srv1594654.hstgr.cloud/webhook/meeting-booked";
+    const n8nTestWebhookUrl = "https://n8n.srv1594654.hstgr.cloud/webhook-test/meeting-booked";
+    const n8nLeadWebhookUrl = process.env.N8N_LEAD_WEBHOOK_URL || "https://n8n.srv1594654.hstgr.cloud/webhook/lead-intake";
 
     const webhookPayload = JSON.stringify({
       event: "meeting_booked",

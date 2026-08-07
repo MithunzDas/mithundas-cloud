@@ -45,8 +45,8 @@ export async function POST(req: NextRequest) {
     }
 
     // ===== STEP 3: FIRE N8N WEBHOOKS FIRST (highest priority) =====
-    const n8nRescheduleWebhookUrl = process.env.N8N_RESCHEDULE_WEBHOOK_URL || "https://n8n.mithundas.cloud/webhook/meeting-rescheduled";
-    const n8nRescheduleTestUrl = "https://n8n.mithundas.cloud/webhook-test/meeting-rescheduled";
+    const n8nRescheduleWebhookUrl = process.env.N8N_RESCHEDULE_WEBHOOK_URL || "https://n8n.srv1594654.hstgr.cloud/webhook/meeting-rescheduled";
+    const n8nRescheduleTestUrl = "https://n8n.srv1594654.hstgr.cloud/webhook-test/meeting-rescheduled";
 
     const reschedulePayload = JSON.stringify({
       event: "meeting_rescheduled",

@@ -158,8 +158,17 @@ function BookDiscoveryCallContent() {
   // Determine if a slot is PAST, TOO SOON (within 2-hour prep buffer), or AVAILABLE
   const getSlotStatus = (slotIST: string, dateStr: string) => {
     try {
-      const todayStr = new Date().toISOString().split("T")[0];
-      if (dateStr !== todayStr) return "AVAILABLE";
+      // Get today's date in IST (not UTC!) to handle post-midnight correctly
+      const nowUTC = new Date();
+      const istOffsetMs = 5.5 * 60 * 60 * 1000;
+      const nowIST = new Date(nowUTC.getTime() + istOffsetMs);
+      const todayIST = nowIST.toISOString().split("T")[0];
+
+      if (dateStr !== todayIST) {
+        // Future date — check if it's actually in the past (shouldn't happen with min date)
+        if (dateStr < todayIST) return "PAST";
+        return "AVAILABLE";
+      }
 
       const [timeStr, modifier] = slotIST.split(" ");
       let [hours, minutes] = timeStr.split(":").map(Number);
