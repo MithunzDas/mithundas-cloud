@@ -12,14 +12,16 @@ interface BookedSlot {
 const bookedSlotsStore: BookedSlot[] = [];
 
 export async function GET() {
-  const dbSlots = await getBookedSlotsFromDB();
-  const allSlots = [...bookedSlotsStore, ...dbSlots];
-  const uniqueSlots = Array.from(new Set(allSlots.map((s) => `${s.date}_${s.time}`)))
-    .map((key) => allSlots.find((s) => `${s.date}_${s.time}` === key)!);
+  try {
+    const dbSlots = await getBookedSlotsFromDB();
+    const allSlots = [...bookedSlotsStore, ...dbSlots];
+    const uniqueSlots = Array.from(new Set(allSlots.map((s) => `${s.date}_${s.time}`)))
+      .map((key) => allSlots.find((s) => `${s.date}_${s.time}` === key)!);
 
-  return NextResponse.json({
-    bookedSlots: uniqueSlots,
-  });
+    return NextResponse.json({ bookedSlots: uniqueSlots });
+  } catch (error) {
+    return NextResponse.json({ bookedSlots: bookedSlotsStore });
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -31,45 +33,41 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required booking fields" }, { status: 400 });
     }
 
-    const dbSlots = await getBookedSlotsFromDB();
-    const allSlots = [...bookedSlotsStore, ...dbSlots];
-
-    // Check for double booking conflict (with normalized time string comparison)
+    // Quick in-memory check first (fast path)
     const normalize = (t: string) => (t || "").replace(/^0/, "").toUpperCase().trim();
     const requestedTimeNorm = normalize(time);
 
-    const isAlreadyBooked = allSlots.some(
+    const inMemoryConflict = bookedSlotsStore.some(
       (slot) => slot.date === date && normalize(slot.time) === requestedTimeNorm
     );
-
-    if (isAlreadyBooked) {
+    if (inMemoryConflict) {
       return NextResponse.json(
         { error: "This time slot has already been booked by another client. Please select another slot." },
         { status: 409 }
       );
     }
 
-    const assignedBookingId = bookingId || `INV-${Date.now().toString().slice(-6)}`;
-    const newBooking: BookedSlot = {
-      date,
-      time,
-      bookingId: assignedBookingId,
-    };
-    bookedSlotsStore.push(newBooking);
+    // DB check (with timeout fallback — don't let DB failure block booking)
+    try {
+      const dbSlots = await getBookedSlotsFromDB();
+      const isDBConflict = dbSlots.some(
+        (slot) => slot.date === date && normalize(slot.time) === requestedTimeNorm
+      );
+      if (isDBConflict) {
+        return NextResponse.json(
+          { error: "This time slot has already been booked by another client. Please select another slot." },
+          { status: 409 }
+        );
+      }
+    } catch (dbCheckErr) {
+      logger.warn("DB slot check failed, proceeding with in-memory check only", "db_slot_check_warn");
+    }
 
-    // Save to Database persistently
-    await saveBookingToDB({
-      bookingId: assignedBookingId,
-      name,
-      email,
-      company,
-      businessType: businessType || "General",
-      projectRequirement: projectRequirement || "",
-      date,
-      time,
-      timeZone: timeZone || "Asia/Kolkata",
-      meetUrl: meetUrl || `https://mithundas.cloud/meet/${assignedBookingId}`,
-    }).catch((e) => logger.warn("Failed to persist booking in DB", "booking_db_warn", { message: String(e) }));
+    // Assign booking ID and lock in memory immediately
+    const assignedBookingId = bookingId || `INV-${Date.now().toString().slice(-6)}`;
+    const assignedMeetUrl = meetUrl || `https://mithundas.cloud/meet/${assignedBookingId}`;
+    const newBooking: BookedSlot = { date, time, bookingId: assignedBookingId };
+    bookedSlotsStore.push(newBooking);
 
     // Calculate meeting start ISO timestamp from date + time (IST)
     let meetingStartISO = "";
@@ -84,7 +82,7 @@ export async function POST(req: NextRequest) {
       meetingStartISO = new Date().toISOString();
     }
 
-    // Pass booking payload to n8n booking webhooks (both production & test mode)
+    // ===== STEP 1: FIRE N8N WEBHOOKS FIRST (highest priority) =====
     const n8nBookingWebhookUrl = process.env.N8N_BOOKING_WEBHOOK_URL || "https://n8n.mithundas.cloud/webhook/meeting-booked";
     const n8nTestWebhookUrl = "https://n8n.mithundas.cloud/webhook-test/meeting-booked";
     const n8nLeadWebhookUrl = process.env.N8N_LEAD_WEBHOOK_URL || "https://n8n.mithundas.cloud/webhook/lead-intake";
@@ -92,8 +90,8 @@ export async function POST(req: NextRequest) {
     const webhookPayload = JSON.stringify({
       event: "meeting_booked",
       source: "custom_booking_page",
-      bookingId: newBooking.bookingId,
-      leadId: newBooking.bookingId,
+      bookingId: assignedBookingId,
+      leadId: assignedBookingId,
       name,
       email,
       company,
@@ -102,42 +100,62 @@ export async function POST(req: NextRequest) {
       date,
       time,
       timeZone,
-      meetUrl,
+      meetUrl: assignedMeetUrl,
       hostEmail: "mithun.here01@gmail.com",
       bookedAt: new Date().toISOString(),
       meetingStartISO,
     });
 
-    // Fire webhook side-effects in parallel
+    // Dispatch to all n8n webhook URLs in parallel
     const webhookUrlsToHit = Array.from(new Set([n8nBookingWebhookUrl, n8nTestWebhookUrl, n8nLeadWebhookUrl]));
-    const webhookPromises = webhookUrlsToHit.map((url) =>
-      fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: webhookPayload,
-      })
-        .then((res) => {
-          logger.info(`Booking webhook dispatch to ${url} returned status ${res.status}`, "booking_n8n_webhook_status");
+    const webhookResults = await Promise.allSettled(
+      webhookUrlsToHit.map((url) =>
+        fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: webhookPayload,
+        }).then(async (res) => {
+          const status = res.status;
+          logger.info(`Webhook dispatch to ${url} → HTTP ${status}`, "booking_n8n_webhook_status");
+          return { url, status };
         })
-        .catch((e) => {
-          logger.warn(`Failed to dispatch to booking webhook ${url}`, "booking_n8n_webhook_err", { message: String(e) });
-        })
+      )
     );
 
-    await Promise.allSettled(webhookPromises);
+    // Log webhook results
+    for (const result of webhookResults) {
+      if (result.status === "rejected") {
+        logger.warn(`Webhook dispatch failed: ${String(result.reason)}`, "booking_n8n_webhook_err");
+      }
+    }
 
+    // ===== STEP 2: SAVE TO DB (background, non-blocking for response) =====
+    saveBookingToDB({
+      bookingId: assignedBookingId,
+      name,
+      email,
+      company,
+      businessType: businessType || "General",
+      projectRequirement: projectRequirement || "",
+      date,
+      time,
+      timeZone: timeZone || "Asia/Kolkata",
+      meetUrl: assignedMeetUrl,
+    }).catch((e) => logger.warn("Failed to persist booking in DB", "booking_db_warn", { message: String(e) }));
+
+    // ===== STEP 3: RETURN SUCCESS =====
     return NextResponse.json({
       success: true,
       message: "Discovery session booked successfully!",
       booking: {
-        bookingId: newBooking.bookingId,
+        bookingId: assignedBookingId,
         name,
         email,
         company,
         date,
         time,
         timeZone,
-        meetUrl,
+        meetUrl: assignedMeetUrl,
       },
     });
   } catch (error) {
