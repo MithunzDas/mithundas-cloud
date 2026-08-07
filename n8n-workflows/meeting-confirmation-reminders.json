@@ -12,8 +12,23 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        200,
+        100,
         300
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "meeting-rescheduled",
+        "options": {}
+      },
+      "id": "webhook-meeting-rescheduled",
+      "name": "Meeting Rescheduled Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        100,
+        500
       ]
     },
     {
@@ -31,30 +46,30 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  \"chat_id\": \"<YOUR_MEETING_TELEGRAM_CHAT_ID>\",\n  \"text\": \"🎉 NEW DISCOVERY CALL BOOKED!\\n\\n👤 Client: \" + ($json.body.name || '') +\n    \"\\n🏢 Company: \" + ($json.body.company || '') +\n    \"\\n💼 Industry: \" + ($json.body.businessType || 'General') +\n    \"\\n✉️ Email: \" + ($json.body.email || '') +\n    \"\\n📅 Scheduled Date: \" + ($json.body.date || '') + \" @ \" + ($json.body.time || '') + \" (\" + ($json.body.timeZone || 'IST') + \")\" +\n    \"\\n🆔 Reference: \" + ($json.body.bookingId || '') +\n    \"\\n\\n🎥 Video Room Link:\\n\" + ($json.body.meetUrl || '') +\n    \"\\n\\n📋 SOW / Requirements:\\n\" + ($json.body.projectRequirement || 'None')\n}) }}"
+        "jsonBody": "={{ JSON.stringify({\n  \"chat_id\": \"<YOUR_MEETING_TELEGRAM_CHAT_ID>\",\n  \"text\": ($json.body.event === 'meeting_rescheduled' ? '🔄 MEETING RESCHEDULED!\\n\\n' : '🎉 NEW DISCOVERY CALL BOOKED!\\n\\n') +\n    \"👤 Client: \" + ($json.body.name || '') +\n    \"\\n🏢 Company: \" + ($json.body.company || '') +\n    \"\\n💼 Industry: \" + ($json.body.businessType || 'General') +\n    \"\\n✉️ Email: \" + ($json.body.email || '') +\n    \"\\n📅 Scheduled Date: \" + ($json.body.date || $json.body.newDate || '') + \" @ \" + ($json.body.time || $json.body.newTime || '') + \" (\" + ($json.body.timeZone || $json.body.newTimeZone || 'IST') + \")\" +\n    \"\\n🆔 Reference: \" + ($json.body.bookingId || '') +\n    \"\\n\\n🎥 Video Room Link:\\n\" + ($json.body.meetUrl || '') +\n    \"\\n\\n📋 SOW / Requirements:\\n\" + ($json.body.projectRequirement || 'None')\n}) }}"
       },
       "id": "telegram-meeting-alert",
       "name": "Telegram: Meeting Alert Bot",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        450,
-        150
+        350,
+        300
       ]
     },
     {
       "parameters": {
         "fromEmail": "Mithun Das <mithun@mithundas.cloud>",
-        "toEmail": "={{$('Meeting Booked Webhook').first().json.body.email}}",
-        "subject": "={{ 'Discovery Session Confirmed — ' + $('Meeting Booked Webhook').first().json.body.company + ' | Mithun Das' }}",
-        "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; color: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;\"><div style=\"height: 4px; background: linear-gradient(90deg, #0ea5e9, #6366f1, #0ea5e9);\"></div><div style=\"padding: 24px 32px; border-bottom: 1px solid #f1f5f9;\"><table cellpadding=\"0\" cellspacing=\"0\" style=\"border: none;\"><tr><td style=\"padding-right: 12px;\"><img src=\"https://mithundas.cloud/logo.png\" alt=\"M\" style=\"width: 38px; height: 38px; border-radius: 8px;\"></td><td><span style=\"font-size: 16px; font-weight: 800; color: #0f172a;\">Mithun Das</span><br><span style=\"font-size: 10px; color: #0ea5e9; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;\">AI AUTOMATION</span></td></tr></table></div><div style=\"padding: 28px 32px;\"><h2 style=\"font-size: 20px; color: #0f172a; margin-top: 0;\">Your Discovery Session is Confirmed! 🎉</h2><p style=\"font-size: 15px; color: #334155; line-height: 1.6;\">Hi <b>${$json.body.name}</b>,</p><p style=\"font-size: 15px; color: #334155; line-height: 1.6;\">Thank you for scheduling your AI Architecture Discovery Session for <b>${$json.body.company}</b>. Below are your meeting details:</p><div style=\"background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin: 20px 0; font-family: monospace; font-size: 13px;\"><p style=\"margin: 4px 0;\"><b>📅 Date & Time:</b> ${$json.body.date} @ ${$json.body.time} (${$json.body.timeZone})</p><p style=\"margin: 4px 0;\"><b>🆔 Reference:</b> ${$json.body.bookingId}</p><p style=\"margin: 4px 0;\"><b>🎥 Video Room:</b> <a href=\"${$json.body.meetUrl}\" style=\"color: #0ea5e9; font-weight: bold;\">${$json.body.meetUrl}</a></p></div></div><div style=\"padding: 0 32px 28px 32px; text-align: center;\">\n    <a href=\"${$json.body.meetUrl}\" style=\"display: inline-block; background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #ffffff; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-family: Arial, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);\">🚀 Join Video Meeting Room Now</a>\n    <div style=\"margin-top: 14px;\">\n      <a href=\"https://mithundas.cloud/book/reschedule?bookingId=${$json.body.bookingId}\" style=\"color: #64748b; font-size: 12px; font-family: Arial, sans-serif; text-decoration: underline;\">🔄 Need to Reschedule Your Session? Click Here</a>\n    </div>\n  </div><div style=\"height: 3px; background: linear-gradient(90deg, #0ea5e9, #6366f1, #0ea5e9);\"></div></div>` }}"
+        "toEmail": "={{$('Meeting Booked Webhook').first()?.json?.body?.email || $('Meeting Rescheduled Webhook').first()?.json?.body?.email}}",
+        "subject": "={{ ($json.body.event === 'meeting_rescheduled' ? '🔄 Session Rescheduled — ' : 'Discovery Session Confirmed — ') + ($json.body.company || '') + ' | Mithun Das' }}",
+        "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; color: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;\"><div style=\"height: 4px; background: linear-gradient(90deg, #0ea5e9, #6366f1, #0ea5e9);\"></div><div style=\"padding: 24px 32px; border-bottom: 1px solid #f1f5f9;\"><table cellpadding=\"0\" cellspacing=\"0\" style=\"border: none;\"><tr><td style=\"padding-right: 12px;\"><img src=\"https://mithundas.cloud/logo.png\" alt=\"M\" style=\"width: 38px; height: 38px; border-radius: 8px;\"></td><td><span style=\"font-size: 16px; font-weight: 800; color: #0f172a;\">Mithun Das</span><br><span style=\"font-size: 10px; color: #0ea5e9; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;\">AI AUTOMATION</span></td></tr></table></div><div style=\"padding: 28px 32px;\"><h2 style=\"font-size: 20px; color: #0f172a; margin-top: 0;\">${$json.body.event === 'meeting_rescheduled' ? 'Your Session Has Been Rescheduled! 🔄' : 'Your Discovery Session is Confirmed! 🎉'}</h2><p style=\"font-size: 15px; color: #334155; line-height: 1.6;\">Hi <b>${$json.body.name}</b>,</p><p style=\"font-size: 15px; color: #334155; line-height: 1.6;\">Your 15-minute AI Architecture Discovery Session for <b>${$json.body.company}</b> has been updated. Below are your new session details:</p><div style=\"background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin: 20px 0; font-family: monospace; font-size: 13px;\"><p style=\"margin: 4px 0;\"><b>📅 New Date & Time:</b> ${$json.body.date || $json.body.newDate} @ ${$json.body.time || $json.body.newTime} (${$json.body.timeZone || $json.body.newTimeZone || 'IST'})</p><p style=\"margin: 4px 0;\"><b>🆔 Reference:</b> ${$json.body.bookingId}</p><p style=\"margin: 4px 0;\"><b>🎥 Video Room:</b> <a href=\"${$json.body.meetUrl}\" style=\"color: #0ea5e9; font-weight: bold;\">${$json.body.meetUrl}</a></p></div></div><div style=\"padding: 0 32px 28px 32px; text-align: center;\"><a href=\"${$json.body.meetUrl}\" style=\"display: inline-block; background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #ffffff; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-family: Arial, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;\">🚀 Join Video Meeting Room Now</a><div style=\"margin-top: 14px;\"><a href=\"https://mithundas.cloud/book/reschedule?bookingId=${$json.body.bookingId}\" style=\"color: #64748b; font-size: 12px; font-family: Arial, sans-serif; text-decoration: underline;\">🔄 Need to Reschedule Your Session? Click Here</a></div></div><div style=\"height: 3px; background: linear-gradient(90deg, #0ea5e9, #6366f1, #0ea5e9);\"></div></div>` }}"
       },
       "id": "email-client-confirmation",
       "name": "Email: Client Confirmation",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
       "position": [
-        450,
+        550,
         300
       ]
     },
@@ -62,27 +77,27 @@
       "parameters": {
         "fromEmail": "Mithun Das AI Automation <mithun@mithundas.cloud>",
         "toEmail": "mithun.here01@gmail.com",
-        "subject": "={{ '📅 NEW MEETING: ' + $('Meeting Booked Webhook').first().json.body.company + ' (' + $('Meeting Booked Webhook').first().json.body.name + ')' }}",
-        "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; color: #1e293b; padding: 24px;\"><h2 style=\"color: #0ea5e9;\">🎉 New Meeting Booked!</h2><p><b>Client Name:</b> ${$json.body.name}</p><p><b>Company:</b> ${$json.body.company} (${$json.body.businessType})</p><p><b>Email:</b> ${$json.body.email}</p><p><b>Scheduled:</b> ${$json.body.date} @ ${$json.body.time} (${$json.body.timeZone})</p><p><b>Video Room Link:</b> <a href=\"${$json.meetUrl}\">${$json.meetUrl}</a></p><hr><p><b>Project SOW / Bottlenecks:</b></p><pre style=\"background: #f1f5f9; padding: 12px; border-radius: 6px;\">${$json.body.projectRequirement}</pre></div>` }}"
+        "subject": "={{ ($json.body.event === 'meeting_rescheduled' ? '🔄 MEETING RESCHEDULED: ' : '📅 NEW MEETING: ') + ($json.body.company || '') + ' (' + ($json.body.name || '') + ')' }}",
+        "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; color: #1e293b; padding: 24px;\"><h2 style=\"color: #0ea5e9;\">${$json.body.event === 'meeting_rescheduled' ? '🔄 Meeting Rescheduled!' : '🎉 New Meeting Booked!'}</h2><p><b>Client Name:</b> ${$json.body.name}</p><p><b>Company:</b> ${$json.body.company} (${$json.body.businessType})</p><p><b>Email:</b> ${$json.body.email}</p><p><b>New Scheduled Time:</b> ${$json.body.date || $json.body.newDate} @ ${$json.body.time || $json.body.newTime} (${$json.body.timeZone || $json.body.newTimeZone || 'IST'})</p><p><b>Video Room Link:</b> <a href=\"${$json.body.meetUrl}\">${$json.body.meetUrl}</a></p></div>` }}"
       },
       "id": "email-host-notification",
       "name": "Email: Host Notification (mithun.here01@gmail.com)",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
       "position": [
-        450,
-        450
+        750,
+        300
       ]
     },
     {
       "parameters": {
         "calendar": "primary",
-        "summary": "={{ 'Discovery Session — ' + $('Meeting Booked Webhook').first().json.body.company + ' (' + $('Meeting Booked Webhook').first().json.body.name + ')' }}",
-        "description": "={{ 'AI Discovery Session for ' + $('Meeting Booked Webhook').first().json.body.company + '\\n\\nVideo Room: ' + $('Meeting Booked Webhook').first().json.body.meetUrl + '\\n\\nSOW / Requirements:\\n' + $('Meeting Booked Webhook').first().json.body.projectRequirement }}",
-        "start": "={{ $('Meeting Booked Webhook').first().json.body.meetingStartISO }}",
-        "end": "={{ new Date(new Date($('Meeting Booked Webhook').first().json.body.meetingStartISO).getTime() + 15 * 60 * 1000).toISOString() }}",
+        "summary": "={{ 'Discovery Session — ' + ($json.body.company || '') + ' (' + ($json.body.name || '') + ')' }}",
+        "description": "={{ 'AI Discovery Session for ' + ($json.body.company || '') + '\\n\\nVideo Room: ' + $json.body.meetUrl }}",
+        "start": "={{ $json.body.meetingStartISO }}",
+        "end": "={{ new Date(new Date($json.body.meetingStartISO).getTime() + 15 * 60 * 1000).toISOString() }}",
         "attendees": [
-          "={{ $('Meeting Booked Webhook').first().json.body.email }}"
+          "={{ $json.body.email }}"
         ],
         "options": {
           "sendUpdates": "all"
@@ -93,20 +108,20 @@
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1,
       "position": [
-        580,
-        450
+        950,
+        300
       ]
     },
     {
       "parameters": {
-        "jsCode": "const item = $('Meeting Booked Webhook').first().json.body || {};\nconst bookedAt = new Date(item.bookedAt || new Date()).getTime();\nconst meetingStart = new Date(item.meetingStartISO || new Date()).getTime();\nconst hoursDiff = (meetingStart - bookedAt) / (1000 * 60 * 60);\n\nreturn [{\n  json: {\n    ...item,\n    hoursDiff,\n    isWithin24Hours: hoursDiff <= 24,\n    reminder1HourISO: new Date(meetingStart - 60 * 60 * 1000).toISOString(),\n    reminder10MinISO: new Date(meetingStart - 10 * 60 * 1000).toISOString()\n  }\n}];"
+        "jsCode": "const input = $input.first().json;\nconst item = input.body || input;\nconst bookedAt = new Date(item.bookedAt || new Date()).getTime();\nconst meetingStart = new Date(item.meetingStartISO || new Date()).getTime();\nconst hoursDiff = (meetingStart - bookedAt) / (1000 * 60 * 60);\n\nreturn [{\n  json: {\n    ...item,\n    scheduledDate: item.date || item.newDate,\n    scheduledTime: item.time || item.newTime,\n    hoursDiff,\n    isWithin24Hours: hoursDiff <= 24,\n    reminder1HourISO: new Date(meetingStart - 60 * 60 * 1000).toISOString(),\n    reminder10MinISO: new Date(meetingStart - 10 * 60 * 1000).toISOString()\n  }\n}];"
       },
       "id": "calculate-reminders",
       "name": "Calculate Reminder Schedules",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        700,
+        1150,
         300
       ]
     },
@@ -126,7 +141,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        920,
+        1350,
         300
       ]
     },
@@ -135,28 +150,74 @@
         "amount": "={{ Math.max(0, (new Date($json.reminder10MinISO).getTime() - Date.now()) / 1000) }}",
         "unit": "seconds"
       },
-      "id": "wait-15min-branch1",
+      "id": "wait-10min-branch1",
       "name": "Wait Until 10-Min Before Call",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1,
       "position": [
-        1150,
+        1550,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://mithundas.cloud/api/book/verify-slot",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ bookingId: $json.bookingId, date: $json.scheduledDate, time: $json.scheduledTime }) }}"
+      },
+      "id": "verify-slot-10min-branch1",
+      "name": "Verify Slot Active (10-Min)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1750,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.active }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-active-10min-branch1",
+      "name": "Is Slot Still Active? (10-Min)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1950,
         200
       ]
     },
     {
       "parameters": {
         "fromEmail": "Mithun Das <mithun@mithundas.cloud>",
-        "toEmail": "={{ $json.email }}, mithun.here01@gmail.com",
-        "subject": "={{ '⏰ Starting in 10 Mins: Discovery Session for ' + $json.company }}",
-        "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px;\"><h2>⏰ Starting in 10 Minutes!</h2><p>Hi ${$json.name}, your discovery session for <b>${$json.company}</b> starts in 10 minutes.</p><p><a href=\"${$json.meetUrl}\" style=\"background: #0ea5e9; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;\">🚀 Click Here to Join Meeting Room</a></p></div>` }}"
+        "toEmail": "={{ $('Calculate Reminder Schedules').first().json.email }}, mithun.here01@gmail.com",
+        "subject": "={{ '⏰ Starting in 10 Mins: Discovery Session for ' + $('Calculate Reminder Schedules').first().json.company }}",
+        "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px;\"><h2>⏰ Starting in 10 Minutes!</h2><p>Hi ${$('Calculate Reminder Schedules').first().json.name}, your discovery session starts in 10 minutes.</p><p><a href=\"${$('Calculate Reminder Schedules').first().json.meetUrl}\" style=\"background: #0ea5e9; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;\">🚀 Click Here to Join Meeting Room</a></p></div>` }}"
       },
-      "id": "send-15min-reminder-branch1",
+      "id": "send-10min-reminder-branch1",
       "name": "Send 10-Min Reminder Email",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
       "position": [
-        1380,
+        2150,
         200
       ]
     },
@@ -170,59 +231,86 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1,
       "position": [
-        1150,
-        420
+        1550,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://mithundas.cloud/api/book/verify-slot",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ bookingId: $json.bookingId, date: $json.scheduledDate, time: $json.scheduledTime }) }}"
+      },
+      "id": "verify-slot-1hour-branch2",
+      "name": "Verify Slot Active (1-Hour)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1750,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.active }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-active-1hour-branch2",
+      "name": "Is Slot Still Active? (1-Hour)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1950,
+        450
       ]
     },
     {
       "parameters": {
         "fromEmail": "Mithun Das <mithun@mithundas.cloud>",
-        "toEmail": "={{ $json.email }}, mithun.here01@gmail.com",
-        "subject": "={{ '⌛ 1 Hour Until Your Discovery Session — ' + $json.company }}",
-        "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px;\"><h2>⌛ 1 Hour Until Your Discovery Session</h2><p>Hi ${$json.name}, just a friendly reminder that your discovery call for <b>${$json.company}</b> is in 1 hour.</p><p>Meeting Link: <a href=\"${$json.meetUrl}\">${$json.meetUrl}</a></p></div>` }}"
+        "toEmail": "={{ $('Calculate Reminder Schedules').first().json.email }}, mithun.here01@gmail.com",
+        "subject": "={{ '⌛ 1 Hour Until Your Discovery Session — ' + $('Calculate Reminder Schedules').first().json.company }}",
+        "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px;\"><h2>⌛ 1 Hour Until Your Discovery Session</h2><p>Hi ${$('Calculate Reminder Schedules').first().json.name}, just a friendly reminder that your discovery call is in 1 hour.</p><p><a href=\"${$('Calculate Reminder Schedules').first().json.meetUrl}\">${$('Calculate Reminder Schedules').first().json.meetUrl}</a></p><p><a href=\"https://mithundas.cloud/book/reschedule?bookingId=${$('Calculate Reminder Schedules').first().json.bookingId}\">🔄 Need to Reschedule? Click Here</a></p></div>` }}"
       },
       "id": "send-1hour-reminder-branch2",
       "name": "Send 1-Hour Reminder Email",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
       "position": [
-        1380,
-        420
-      ]
-    },
-    {
-      "parameters": {
-        "amount": "={{ Math.max(0, (new Date($json.reminder10MinISO).getTime() - Date.now()) / 1000) }}",
-        "unit": "seconds"
-      },
-      "id": "wait-15min-branch2",
-      "name": "Wait Until 10-Min Before Call (Branch 2)",
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1,
-      "position": [
-        1600,
-        420
-      ]
-    },
-    {
-      "parameters": {
-        "fromEmail": "Mithun Das <mithun@mithundas.cloud>",
-        "toEmail": "={{ $json.email }}, mithun.here01@gmail.com",
-        "subject": "={{ '⏰ Starting in 10 Mins: Discovery Session for ' + $json.company }}",
-        "html": "={{ `<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px;\"><h2>⏰ Starting in 10 Minutes!</h2><p>Hi ${$json.name}, your meeting room is ready.</p><p><a href=\"${$json.meetUrl}\" style=\"background: #0ea5e9; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;\">🚀 Click Here to Join Meeting Room</a></p></div>` }}"
-      },
-      "id": "send-15min-reminder-branch2",
-      "name": "Send 10-Min Final Reminder Email",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2,
-      "position": [
-        1820,
-        420
+        2150,
+        450
       ]
     }
   ],
   "connections": {
     "Meeting Booked Webhook": {
+      "main": [
+        [
+          {
+            "node": "Telegram: Meeting Alert Bot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meeting Rescheduled Webhook": {
       "main": [
         [
           {
@@ -292,7 +380,7 @@
       "main": [
         [
           {
-            "node": "Wait Until 15-Min Before Call",
+            "node": "Wait Until 10-Min Before Call",
             "type": "main",
             "index": 0
           }
@@ -306,11 +394,33 @@
         ]
       ]
     },
-    "Wait Until 15-Min Before Call": {
+    "Wait Until 10-Min Before Call": {
       "main": [
         [
           {
-            "node": "Send 15-Min Reminder Email",
+            "node": "Verify Slot Active (10-Min)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Slot Active (10-Min)": {
+      "main": [
+        [
+          {
+            "node": "Is Slot Still Active? (10-Min)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Slot Still Active? (10-Min)": {
+      "main": [
+        [
+          {
+            "node": "Send 10-Min Reminder Email",
             "type": "main",
             "index": 0
           }
@@ -321,29 +431,29 @@
       "main": [
         [
           {
+            "node": "Verify Slot Active (1-Hour)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Slot Active (1-Hour)": {
+      "main": [
+        [
+          {
+            "node": "Is Slot Still Active? (1-Hour)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Slot Still Active? (1-Hour)": {
+      "main": [
+        [
+          {
             "node": "Send 1-Hour Reminder Email",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Send 1-Hour Reminder Email": {
-      "main": [
-        [
-          {
-            "node": "Wait Until 15-Min Before Call (Branch 2)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wait Until 15-Min Before Call (Branch 2)": {
-      "main": [
-        [
-          {
-            "node": "Send 15-Min Final Reminder Email",
             "type": "main",
             "index": 0
           }
