@@ -357,10 +357,16 @@ export async function sendOnboardingKit(data: OnboardingKitData): Promise<boolea
           To commence architecture &amp; development, a ${depositPct}% upfront deposit is required.
         </p>
 
+        <div style="margin-bottom:16px;text-align:center;">
+          <a href="https://mithundas.cloud/invoice/${data.invoiceId}" target="_blank" style="display:inline-block;background:linear-gradient(135deg, #0ea5e9, #6366f1);color:#fff;font-size:14px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:8px;box-shadow:0 4px 12px rgba(14,165,233,0.3);">
+            📄 View &amp; Pay Interactive Invoice Portal ➔
+          </a>
+        </div>
+
         ${data.paymentLink ? `
-        <div style="margin-bottom:16px;">
-          <a href="${data.paymentLink}" target="_blank" style="display:inline-block;background:#22c55e;color:#fff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:6px;">
-            Pay via Razorpay / Cards / UPI ➔
+        <div style="margin-bottom:16px;text-align:center;">
+          <a href="${data.paymentLink}" target="_blank" style="display:inline-block;background:#22c55e;color:#fff;font-size:13px;font-weight:600;text-decoration:none;padding:10px 24px;border-radius:6px;">
+            Pay via Checkout Link ➔
           </a>
         </div>
         ` : ""}
@@ -384,10 +390,16 @@ export async function sendOnboardingKit(data: OnboardingKitData): Promise<boolea
           To commence architecture &amp; development, a ${depositPct}% upfront deposit is required.
         </p>
 
+        <div style="margin-bottom:16px;text-align:center;">
+          <a href="https://mithundas.cloud/invoice/${data.invoiceId}" target="_blank" style="display:inline-block;background:linear-gradient(135deg, #0ea5e9, #6366f1);color:#fff;font-size:14px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:8px;box-shadow:0 4px 12px rgba(14,165,233,0.3);">
+            📄 View &amp; Pay Interactive Invoice Portal ➔
+          </a>
+        </div>
+
         ${data.paymentLink ? `
-        <div style="margin-bottom:16px;">
-          <a href="${data.paymentLink}" target="_blank" style="display:inline-block;background:#0ea5e9;color:#fff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:6px;">
-            Pay Deposit via Credit Card / Stripe ➔
+        <div style="margin-bottom:16px;text-align:center;">
+          <a href="${data.paymentLink}" target="_blank" style="display:inline-block;background:#0ea5e9;color:#fff;font-size:13px;font-weight:600;text-decoration:none;padding:10px 24px;border-radius:6px;">
+            Pay via Credit Card / Stripe ➔
           </a>
         </div>
         ` : ""}

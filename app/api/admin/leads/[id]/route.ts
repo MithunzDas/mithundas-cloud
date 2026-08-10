@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getLeadById, updateLeadStatus } from "@/lib/db";
+import { getLeadById, updateLeadStatus, saveInvoiceToDB, InvoicePayload } from "@/lib/db";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { LeadStatus, triggerOnboarding, triggerFollowUp, pushStatusUpdate } from "@/services/n8n/n8n";
@@ -81,6 +81,30 @@ export async function PATCH(
         monthlyRetainer: onboardingDetails.monthlyRetainer || undefined,
         paymentLink: onboardingDetails.paymentLink || undefined,
       };
+
+      const invoicePayload: InvoicePayload = {
+        invoiceId: kitData.invoiceId,
+        leadId: id,
+        clientName: lead.name,
+        clientEmail: lead.email,
+        companyName: lead.company,
+        currency: kitData.currency,
+        currencySymbol: kitData.currencySymbol,
+        totalAmount: kitData.invoiceAmount,
+        depositPercent: `${kitData.depositPercent}%`,
+        depositAmount: kitData.invoiceAmount,
+        setupFee: kitData.setupFee,
+        monthlyRetainer: kitData.monthlyRetainer,
+        projectScope: kitData.projectScope,
+        paymentStatus: "unpaid",
+        paymentLink: kitData.paymentLink,
+      };
+
+      sideEffects.push(
+        saveInvoiceToDB(invoicePayload).catch((err) => {
+          logger.warn(`Failed to save invoice ${kitData.invoiceId}`, "invoice_save_err", { message: String(err) });
+        })
+      );
 
       sideEffects.push(
         triggerOnboarding({

@@ -495,3 +495,156 @@ export async function getAllBookingsFromDB(): Promise<BookingPayload[]> {
   return Array.from(map.values());
 }
 
+export interface InvoicePayload {
+  id?: string;
+  invoiceId: string;
+  leadId?: string;
+  clientName: string;
+  clientEmail: string;
+  companyName: string;
+  currency?: string;
+  currencySymbol?: string;
+  totalAmount: string;
+  depositPercent?: string;
+  depositAmount: string;
+  setupFee?: string;
+  monthlyRetainer?: string;
+  projectScope: string;
+  paymentStatus?: string;
+  paymentLink?: string;
+  customPaymentMethods?: string;
+  issueDate?: string;
+  dueDate?: string;
+  paidAt?: string;
+  createdAt?: string;
+}
+
+const LOCAL_INVOICES_FILE = path.join(process.cwd(), ".invoices.json");
+const TMP_INVOICES_FILE = "/tmp/invoices.json";
+
+function getLocalInvoices(): InvoicePayload[] {
+  try {
+    const fileToRead = fs.existsSync(LOCAL_INVOICES_FILE) ? LOCAL_INVOICES_FILE : (fs.existsSync(TMP_INVOICES_FILE) ? TMP_INVOICES_FILE : null);
+    if (fileToRead) {
+      const data = fs.readFileSync(fileToRead, "utf-8");
+      return JSON.parse(data);
+    }
+  } catch (e) {}
+  return [];
+}
+
+function saveLocalInvoice(inv: InvoicePayload) {
+  try {
+    const current = getLocalInvoices().filter((i) => i.invoiceId !== inv.invoiceId);
+    current.push(inv);
+    const data = JSON.stringify(current, null, 2);
+    try { fs.writeFileSync(LOCAL_INVOICES_FILE, data); } catch (e) {}
+    try { fs.writeFileSync(TMP_INVOICES_FILE, data); } catch (e) {}
+  } catch (e) {}
+}
+
+export async function saveInvoiceToDB(inv: InvoicePayload): Promise<void> {
+  saveLocalInvoice(inv);
+
+  try {
+    await (prisma as any).invoice.upsert({
+      where: { invoiceId: inv.invoiceId },
+      update: {
+        clientName: inv.clientName,
+        clientEmail: inv.clientEmail,
+        companyName: inv.companyName,
+        currency: inv.currency || "USD",
+        currencySymbol: inv.currencySymbol || "$",
+        totalAmount: inv.totalAmount,
+        depositPercent: inv.depositPercent || "50",
+        depositAmount: inv.depositAmount,
+        setupFee: inv.setupFee || null,
+        monthlyRetainer: inv.monthlyRetainer || null,
+        projectScope: inv.projectScope,
+        paymentStatus: inv.paymentStatus || "unpaid",
+        paymentLink: inv.paymentLink || null,
+        customPaymentMethods: inv.customPaymentMethods || null,
+        issueDate: inv.issueDate || new Date().toISOString().split("T")[0],
+        dueDate: inv.dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      },
+      create: {
+        invoiceId: inv.invoiceId,
+        leadId: inv.leadId || null,
+        clientName: inv.clientName,
+        clientEmail: inv.clientEmail,
+        companyName: inv.companyName,
+        currency: inv.currency || "USD",
+        currencySymbol: inv.currencySymbol || "$",
+        totalAmount: inv.totalAmount,
+        depositPercent: inv.depositPercent || "50",
+        depositAmount: inv.depositAmount,
+        setupFee: inv.setupFee || null,
+        monthlyRetainer: inv.monthlyRetainer || null,
+        projectScope: inv.projectScope,
+        paymentStatus: inv.paymentStatus || "unpaid",
+        paymentLink: inv.paymentLink || null,
+        customPaymentMethods: inv.customPaymentMethods || null,
+        issueDate: inv.issueDate || new Date().toISOString().split("T")[0],
+        dueDate: inv.dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      },
+    });
+    logger.info(`Invoice ${inv.invoiceId} saved to database`, "invoice_save_success");
+  } catch (e) {
+    logger.warn(`Failed to save invoice ${inv.invoiceId} to DB, saved to local cache`, "invoice_save_warn");
+  }
+}
+
+export async function getInvoiceFromDB(invoiceId: string): Promise<InvoicePayload | null> {
+  // 1. Try Prisma Invoice table
+  try {
+    const inv = await (prisma as any).invoice.findUnique({
+      where: { invoiceId },
+    });
+    if (inv) {
+      return {
+        ...inv,
+        createdAt: inv.createdAt ? inv.createdAt.toISOString() : new Date().toISOString(),
+        paidAt: inv.paidAt ? inv.paidAt.toISOString() : undefined,
+      };
+    }
+  } catch (e) {}
+
+  // 2. Fallback to local cache
+  const local = getLocalInvoices();
+  const match = local.find((i) => i.invoiceId === invoiceId);
+  return match || null;
+}
+
+export async function updateInvoiceStatusInDB(invoiceId: string, status: string, paidAt?: Date): Promise<boolean> {
+  let updated = false;
+
+  // Local cache update
+  try {
+    const local = getLocalInvoices();
+    const inv = local.find((i) => i.invoiceId === invoiceId);
+    if (inv) {
+      inv.paymentStatus = status;
+      if (paidAt) inv.paidAt = paidAt.toISOString();
+      const data = JSON.stringify(local, null, 2);
+      try { fs.writeFileSync(LOCAL_INVOICES_FILE, data); } catch (e) {}
+      try { fs.writeFileSync(TMP_INVOICES_FILE, data); } catch (e) {}
+      updated = true;
+    }
+  } catch (e) {}
+
+  // DB update
+  try {
+    await (prisma as any).invoice.update({
+      where: { invoiceId },
+      data: {
+        paymentStatus: status,
+        paidAt: paidAt || new Date(),
+      },
+    });
+    updated = true;
+  } catch (e) {}
+
+  return updated;
+}
+
+

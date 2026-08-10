@@ -65,3 +65,32 @@ model Booking {
   @@index([email])
 }
 
+model Invoice {
+  id                   String    @id @default(cuid())
+  invoiceId            String    @unique
+  leadId               String?
+  clientName           String
+  clientEmail          String
+  companyName          String
+  currency             String    @default("USD")
+  currencySymbol       String    @default("$")
+  totalAmount          String
+  depositPercent       String    @default("50")
+  depositAmount        String
+  setupFee             String?
+  monthlyRetainer      String?
+  projectScope         String    @db.Text
+  paymentStatus        String    @default("unpaid") // "unpaid", "deposit_paid", "paid_in_full"
+  paymentLink          String?   @db.Text
+  customPaymentMethods String?   @db.Text // JSON string of custom payment methods
+  issueDate            String
+  dueDate              String
+  paidAt               DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([invoiceId])
+  @@index([clientEmail])
+}
+
+
