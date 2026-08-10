@@ -66,7 +66,6 @@ export async function POST(req: NextRequest) {
     const directWebhookUrl = "https://n8n.srv1594654.hstgr.cloud/webhook/meeting-booked";
     const n8nBookingWebhookUrl = sanitizeUrl(process.env.N8N_BOOKING_WEBHOOK_URL) || directWebhookUrl;
     const n8nTestWebhookUrl = "https://n8n.srv1594654.hstgr.cloud/webhook-test/meeting-booked";
-    const n8nLeadWebhookUrl = sanitizeUrl(process.env.N8N_LEAD_WEBHOOK_URL) || "https://n8n.srv1594654.hstgr.cloud/webhook/lead-intake";
 
     const webhookPayload = JSON.stringify({
       event: "meeting_booked",
@@ -87,8 +86,8 @@ export async function POST(req: NextRequest) {
       meetingStartISO,
     });
 
-    // Dispatch to all n8n webhook URLs in parallel
-    const webhookUrlsToHit = Array.from(new Set([directWebhookUrl, n8nBookingWebhookUrl, n8nTestWebhookUrl, n8nLeadWebhookUrl]));
+    // Dispatch to all n8n meeting webhook URLs in parallel
+    const webhookUrlsToHit = Array.from(new Set([directWebhookUrl, n8nBookingWebhookUrl, n8nTestWebhookUrl]));
     const webhookResults = await Promise.allSettled(
       webhookUrlsToHit.map((url) =>
         fetch(url, {
