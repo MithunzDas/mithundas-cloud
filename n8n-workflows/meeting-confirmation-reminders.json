@@ -1,5 +1,4 @@
 {
-  "name": "Mithun Das — Meeting Confirmation & Automated Reminder Engine",
   "nodes": [
     {
       "parameters": {
@@ -7,14 +6,15 @@
         "path": "meeting-booked",
         "options": {}
       },
-      "id": "webhook-meeting-booked",
+      "id": "518327e7-dbed-4277-a648-cb4aa21bbc80",
       "name": "Meeting Booked Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        100,
-        300
-      ]
+        -2544,
+        192
+      ],
+      "webhookId": "918cfa83-8b5c-4989-88c0-2c1f6fc4c625"
     },
     {
       "parameters": {
@@ -22,26 +22,27 @@
         "path": "meeting-rescheduled",
         "options": {}
       },
-      "id": "webhook-meeting-rescheduled",
+      "id": "73eaf9b9-ee23-468d-befa-0021fd4ff4e9",
       "name": "Meeting Rescheduled Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        100,
-        500
-      ]
+        -2544,
+        400
+      ],
+      "webhookId": "84f26712-c398-4d2c-a9c8-23a8929489fa"
     },
     {
       "parameters": {
         "jsCode": "const item = $input.first()?.json?.body || $input.first()?.json || {};\nconst isReschedule = item.event === 'meeting_rescheduled';\n\nconst name = item.name || 'Client';\nconst email = item.email || '';\nconst company = item.company || 'Client Business';\nconst businessType = item.businessType || 'General';\nconst projectRequirement = item.projectRequirement || 'None';\nconst date = item.date || item.newDate || '';\nconst time = item.time || item.newTime || '';\nconst timeZone = item.timeZone || item.newTimeZone || 'IST';\nconst bookingId = item.bookingId || '';\nconst meetUrl = item.meetUrl || '';\nconst meetingStartISO = item.meetingStartISO || new Date().toISOString();\nconst bookedAt = item.bookedAt || new Date().toISOString();\n\nconst clientSubject = isReschedule\n  ? '🔄 Session Rescheduled — ' + company + ' | Mithun Das'\n  : 'Discovery Session Confirmed — ' + company + ' | Mithun Das';\n\nconst hostSubject = isReschedule\n  ? '🔄 MEETING RESCHEDULED: ' + company + ' (' + name + ')'\n  : '📅 NEW MEETING: ' + company + ' (' + name + ')';\n\nconst rescheduleLink = 'https://mithundas.cloud/book/reschedule?bookingId=' + bookingId;\n\nconst clientTitle = isReschedule ? 'Your Session Has Been Rescheduled! 🔄' : 'Your Discovery Session is Confirmed! 🎉';\nconst hostTitle = isReschedule ? '🔄 Meeting Rescheduled!' : '🎉 New Discovery Call Booked!';\n\nconst headerBlock = '<div style=\"font-family: Arial, -apple-system, BlinkMacSystemFont, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; color: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);\">' +\n  '<div style=\"height: 4px; background: linear-gradient(90deg, #0ea5e9, #6366f1, #0ea5e9);\"></div>' +\n  '<div style=\"padding: 24px 32px 18px 32px; border-bottom: 1px solid #f1f5f9;\">' +\n  '<table cellpadding=\"0\" cellspacing=\"0\" style=\"border: none;\"><tr>' +\n  '<td style=\"vertical-align: middle; padding-right: 12px;\">' +\n  '<img src=\"https://mithundas.cloud/logo.png\" alt=\"M\" style=\"width: 38px; height: 38px; border-radius: 8px; display: block;\">' +\n  '</td><td style=\"vertical-align: middle;\">' +\n  '<span style=\"font-family: Arial, sans-serif; font-size: 16px; font-weight: 800; color: #0f172a; letter-spacing: -0.3px;\">Mithun Das</span><br>' +\n  '<span style=\"font-family: Arial, sans-serif; font-size: 10px; color: #0ea5e9; text-transform: uppercase; font-weight: 700; letter-spacing: 1.5px;\">AI AUTOMATION</span>' +\n  '</td></tr></table></div>';\n\nconst footerBlock = '<div style=\"padding: 0 32px;\"><div style=\"border-top: 1px solid #f1f5f9;\"></div></div>' +\n  '<div style=\"padding: 24px 32px 28px 32px;\">' +\n  '<table cellpadding=\"0\" cellspacing=\"0\" style=\"border: none;\"><tr>' +\n  '<td style=\"padding-right: 16px; border-right: 2px solid #0ea5e9; vertical-align: middle;\">' +\n  '<img src=\"https://mithundas.cloud/logo.png\" alt=\"M\" style=\"width: 42px; height: 42px; border-radius: 8px; display: block;\">' +\n  '</td><td style=\"padding-left: 16px; vertical-align: middle;\">' +\n  '<span style=\"font-family: Arial, sans-serif; font-size: 15px; font-weight: 700; color: #0f172a;\">Mithun Das</span><br>' +\n  '<span style=\"font-family: Arial, sans-serif; font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;\">Founder &amp; Automation Architect</span><br>' +\n  '<a href=\"https://mithundas.cloud\" style=\"font-family: Arial, sans-serif; font-size: 12px; color: #0ea5e9; text-decoration: none; font-weight: 600;\">Mithun Das AI Automation</a>' +\n  '</td></tr></table></div>' +\n  '<div style=\"height: 3px; background: linear-gradient(90deg, #0ea5e9, #6366f1, #0ea5e9);\"></div></div>';\n\nconst detailsBlock = '<div style=\"background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 20px; margin: 20px 0; font-family: monospace; font-size: 13px; color: #0f172a;\">' +\n  '<div style=\"margin-bottom: 8px;\"><b>📅 Date &amp; Time:</b> ' + date + ' @ ' + time + ' (' + timeZone + ')</div>' +\n  '<div style=\"margin-bottom: 8px;\"><b>🆔 Reference:</b> ' + bookingId + '</div>' +\n  '<div><b>🎥 Video Room:</b> <a href=\"' + meetUrl + '\" style=\"color: #0ea5e9; font-weight: bold; text-decoration: underline;\">' + meetUrl + '</a></div>' +\n  '</div>';\n\nconst clientHtml = headerBlock +\n  '<div style=\"padding: 28px 32px; font-size: 15px; color: #334155; line-height: 1.7;\">' +\n  '<h2 style=\"font-size: 20px; color: #0f172a; margin: 0 0 12px 0;\">' + clientTitle + '</h2>' +\n  '<p style=\"margin: 0 0 16px 0;\">Hi <b>' + name + '</b>,</p>' +\n  '<p style=\"margin: 0 0 16px 0;\">Your 15-minute AI Architecture Discovery Session for <b>' + company + '</b> is confirmed. Below are your session details:</p>' +\n  detailsBlock +\n  '</div>' +\n  '<div style=\"padding: 0 32px 28px 32px; text-align: center;\">' +\n  '<a href=\"' + meetUrl + '\" style=\"display: inline-block; background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #ffffff; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-family: Arial, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);\">🚀 Join Video Meeting Room Now</a>' +\n  '<div style=\"margin-top: 14px;\">' +\n  '<a href=\"' + rescheduleLink + '\" style=\"color: #64748b; font-size: 12px; font-family: Arial, sans-serif; text-decoration: underline;\">🔄 Need to Reschedule Your Session? Click Here</a>' +\n  '</div></div>' +\n  footerBlock;\n\nconst hostDetailsBlock = '<div style=\"background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 20px; margin-bottom: 20px; font-family: monospace; font-size: 13px; color: #0f172a;\">' +\n  '<div style=\"margin-bottom: 6px;\"><b>👤 Client Name:</b> ' + name + '</div>' +\n  '<div style=\"margin-bottom: 6px;\"><b>🏢 Company:</b> ' + company + ' (' + businessType + ')</div>' +\n  '<div style=\"margin-bottom: 6px;\"><b>✉️ Email:</b> ' + email + '</div>' +\n  '<div style=\"margin-bottom: 6px;\"><b>📅 Date &amp; Time:</b> ' + date + ' @ ' + time + ' (' + timeZone + ')</div>' +\n  '<div><b>🆔 Booking Reference:</b> ' + bookingId + '</div>' +\n  '</div>';\n\nconst hostHeaderBlock = '<div style=\"font-family: Arial, -apple-system, BlinkMacSystemFont, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; color: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);\">' +\n  '<div style=\"height: 4px; background: linear-gradient(90deg, #10b981, #0ea5e9, #10b981);\"></div>' +\n  '<div style=\"padding: 24px 32px 18px 32px; border-bottom: 1px solid #f1f5f9;\">' +\n  '<span style=\"font-size: 18px; font-weight: 800; color: #0f172a;\">' + hostTitle + '</span>' +\n  '</div>';\n\nconst hostFooterBlock = '<div style=\"height: 3px; background: linear-gradient(90deg, #10b981, #0ea5e9, #10b981);\"></div></div>';\n\nconst hostHtml = hostHeaderBlock +\n  '<div style=\"padding: 28px 32px; font-size: 15px; color: #334155; line-height: 1.7;\">' +\n  hostDetailsBlock +\n  '<div style=\"margin-bottom: 20px;\">' +\n  '<b style=\"font-size: 13px; font-family: monospace; color: #64748b; text-transform: uppercase;\">Project Requirements / SOW:</b>' +\n  '<div style=\"background: #f1f5f9; border-radius: 8px; padding: 14px; margin-top: 6px; font-size: 13px; color: #1e293b; white-space: pre-wrap;\">' + projectRequirement + '</div>' +\n  '</div></div>' +\n  '<div style=\"padding: 0 32px 28px 32px;\">' +\n  '<a href=\"' + meetUrl + '\" style=\"display: inline-block; background: linear-gradient(135deg, #10b981, #0ea5e9); color: #ffffff; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-family: Arial, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;\">🎥 Join Host Video Meeting Room</a>' +\n  '</div>' +\n  hostFooterBlock;\n\nconst telegramText = (isReschedule ? '🔄 MEETING RESCHEDULED!\\n\\n' : '🎉 NEW DISCOVERY CALL BOOKED!\\n\\n') +\n  '👤 Client: ' + name + '\\n' +\n  '🏢 Company: ' + company + '\\n' +\n  '💼 Industry: ' + businessType + '\\n' +\n  '✉️ Email: ' + email + '\\n' +\n  '📅 Scheduled Date: ' + date + ' @ ' + time + ' (' + timeZone + ')\\n' +\n  '🆔 Reference: ' + bookingId + '\\n\\n' +\n  '🎥 Video Room Link:\\n' + meetUrl + '\\n\\n' +\n  '📋 SOW / Requirements:\\n' + projectRequirement;\n\nreturn [{\n  json: {\n    event: isReschedule ? 'meeting_rescheduled' : 'meeting_booked',\n    name,\n    email,\n    company,\n    businessType,\n    projectRequirement,\n    date,\n    time,\n    timeZone,\n    bookingId,\n    meetUrl,\n    meetingStartISO,\n    bookedAt,\n    clientSubject,\n    hostSubject,\n    clientHtml,\n    hostHtml,\n    telegramText\n  }\n}];"
       },
-      "id": "prepare-booking-data",
+      "id": "8297fee8-a011-4966-b33e-c47ba21b42aa",
       "name": "Prepare Booking Data",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        300,
-        400
+        -2352,
+        304
       ]
     },
     {
@@ -62,13 +63,13 @@
         "jsonBody": "={{ JSON.stringify({\n  \"chat_id\": \"5000978436\",\n  \"text\": $json.telegramText\n}) }}",
         "options": {}
       },
-      "id": "telegram-meeting-alert",
+      "id": "ed4e1a8b-650e-4028-aa81-0e67de7a4e8e",
       "name": "Telegram: Meeting Alert Bot",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        500,
-        400
+        -2144,
+        304
       ]
     },
     {
@@ -80,14 +81,21 @@
         "html": "={{ $('Prepare Booking Data').first().json.clientHtml }}",
         "options": {}
       },
-      "id": "email-client-confirmation",
+      "id": "7f3cc9ee-acaa-4769-82a3-87814124cd3f",
       "name": "Email: Client Confirmation",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
       "position": [
-        700,
-        400
-      ]
+        -1952,
+        304
+      ],
+      "webhookId": "1e5521d1-2fc8-4c7b-a1a2-2384999461b8",
+      "credentials": {
+        "smtp": {
+          "id": "T56D8v7zIgHOFpXD",
+          "name": "SMTP account"
+        }
+      }
     },
     {
       "parameters": {
@@ -98,14 +106,21 @@
         "html": "={{ $('Prepare Booking Data').first().json.hostHtml }}",
         "options": {}
       },
-      "id": "email-host-notification",
+      "id": "514f56f8-7865-4bbc-9dc1-22506f9cec07",
       "name": "Email: Host Notification (mithun.here01@gmail.com)",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
       "position": [
-        900,
-        400
-      ]
+        -1744,
+        304
+      ],
+      "webhookId": "3bd76168-be1a-4d70-a510-daba29e905b9",
+      "credentials": {
+        "smtp": {
+          "id": "T56D8v7zIgHOFpXD",
+          "name": "SMTP account"
+        }
+      }
     },
     {
       "parameters": {
@@ -114,26 +129,32 @@
         "end": "={{ new Date(new Date($('Prepare Booking Data').first().json.meetingStartISO).getTime() + 15 * 60 * 1000).toISOString() }}",
         "additionalFields": {}
       },
-      "id": "google-calendar-create",
+      "id": "d142d489-38a0-4faa-96e0-f10b628e5122",
       "name": "Google Calendar: Create Event & Invite",
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1,
       "position": [
-        1100,
-        400
-      ]
+        -1552,
+        304
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "inAf0fdYeQvJPf8K",
+          "name": "Google Calendar account"
+        }
+      }
     },
     {
       "parameters": {
         "jsCode": "const booking = $('Prepare Booking Data').first().json;\nconst bookedAt = new Date(booking.bookedAt || new Date()).getTime();\nconst meetingStart = new Date(booking.meetingStartISO || new Date()).getTime();\nconst hoursDiff = (meetingStart - bookedAt) / (1000 * 60 * 60);\n\nreturn [{\n  json: {\n    ...booking,\n    scheduledDate: booking.date,\n    scheduledTime: booking.time,\n    hoursDiff,\n    isWithin24Hours: hoursDiff <= 24,\n    reminder1HourISO: new Date(meetingStart - 60 * 60 * 1000).toISOString(),\n    reminder10MinISO: new Date(meetingStart - 10 * 60 * 1000).toISOString()\n  }\n}];"
       },
-      "id": "calculate-reminders",
+      "id": "9c59309e-0f64-4342-a865-c8e62bc03d11",
       "name": "Calculate Reminder Schedules",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1300,
-        400
+        -1344,
+        304
       ]
     },
     {
@@ -147,13 +168,13 @@
           ]
         }
       },
-      "id": "if-scheduled-within-24h",
+      "id": "41551c16-7f96-462d-9358-c26c50635a22",
       "name": "Is Scheduled Within 24 Hours?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        1500,
-        400
+        -1152,
+        304
       ]
     },
     {
@@ -161,14 +182,15 @@
         "amount": "={{ Math.max(0, (new Date($json.reminder10MinISO).getTime() - Date.now()) / 1000) }}",
         "unit": "seconds"
       },
-      "id": "wait-10min-branch1",
+      "id": "dc6137e5-2e45-47a4-90ef-6c11fc2390dd",
       "name": "Wait Until 10-Min Before Call",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1,
       "position": [
-        1700,
-        300
-      ]
+        -944,
+        192
+      ],
+      "webhookId": "6aee74f3-fdfd-44db-be76-303952f9d389"
     },
     {
       "parameters": {
@@ -185,15 +207,16 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ bookingId: $json.bookingId, date: $json.scheduledDate, time: $json.scheduledTime }) }}"
+        "jsonBody": "={{ JSON.stringify({ bookingId: $json.bookingId, date: $json.scheduledDate, time: $json.scheduledTime }) }}",
+        "options": {}
       },
-      "id": "verify-slot-10min-branch1",
+      "id": "3fbfb919-91d7-499c-b141-c02da89cfd1f",
       "name": "Verify Slot Active (10-Min)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1900,
-        300
+        -752,
+        192
       ]
     },
     {
@@ -207,13 +230,13 @@
           ]
         }
       },
-      "id": "if-active-10min-branch1",
+      "id": "19c35c1d-2974-4dcb-b6b5-e3bb693f172b",
       "name": "Is Slot Still Active? (10-Min)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        2100,
-        300
+        -544,
+        192
       ]
     },
     {
@@ -222,31 +245,39 @@
         "toEmail": "={{ $('Calculate Reminder Schedules').first().json.email }}, mithun.here01@gmail.com",
         "subject": "={{ '⏰ Starting in 10 Mins: Discovery Session for ' + $('Calculate Reminder Schedules').first().json.company }}",
         "emailFormat": "html",
-        "html": "={{ `<div style=\"font-family: Arial, -apple-system, BlinkMacSystemFont, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; color: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);\">\n  <div style=\"height: 4px; background: linear-gradient(90deg, #f59e0b, #0ea5e9, #6366f1);\"></div>\n  <div style=\"padding: 24px 32px 18px 32px; border-bottom: 1px solid #f1f5f9;\">\n    <table cellpadding=\"0\" cellspacing=\"0\" style=\"border: none;\">\n      <tr>\n        <td style=\"vertical-align: middle; padding-right: 12px;\">\n          <img src=\"https://mithundas.cloud/logo.png\" alt=\"M\" style=\"width: 38px; height: 38px; border-radius: 8px; display: block;\">\n        </td>\n        <td style=\"vertical-align: middle;\">\n          <span style=\"font-family: Arial, sans-serif; font-size: 16px; font-weight: 800; color: #0f172a; letter-spacing: -0.3px;\">Mithun Das</span><br>\n          <span style=\"font-family: Arial, sans-serif; font-size: 10px; color: #0ea5e9; text-transform: uppercase; font-weight: 700; letter-spacing: 1.5px;\">AI AUTOMATION</span>\n        </td>\n      </tr>\n    </table>\n  </div>\n  \n  <div style=\"padding: 28px 32px; font-size: 15px; color: #334155; line-height: 1.7;\">\n    <h2 style=\"font-size: 19px; color: #0f172a; margin: 0 0 12px 0;\">⏰ Starting in 10 Minutes!</h2>\n    <p style=\"margin: 0 0 16px 0;\">Hi <b>${$('Calculate Reminder Schedules').first().json.name}</b>,</p>\n    <p style=\"margin: 0 0 16px 0;\">Your custom video meeting room for <b>${$('Calculate Reminder Schedules').first().json.company}</b> is now active and ready. The session starts in 10 minutes.</p>\n    \n    <div style=\"background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; margin: 20px 0; font-family: monospace; font-size: 13px; color: #0f172a;\">\n      <div style=\"margin-bottom: 6px;\"><b>📅 Session Time:</b> ${$('Calculate Reminder Schedules').first().json.scheduledDate} @ ${$('Calculate Reminder Schedules').first().json.scheduledTime} (${$('Calculate Reminder Schedules').first().json.timeZone || 'IST'})</div>\n      <div><b>🎥 Video Room Link:</b> <a href=\"${$('Calculate Reminder Schedules').first().json.meetUrl}\" style=\"color: #0ea5e9; font-weight: bold;\">${$('Calculate Reminder Schedules').first().json.meetUrl}</a></div>\n    </div>\n  </div>\n\n  <div style=\"padding: 0 32px 28px 32px; text-align: center;\">\n    <a href=\"${$('Calculate Reminder Schedules').first().json.meetUrl}\" style=\"display: inline-block; background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-family: Arial, sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);\">🚀 Click Here to Join Meeting Room</a>\n  </div>\n  \n  <div style=\"padding: 0 32px;\"><div style=\"border-top: 1px solid #f1f5f9;\"></div></div>\n  \n  <div style=\"padding: 24px 32px 28px 32px;\">\n    <table cellpadding=\"0\" cellspacing=\"0\" style=\"border: none;\">\n      <tr>\n        <td style=\"padding-right: 16px; border-right: 2px solid #0ea5e9; vertical-align: middle;\">\n          <img src=\"https://mithundas.cloud/logo.png\" alt=\"M\" style=\"width: 42px; height: 42px; border-radius: 8px; display: block;\">\n        </td>\n        <td style=\"padding-left: 16px; vertical-align: middle;\">\n          <span style=\"font-family: Arial, sans-serif; font-size: 15px; font-weight: 700; color: #0f172a;\">Mithun Das</span><br>\n          <span style=\"font-family: Arial, sans-serif; font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;\">Founder & Automation Architect</span><br>\n          <a href=\"https://mithundas.cloud\" style=\"font-family: Arial, sans-serif; font-size: 12px; color: #0ea5e9; text-decoration: none; font-weight: 600;\">Mithun Das AI Automation</a>\n        </td>\n      </tr>\n    </table>\n  </div>\n  <div style=\"height: 3px; background: linear-gradient(90deg, #0ea5e9, #6366f1, #0ea5e9);\"></div>\n</div>` }}",
+        "html": "={{ $('Prepare Booking Data').first().json.clientHtml }}",
         "options": {}
       },
-      "id": "email-10min-reminder",
+      "id": "8891c763-5760-4ff9-bd52-267d848b26da",
       "name": "Send 10-Min Reminder Email",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
       "position": [
-        2300,
-        300
-      ]
+        -320,
+        176
+      ],
+      "webhookId": "49049cd1-7ae0-4046-9f13-88b5f1740cf6",
+      "credentials": {
+        "smtp": {
+          "id": "T56D8v7zIgHOFpXD",
+          "name": "SMTP account"
+        }
+      }
     },
     {
       "parameters": {
         "amount": "={{ Math.max(0, (new Date($json.reminder1HourISO).getTime() - Date.now()) / 1000) }}",
         "unit": "seconds"
       },
-      "id": "wait-1hour-branch2",
+      "id": "ff732091-0852-48c6-ab64-3e05b45ce39e",
       "name": "Wait Until 1 Hour Before Call",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1,
       "position": [
-        1700,
-        500
-      ]
+        -944,
+        400
+      ],
+      "webhookId": "8cf85468-a374-4a5c-95df-a7cb59b04418"
     },
     {
       "parameters": {
@@ -263,15 +294,16 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ bookingId: $json.bookingId, date: $json.scheduledDate, time: $json.scheduledTime }) }}"
+        "jsonBody": "={{ JSON.stringify({ bookingId: $json.bookingId, date: $json.scheduledDate, time: $json.scheduledTime }) }}",
+        "options": {}
       },
-      "id": "verify-slot-1hour-branch2",
+      "id": "d3ebba0b-8102-46a1-9245-1c956aa34a67",
       "name": "Verify Slot Active (1-Hour)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1900,
-        500
+        -752,
+        400
       ]
     },
     {
@@ -285,13 +317,13 @@
           ]
         }
       },
-      "id": "if-active-1hour-branch2",
+      "id": "f2f97dd0-5704-4292-ab11-4adfe8168abb",
       "name": "Is Slot Still Active? (1-Hour)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        2100,
-        500
+        -544,
+        400
       ]
     },
     {
@@ -300,17 +332,24 @@
         "toEmail": "={{ $('Calculate Reminder Schedules').first().json.email }}, mithun.here01@gmail.com",
         "subject": "={{ '⌛ 1 Hour Until Your Discovery Session — ' + $('Calculate Reminder Schedules').first().json.company }}",
         "emailFormat": "html",
-        "html": "={{ `<div style=\"font-family: Arial, -apple-system, BlinkMacSystemFont, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; color: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);\">\n  <div style=\"height: 4px; background: linear-gradient(90deg, #0ea5e9, #6366f1, #0ea5e9);\"></div>\n  <div style=\"padding: 24px 32px 18px 32px; border-bottom: 1px solid #f1f5f9;\">\n    <table cellpadding=\"0\" cellspacing=\"0\" style=\"border: none;\">\n      <tr>\n        <td style=\"vertical-align: middle; padding-right: 12px;\">\n          <img src=\"https://mithundas.cloud/logo.png\" alt=\"M\" style=\"width: 38px; height: 38px; border-radius: 8px; display: block;\">\n        </td>\n        <td style=\"vertical-align: middle;\">\n          <span style=\"font-family: Arial, sans-serif; font-size: 16px; font-weight: 800; color: #0f172a; letter-spacing: -0.3px;\">Mithun Das</span><br>\n          <span style=\"font-family: Arial, sans-serif; font-size: 10px; color: #0ea5e9; text-transform: uppercase; font-weight: 700; letter-spacing: 1.5px;\">AI AUTOMATION</span>\n        </td>\n      </tr>\n    </table>\n  </div>\n  \n  <div style=\"padding: 28px 32px; font-size: 15px; color: #334155; line-height: 1.7;\">\n    <h2 style=\"font-size: 19px; color: #0f172a; margin: 0 0 12px 0;\">⌛ 1 Hour Until Your Discovery Session!</h2>\n    <p style=\"margin: 0 0 16px 0;\">Hi <b>${$('Calculate Reminder Schedules').first().json.name}</b>,</p>\n    <p style=\"margin: 0 0 16px 0;\">Just a friendly reminder that your 15-minute AI Discovery Session for <b>${$('Calculate Reminder Schedules').first().json.company}</b> starts in <b>1 hour</b>.</p>\n    \n    <div style=\"background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; margin: 20px 0; font-family: monospace; font-size: 13px; color: #0f172a;\">\n      <div style=\"margin-bottom: 6px;\"><b>📅 Date & Time:</b> ${$('Calculate Reminder Schedules').first().json.scheduledDate} @ ${$('Calculate Reminder Schedules').first().json.scheduledTime} (${$('Calculate Reminder Schedules').first().json.timeZone || 'IST'})</div>\n      <div><b>🎥 Video Room:</b> <a href=\"${$('Calculate Reminder Schedules').first().json.meetUrl}\" style=\"color: #0ea5e9; font-weight: bold;\">${$('Calculate Reminder Schedules').first().json.meetUrl}</a></div>\n    </div>\n  </div>\n\n  <div style=\"padding: 0 32px 28px 32px; text-align: center;\">\n    <a href=\"${$('Calculate Reminder Schedules').first().json.meetUrl}\" style=\"display: inline-block; background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #ffffff; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-family: Arial, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);\">🚀 Open Video Meeting Room</a>\n    <div style=\"margin-top: 14px;\">\n      <a href=\"https://mithundas.cloud/book/reschedule?bookingId=${$('Calculate Reminder Schedules').first().json.bookingId}\" style=\"color: #64748b; font-size: 12px; font-family: Arial, sans-serif; text-decoration: underline;\">🔄 Need to Reschedule Your Session? Click Here</a>\n    </div>\n  </div>\n  \n  <div style=\"padding: 0 32px;\"><div style=\"border-top: 1px solid #f1f5f9;\"></div></div>\n  \n  <div style=\"padding: 24px 32px 28px 32px;\">\n    <table cellpadding=\"0\" cellspacing=\"0\" style=\"border: none;\">\n      <tr>\n        <td style=\"padding-right: 16px; border-right: 2px solid #0ea5e9; vertical-align: middle;\">\n          <img src=\"https://mithundas.cloud/logo.png\" alt=\"M\" style=\"width: 42px; height: 42px; border-radius: 8px; display: block;\">\n        </td>\n        <td style=\"padding-left: 16px; vertical-align: middle;\">\n          <span style=\"font-family: Arial, sans-serif; font-size: 15px; font-weight: 700; color: #0f172a;\">Mithun Das</span><br>\n          <span style=\"font-family: Arial, sans-serif; font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;\">Founder & Automation Architect</span><br>\n          <a href=\"https://mithundas.cloud\" style=\"font-family: Arial, sans-serif; font-size: 12px; color: #0ea5e9; text-decoration: none; font-weight: 600;\">Mithun Das AI Automation</a>\n        </td>\n      </tr>\n    </table>\n  </div>\n  <div style=\"height: 3px; background: linear-gradient(90deg, #0ea5e9, #6366f1, #0ea5e9);\"></div>\n</div>` }}",
+        "html": "={{ $('Prepare Booking Data').first().json.clientHtml }}",
         "options": {}
       },
-      "id": "email-1hour-reminder",
+      "id": "9febdbfb-5d46-4665-a085-810a967fc3e3",
       "name": "Send 1-Hour Reminder Email",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
       "position": [
-        2300,
-        500
-      ]
+        -304,
+        384
+      ],
+      "webhookId": "189c5932-afb7-4038-b186-5dee52faf510",
+      "credentials": {
+        "smtp": {
+          "id": "T56D8v7zIgHOFpXD",
+          "name": "SMTP account"
+        }
+      }
     }
   ],
   "connections": {
@@ -486,5 +525,10 @@
         ]
       ]
     }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a3c248fb75e9ee495ecad8838dca0af4946fbc5bf0b6e721a4c19d9076cabbca"
   }
 }

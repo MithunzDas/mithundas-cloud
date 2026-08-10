@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getBookedSlotsFromDB, saveBookingToDB, cancelBookingInDB } from "@/lib/db";
+import { getBookedSlotsFromDB, saveBookingToDB, cancelBookingInDB, getBookingDetails } from "@/lib/db";
 import { logger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
@@ -14,7 +14,15 @@ export async function POST(req: NextRequest) {
     const normalize = (t: string) => (t || "").replace(/^0/, "").toUpperCase().trim();
     const requestedNorm = normalize(newTime);
 
-    // 1. Check if the new time slot is already booked by another client
+    // 1. Fetch existing booking metadata from DB so name/email/company are never empty
+    const existingBooking = await getBookingDetails(bookingId);
+    const clientName = body.name || existingBooking?.name || "Client";
+    const clientEmail = body.email || existingBooking?.email || "";
+    const clientCompany = body.company || existingBooking?.company || "";
+    const clientBusinessType = body.businessType || existingBooking?.businessType || "General";
+    const clientReq = body.projectRequirement || existingBooking?.projectRequirement || "";
+
+    // 2. Check if the new time slot is already booked by another client
     try {
       const existingSlots = await getBookedSlotsFromDB();
       const isConflict = existingSlots.some(
@@ -30,7 +38,7 @@ export async function POST(req: NextRequest) {
       logger.warn("DB conflict check failed, proceeding with reschedule", "reschedule_db_check_warn");
     }
 
-    // 2. Calculate new meeting start ISO timestamp
+    // 3. Calculate new meeting start ISO timestamp
     const meetUrl = `https://mithundas.cloud/meet/${bookingId}`;
     let meetingStartISO = "";
     try {
@@ -54,11 +62,11 @@ export async function POST(req: NextRequest) {
     const reschedulePayload = JSON.stringify({
       event: "meeting_rescheduled",
       bookingId,
-      name: body.name || "Client",
-      email: body.email || "",
-      company: body.company || "",
-      businessType: body.businessType || "General",
-      projectRequirement: body.projectRequirement || "",
+      name: clientName,
+      email: clientEmail,
+      company: clientCompany,
+      businessType: clientBusinessType,
+      projectRequirement: clientReq,
       newDate,
       newTime,
       date: newDate,
@@ -100,11 +108,11 @@ export async function POST(req: NextRequest) {
 
     saveBookingToDB({
       bookingId,
-      name: body.name || "Client",
-      email: body.email || "client@example.com",
-      company: body.company || "Client Business",
-      businessType: body.businessType || "General",
-      projectRequirement: body.projectRequirement || "",
+      name: clientName,
+      email: clientEmail || "client@example.com",
+      company: clientCompany || "Client Business",
+      businessType: clientBusinessType,
+      projectRequirement: clientReq,
       date: newDate,
       time: newTime,
       timeZone: newTimeZone || "Asia/Kolkata",

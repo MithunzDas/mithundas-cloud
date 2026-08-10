@@ -352,3 +352,34 @@ export async function cancelBookingInDB(bookingId: string): Promise<boolean> {
   return cancelled;
 }
 
+export async function getBookingDetails(bookingId: string): Promise<BookingPayload | null> {
+  // 1. Try optional Booking table first
+  try {
+    const booking = await (prisma as any).booking.findUnique({
+      where: { bookingId },
+    });
+    if (booking && booking.email) return booking;
+  } catch (e) {}
+
+  // 2. Try Lead table (primary DB store)
+  try {
+    const lead = await getLeadById(bookingId);
+    if (lead) {
+      const cleanReq = (lead.projectRequirement || "").replace(/\[Discovery Call Scheduled for [^\]]+\]\s*/i, "").trim();
+      return {
+        bookingId: lead.leadId,
+        name: lead.name,
+        email: lead.email,
+        company: lead.company,
+        businessType: lead.businessType || "General",
+        projectRequirement: cleanReq,
+        date: "",
+        time: "",
+        meetUrl: `https://mithundas.cloud/meet/${lead.leadId}`,
+      };
+    }
+  } catch (e) {}
+
+  return null;
+}
+
