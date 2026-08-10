@@ -406,3 +406,92 @@ export async function getBookingDetails(bookingId: string): Promise<BookingPaylo
   return null;
 }
 
+export async function getAllBookingsFromDB(): Promise<BookingPayload[]> {
+  const map = new Map<string, BookingPayload>();
+
+  // 1. Try Prisma Booking Table first
+  try {
+    const bookings = await (prisma as any).booking.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+    if (Array.isArray(bookings)) {
+      for (const b of bookings) {
+        if (b.bookingId) {
+          map.set(b.bookingId, {
+            id: b.id,
+            bookingId: b.bookingId,
+            name: b.name || "Client",
+            email: b.email || "",
+            company: b.company || "Client Business",
+            businessType: b.businessType || "General",
+            projectRequirement: b.projectRequirement || "",
+            date: b.date || "",
+            time: b.time || "",
+            timeZone: b.timeZone || "Asia/Kolkata",
+            meetUrl: b.meetUrl || `https://mithundas.cloud/meet/${b.bookingId}`,
+            status: b.status || "confirmed",
+            createdAt: b.createdAt ? new Date(b.createdAt).toISOString() : new Date().toISOString(),
+          });
+        }
+      }
+    }
+  } catch (e) {
+    // Optional table
+  }
+
+  // 2. Parse Lead records
+  try {
+    const leads = await prisma.lead.findMany({
+      orderBy: { submittedAt: "desc" },
+    });
+    for (const l of leads) {
+      if (l.projectRequirement && (l.projectRequirement.includes("Discovery Call Scheduled for") || l.leadId.startsWith("INV-"))) {
+        const match = l.projectRequirement.match(/Discovery Call Scheduled for ([0-9]{4}-[0-9]{2}-[0-9]{2}) @ ([0-9]{1,2}:[0-9]{2}\s+[AP]M)(?:\s+\(([^\)]+)\))?/i);
+        const cleanReq = l.projectRequirement.replace(/\[Discovery Call Scheduled for [^\]]+\]\s*/i, "").trim();
+
+        if (!map.has(l.leadId)) {
+          map.set(l.leadId, {
+            bookingId: l.leadId,
+            name: l.name,
+            email: l.email,
+            company: l.company,
+            businessType: l.businessType || "General",
+            projectRequirement: cleanReq,
+            date: match ? match[1] : "",
+            time: match ? match[2] : "",
+            timeZone: match && match[3] ? match[3] : "Asia/Kolkata",
+            meetUrl: `https://mithundas.cloud/meet/${l.leadId}`,
+            status: l.status === "cancelled" ? "cancelled" : "confirmed",
+            createdAt: l.submittedAt.toISOString(),
+          });
+        }
+      }
+    }
+  } catch (e) {}
+
+  // 3. Check local slot cache
+  try {
+    const local = getLocalSlots();
+    for (const slot of local) {
+      if (!map.has(slot.bookingId)) {
+        map.set(slot.bookingId, {
+          bookingId: slot.bookingId,
+          name: "Client",
+          email: "",
+          company: "Client Business",
+          businessType: "General",
+          projectRequirement: "Discovery Call Session",
+          date: slot.date,
+          time: slot.time,
+          timeZone: "Asia/Kolkata",
+          meetUrl: `https://mithundas.cloud/meet/${slot.bookingId}`,
+          status: "confirmed",
+          createdAt: new Date().toISOString(),
+        });
+      }
+    }
+  } catch (e) {}
+
+  return Array.from(map.values());
+}
+

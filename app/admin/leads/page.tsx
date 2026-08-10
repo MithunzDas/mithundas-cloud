@@ -23,6 +23,7 @@ import {
   Video,
 } from "lucide-react";
 import { LeadPayload, LeadStatus } from "@/services/n8n/n8n";
+import { AdminNav } from "../components/AdminNav";
 
 const CURRENCIES = [
   { code: "USD", symbol: "$", label: "USD ($) — Global" },
@@ -353,7 +354,9 @@ export default function AdminLeadsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background-app px-6 py-10 text-text-primary md:px-12">
+    <main className="min-h-screen bg-background-app pb-10 text-text-primary">
+      <AdminNav />
+      <div className="px-6 md:px-12">
       {/* Header Banner */}
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between border-b border-border-subtle pb-8">
         <div>
@@ -1253,6 +1256,7 @@ export default function AdminLeadsPage() {
           </div>
         </div>
       )}
+      </div>
     </main>
   );
 }
