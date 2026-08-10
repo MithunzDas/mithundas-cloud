@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getInvoiceFromDB } from "@/lib/db";
 import { logger } from "@/lib/logger";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const invoiceId = params.id;
+    const { id: invoiceId } = await params;
     if (!invoiceId) {
       return NextResponse.json({ success: false, error: "Missing invoice ID" }, { status: 400 });
     }
