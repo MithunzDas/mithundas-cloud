@@ -406,7 +406,7 @@ export async function sendOnboardingKit(data: OnboardingKitData): Promise<boolea
 
         <div style="background:#12121a;padding:14px;border-radius:6px;border:1px solid #1e1e2e;font-size:13px;color:#ccc;font-family:monospace;">
           <strong style="color:#0ea5e9;">Global Transfer Options:</strong><br>
-          • <strong>PayPal:</strong> <a href="https://paypal.me/mithundas" style="color:#0ea5e9;">paypal.me/mithundas</a><br>
+          • <strong>PayPal:</strong> <a href="https://paypal.me/MithunzDas" style="color:#0ea5e9;">paypal.me/MithunzDas</a><br>
           • <strong>Wise (USD / EUR / GBP):</strong> Available upon request (0.4% fee)<br>
           • <strong>Note:</strong> Include Invoice ID <code>${data.invoiceId}</code> in transfer note.
         </div>

@@ -26,7 +26,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         monthlyRetainer: "$200.00/month",
         projectScope: "Custom n8n Workflow Automation, API Gateway Webhook Routers, Multi-Channel Telegram/Email Alerts & Lead Intake System.",
         paymentStatus: "unpaid",
-        paymentLink: "https://paypal.me/mithundas",
+        paymentLink: "https://paypal.me/MithunzDas",
         issueDate: new Date().toISOString().split("T")[0],
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       };

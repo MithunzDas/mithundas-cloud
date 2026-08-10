@@ -414,12 +414,12 @@ export default function DigitalInvoicePage() {
                       <span className="text-[10px] text-slate-400 uppercase">PayPal Payment Link</span>
                       <div className="mt-2">
                         <a
-                          href="https://paypal.me/mithundas"
+                          href="https://paypal.me/MithunzDas"
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex items-center gap-1.5 text-cyan-400 font-bold hover:underline"
                         >
-                          <span>paypal.me/mithundas</span>
+                          <span>paypal.me/MithunzDas</span>
                           <ExternalLink className="w-3.5 h-3.5" />
                         </a>
                       </div>
