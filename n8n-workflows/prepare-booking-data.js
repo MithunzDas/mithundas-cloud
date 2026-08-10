@@ -102,6 +102,32 @@ const hostHtml = hostHeaderBlock +
   '</div>' +
   hostFooterBlock;
 
+const reminder10MinHtml = headerBlock +
+  '<div style="padding: 28px 32px; font-size: 15px; color: #334155; line-height: 1.7;">' +
+  '<h2 style="font-size: 19px; color: #0f172a; margin: 0 0 12px 0;">⏰ Starting in 10 Minutes!</h2>' +
+  '<p style="margin: 0 0 16px 0;">Hi <b>' + name + '</b>,</p>' +
+  '<p style="margin: 0 0 16px 0;">Your custom video meeting room for <b>' + company + '</b> is now active and ready. The session starts in 10 minutes.</p>' +
+  detailsBlock +
+  '</div>' +
+  '<div style="padding: 0 32px 28px 32px; text-align: center;">' +
+  '<a href="' + meetUrl + '" style="display: inline-block; background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-family: Arial, sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);">🚀 Click Here to Join Meeting Room</a>' +
+  '</div>' +
+  footerBlock;
+
+const reminder1HourHtml = headerBlock +
+  '<div style="padding: 28px 32px; font-size: 15px; color: #334155; line-height: 1.7;">' +
+  '<h2 style="font-size: 19px; color: #0f172a; margin: 0 0 12px 0;">⌛ 1 Hour Until Your Discovery Session!</h2>' +
+  '<p style="margin: 0 0 16px 0;">Hi <b>' + name + '</b>,</p>' +
+  '<p style="margin: 0 0 16px 0;">Just a friendly reminder that your 15-minute AI Discovery Session for <b>' + company + '</b> starts in <b>1 hour</b>.</p>' +
+  detailsBlock +
+  '</div>' +
+  '<div style="padding: 0 32px 28px 32px; text-align: center;">' +
+  '<a href="' + meetUrl + '" style="display: inline-block; background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #ffffff; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-family: Arial, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);">🚀 Open Video Meeting Room</a>' +
+  '<div style="margin-top: 14px;">' +
+  '<a href="' + rescheduleLink + '" style="color: #64748b; font-size: 12px; font-family: Arial, sans-serif; text-decoration: underline;">🔄 Need to Reschedule Your Session? Click Here</a>' +
+  '</div></div>' +
+  footerBlock;
+
 const telegramText = (isReschedule ? '🔄 MEETING RESCHEDULED!\n\n' : '🎉 NEW DISCOVERY CALL BOOKED!\n\n') +
   '👤 Client: ' + name + '\n' +
   '🏢 Company: ' + company + '\n' +
@@ -131,6 +157,8 @@ return [{
     hostSubject,
     clientHtml,
     hostHtml,
+    reminder10MinHtml,
+    reminder1HourHtml,
     telegramText
   }
 }];
