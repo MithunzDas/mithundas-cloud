@@ -29,8 +29,21 @@ export async function getLeads(): Promise<LeadPayload[]> {
 
 export async function saveLead(lead: LeadPayload): Promise<void> {
   try {
-    await prisma.lead.create({
-      data: {
+    await prisma.lead.upsert({
+      where: { leadId: lead.leadId },
+      update: {
+        name: lead.name,
+        email: lead.email,
+        company: lead.company,
+        businessType: lead.businessType,
+        budget: lead.budget,
+        timeline: lead.timeline,
+        projectRequirement: lead.projectRequirement,
+        whatsapp: lead.whatsapp || null,
+        country: lead.country || null,
+        status: lead.status,
+      },
+      create: {
         leadId: lead.leadId,
         name: lead.name,
         email: lead.email,
@@ -43,7 +56,7 @@ export async function saveLead(lead: LeadPayload): Promise<void> {
         country: lead.country || null,
         status: lead.status,
         submittedAt: new Date(lead.submittedAt),
-      }
+      },
     });
     logger.info(`Lead ${lead.leadId} successfully saved to database`, "db_save_success");
   } catch (error) {
@@ -207,8 +220,10 @@ function getLocalSlots(): { date: string; time: string; bookingId: string }[] {
 
 function saveLocalSlot(slot: { date: string; time: string; bookingId: string }) {
   try {
-    const current = getLocalSlots();
-    const exists = current.some((s) => s.date === slot.date && s.time.replace(/^0/, "").toUpperCase().trim() === slot.time.replace(/^0/, "").toUpperCase().trim());
+    // Always remove any previous slot for this bookingId FIRST (so rescheduling frees up old slot)
+    const current = getLocalSlots().filter((s) => s.bookingId !== slot.bookingId);
+    const normalize = (t: string) => (t || "").replace(/^0/, "").toUpperCase().trim();
+    const exists = current.some((s) => s.date === slot.date && normalize(s.time) === normalize(slot.time));
     if (!exists) {
       current.push(slot);
       const data = JSON.stringify(current, null, 2);
@@ -239,10 +254,10 @@ export async function getBookedSlotsFromDB(): Promise<{ date: string; time: stri
   // 2. Try parsing Lead records for discovery call notes
   try {
     const leads = await prisma.lead.findMany({
-      select: { leadId: true, projectRequirement: true },
+      select: { leadId: true, projectRequirement: true, status: true },
     });
     for (const l of leads) {
-      if (l.projectRequirement && l.projectRequirement.includes("Discovery Call Scheduled for")) {
+      if (l.status !== "cancelled" && l.projectRequirement && l.projectRequirement.includes("Discovery Call Scheduled for")) {
         const match = l.projectRequirement.match(/Discovery Call Scheduled for ([0-9]{4}-[0-9]{2}-[0-9]{2}) @ ([0-9]{1,2}:[0-9]{2}\s+[AP]M)/i);
         if (match) {
           allSlots.push({
@@ -257,7 +272,7 @@ export async function getBookedSlotsFromDB(): Promise<{ date: string; time: stri
     // Ignore lead read error
   }
 
-  // Deduplicate slots
+  // Deduplicate slots by unique slot (date + time)
   const normalize = (t: string) => (t || "").replace(/^0/, "").toUpperCase().trim();
   const uniqueSlots = Array.from(new Set(allSlots.map((s) => `${s.date}_${normalize(s.time)}`)))
     .map((key) => allSlots.find((s) => `${s.date}_${normalize(s.time)}` === key)!);
@@ -266,10 +281,10 @@ export async function getBookedSlotsFromDB(): Promise<{ date: string; time: stri
 }
 
 export async function saveBookingToDB(booking: BookingPayload): Promise<void> {
-  // 1. Always save locally to file cache first
+  // 1. Always save locally to file cache first (removes old slot for bookingId)
   saveLocalSlot({ date: booking.date, time: booking.time, bookingId: booking.bookingId });
 
-  // 2. Always persist into Lead table (which exists in production PostgreSQL DB)
+  // 2. Always persist into Lead table (upsert to update existing bookingId)
   try {
     await saveLead({
       leadId: booking.bookingId,
@@ -287,10 +302,18 @@ export async function saveBookingToDB(booking: BookingPayload): Promise<void> {
     logger.warn("Failed to persist booking as Lead record", "db_lead_booking_warn", { message: String(e) });
   }
 
-  // 3. Try optional Booking table
+  // 3. Try optional Booking table (upsert to handle rescheduled slot updates)
   try {
-    await (prisma as any).booking.create({
-      data: {
+    await (prisma as any).booking.upsert({
+      where: { bookingId: booking.bookingId },
+      update: {
+        date: booking.date,
+        time: booking.time,
+        timeZone: booking.timeZone || "Asia/Kolkata",
+        meetUrl: booking.meetUrl,
+        status: booking.status || "confirmed",
+      },
+      create: {
         bookingId: booking.bookingId,
         name: booking.name,
         email: booking.email,

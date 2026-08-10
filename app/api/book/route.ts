@@ -2,25 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { getBookedSlotsFromDB, saveBookingToDB } from "@/lib/db";
 
-// In-memory booked slots store (persists across API requests in server instance)
-interface BookedSlot {
-  date: string;
-  time: string;
-  bookingId: string;
-}
-
-const bookedSlotsStore: BookedSlot[] = [];
-
 export async function GET() {
   try {
     const dbSlots = await getBookedSlotsFromDB();
-    const allSlots = [...bookedSlotsStore, ...dbSlots];
-    const uniqueSlots = Array.from(new Set(allSlots.map((s) => `${s.date}_${s.time}`)))
-      .map((key) => allSlots.find((s) => `${s.date}_${s.time}` === key)!);
+    const normalize = (t: string) => (t || "").replace(/^0/, "").toUpperCase().trim();
+    const uniqueSlots = Array.from(new Set(dbSlots.map((s) => `${s.date}_${normalize(s.time)}`)))
+      .map((key) => dbSlots.find((s) => `${s.date}_${normalize(s.time)}` === key)!);
 
     return NextResponse.json({ bookedSlots: uniqueSlots });
   } catch (error) {
-    return NextResponse.json({ bookedSlots: bookedSlotsStore });
+    return NextResponse.json({ bookedSlots: [] });
   }
 }
 
@@ -33,21 +24,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required booking fields" }, { status: 400 });
     }
 
-    // Quick in-memory check first (fast path)
     const normalize = (t: string) => (t || "").replace(/^0/, "").toUpperCase().trim();
     const requestedTimeNorm = normalize(time);
 
-    const inMemoryConflict = bookedSlotsStore.some(
-      (slot) => slot.date === date && normalize(slot.time) === requestedTimeNorm
-    );
-    if (inMemoryConflict) {
-      return NextResponse.json(
-        { error: "This time slot has already been booked by another client. Please select another slot." },
-        { status: 409 }
-      );
-    }
-
-    // DB check (with timeout fallback — don't let DB failure block booking)
+    // Slot availability check against DB/local cache
     try {
       const dbSlots = await getBookedSlotsFromDB();
       const isDBConflict = dbSlots.some(
@@ -60,14 +40,12 @@ export async function POST(req: NextRequest) {
         );
       }
     } catch (dbCheckErr) {
-      logger.warn("DB slot check failed, proceeding with in-memory check only", "db_slot_check_warn");
+      logger.warn("DB slot check failed, proceeding with booking", "db_slot_check_warn");
     }
 
-    // Assign booking ID and lock in memory immediately
+    // Assign booking ID
     const assignedBookingId = bookingId || `INV-${Date.now().toString().slice(-6)}`;
     const assignedMeetUrl = meetUrl || `https://mithundas.cloud/meet/${assignedBookingId}`;
-    const newBooking: BookedSlot = { date, time, bookingId: assignedBookingId };
-    bookedSlotsStore.push(newBooking);
 
     // Calculate meeting start ISO timestamp from date + time (IST)
     let meetingStartISO = "";
