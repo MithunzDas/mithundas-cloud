@@ -277,12 +277,14 @@ export default function AdminFinancePage() {
       (item.companyName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.invoiceId || "").toLowerCase().includes(searchQuery.toLowerCase());
 
+    const isWonItem = item.paymentStatus === "won_pending" || (item.invoiceId && item.invoiceId.startsWith("WON-"));
+
     const matchesStatus =
-      (statusFilter === "all" && item.paymentStatus !== "won_pending") ||
-      (statusFilter === "won" && item.paymentStatus === "won_pending") ||
-      (statusFilter === "unpaid" && item.paymentStatus === "unpaid") ||
-      (statusFilter === "partially_paid" && item.paymentStatus === "partially_paid") ||
-      (statusFilter === "paid_in_full" && item.paymentStatus === "paid_in_full");
+      (statusFilter === "all" && !isWonItem) ||
+      (statusFilter === "won" && isWonItem) ||
+      (statusFilter === "unpaid" && !isWonItem && item.paymentStatus === "unpaid") ||
+      (statusFilter === "partially_paid" && !isWonItem && item.paymentStatus === "partially_paid") ||
+      (statusFilter === "paid_in_full" && !isWonItem && item.paymentStatus === "paid_in_full");
 
     return matchesSearch && matchesStatus;
   });
@@ -542,8 +544,8 @@ export default function AdminFinancePage() {
           <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 font-mono text-xs">
             <span className="text-text-secondary shrink-0 mr-1">Status Filter:</span>
             {[
-              { key: "all", label: `All Invoices (${invoices.filter((i) => i.paymentStatus !== "won_pending").length})` },
-              { key: "won", label: `🏆 WON Deals (${invoices.filter((i) => i.paymentStatus === "won_pending").length})` },
+              { key: "all", label: `All Invoices (${invoices.filter((i) => i.paymentStatus !== "won_pending" && (!i.invoiceId || !i.invoiceId.startsWith("WON-"))).length})` },
+              { key: "won", label: `🏆 WON Deals (${invoices.filter((i) => i.paymentStatus === "won_pending" || (i.invoiceId && i.invoiceId.startsWith("WON-"))).length})` },
               { key: "partially_paid", label: "Initial Deposit Paid" },
               { key: "paid_in_full", label: "Fully Settled (100%)" },
               { key: "unpaid", label: "Unpaid" },
@@ -586,7 +588,7 @@ export default function AdminFinancePage() {
                 </thead>
                 <tbody className="divide-y divide-border-app/50">
                   {filteredInvoices.map((inv) => {
-                    const isWonPending = inv.paymentStatus === "won_pending";
+                    const isWonPending = inv.paymentStatus === "won_pending" || (inv.invoiceId && inv.invoiceId.startsWith("WON-"));
                     const sym = inv.currencySymbol || "$";
                     const totalRaw = parseFloat((inv.totalAmount || "").replace(/[^0-9.]/g, "")) || inv.totalAmountNumeric || 0;
                     const recRaw = Number(inv.receivedAmountNumeric) || 0;

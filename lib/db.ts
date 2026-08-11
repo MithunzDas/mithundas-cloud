@@ -950,6 +950,10 @@ export async function getFinancialLedger(): Promise<{
   let totalOutstanding = 0;
 
   for (const inv of combinedInvoices) {
+    if (inv.paymentStatus === "won_pending" || (inv.invoiceId && inv.invoiceId.startsWith("WON-"))) {
+      continue; // Exclude pending WON leads from gross revenue totals until invoice is issued
+    }
+
     const curr = inv.currency || "USD";
     if (!currencyTotals[curr]) {
       currencyTotals[curr] = { total: 0, collected: 0, remaining: 0 };
