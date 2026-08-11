@@ -522,18 +522,30 @@ export interface InvoicePayload {
   createdAt?: string;
 }
 
+const REPO_INVOICES_FILE = path.join(process.cwd(), "data", "invoices.json");
 const LOCAL_INVOICES_FILE = path.join(process.cwd(), ".invoices.json");
 const TMP_INVOICES_FILE = "/tmp/invoices.json";
 
 function getLocalInvoices(): InvoicePayload[] {
-  try {
-    const fileToRead = fs.existsSync(LOCAL_INVOICES_FILE) ? LOCAL_INVOICES_FILE : (fs.existsSync(TMP_INVOICES_FILE) ? TMP_INVOICES_FILE : null);
-    if (fileToRead) {
-      const data = fs.readFileSync(fileToRead, "utf-8");
-      return JSON.parse(data);
-    }
-  } catch (e) {}
-  return [];
+  const map = new Map<string, InvoicePayload>();
+  const filesToRead = [REPO_INVOICES_FILE, LOCAL_INVOICES_FILE, TMP_INVOICES_FILE];
+
+  for (const filePath of filesToRead) {
+    try {
+      if (fs.existsSync(filePath)) {
+        const data = fs.readFileSync(filePath, "utf-8");
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+          for (const inv of parsed) {
+            if (inv && inv.invoiceId && !map.has(inv.invoiceId)) {
+              map.set(inv.invoiceId, inv);
+            }
+          }
+        }
+      }
+    } catch (e) {}
+  }
+  return Array.from(map.values());
 }
 
 function saveLocalInvoice(inv: InvoicePayload) {
@@ -541,6 +553,11 @@ function saveLocalInvoice(inv: InvoicePayload) {
     const current = getLocalInvoices().filter((i) => i.invoiceId !== inv.invoiceId);
     current.push(inv);
     const data = JSON.stringify(current, null, 2);
+    try {
+      const dir = path.dirname(REPO_INVOICES_FILE);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(REPO_INVOICES_FILE, data);
+    } catch (e) {}
     try { fs.writeFileSync(LOCAL_INVOICES_FILE, data); } catch (e) {}
     try { fs.writeFileSync(TMP_INVOICES_FILE, data); } catch (e) {}
   } catch (e) {}
