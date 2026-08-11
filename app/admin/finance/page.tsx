@@ -22,6 +22,8 @@ import {
   Building2,
   QrCode,
   Sparkles,
+  Eye,
+  Calendar,
 } from "lucide-react";
 import { AdminNav } from "../components/AdminNav";
 
@@ -109,12 +111,15 @@ export default function AdminFinancePage() {
   const [verifyingTxnId, setVerifyingTxnId] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Modals
+  // Modals & Preview States
   const [showIssueInvoiceModal, setShowIssueInvoiceModal] = useState(false);
   const [showRecordCashModal, setShowRecordCashModal] = useState(false);
+  const [isProposalPreviewing, setIsProposalPreviewing] = useState(false);
+  const [isPolishingScope, setIsPolishingScope] = useState(false);
 
-  // New Invoice Form
+  // New Invoice / Welcome Package Form
   const [newInvoiceForm, setNewInvoiceForm] = useState({
+    invoiceId: "",
     clientName: "",
     clientEmail: "",
     companyName: "",
@@ -125,8 +130,29 @@ export default function AdminFinancePage() {
     setupFee: "150.00",
     monthlyRetainer: "200.00",
     projectScope: "Custom AI Workflow Automation Architecture & Webhook Gateway",
+    startDate: new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0],
     paymentLink: "",
   });
+
+  const handleAIPolishScope = async () => {
+    setIsPolishingScope(true);
+    try {
+      const res = await fetch("/api/admin/leads/polish-scope", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rawNotes: newInvoiceForm.projectScope, company: newInvoiceForm.companyName }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.polishedScope) {
+          setNewInvoiceForm((prev) => ({ ...prev, projectScope: data.polishedScope }));
+        }
+      }
+    } catch (e) {
+    } finally {
+      setIsPolishingScope(false);
+    }
+  };
 
   // Record Cash Form
   const [cashForm, setCashForm] = useState({
@@ -372,7 +398,26 @@ export default function AdminFinancePage() {
             </button>
 
             <button
-              onClick={() => setShowIssueInvoiceModal(true)}
+              onClick={() => {
+                const generatedInvId = `INV-${Math.floor(100000 + Math.random() * 900000)}`;
+                setNewInvoiceForm({
+                  invoiceId: generatedInvId,
+                  clientName: "",
+                  clientEmail: "",
+                  companyName: "",
+                  currency: "USD",
+                  currencySymbol: "$",
+                  totalAmount: "2500.00",
+                  depositPercent: "20",
+                  setupFee: "150.00",
+                  monthlyRetainer: "200.00",
+                  projectScope: "Custom AI Workflow Automation Architecture",
+                  startDate: new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0],
+                  paymentLink: `https://mithundas.cloud/invoice/${generatedInvId}`,
+                });
+                setIsProposalPreviewing(false);
+                setShowIssueInvoiceModal(true);
+              }}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:opacity-90 text-slate-950 rounded-xl text-xs font-sans font-bold transition-all shadow-md"
             >
               <Plus className="w-4 h-4" />
@@ -675,7 +720,9 @@ export default function AdminFinancePage() {
                             {isWonPending ? (
                               <button
                                 onClick={() => {
+                                  const generatedInvId = `INV-${inv.invoiceId.replace(/[^0-9]/g, "").slice(-6) || Math.floor(100000 + Math.random() * 900000)}`;
                                   setNewInvoiceForm({
+                                    invoiceId: generatedInvId,
                                     clientName: inv.clientName,
                                     clientEmail: inv.clientEmail,
                                     companyName: inv.companyName,
@@ -686,8 +733,10 @@ export default function AdminFinancePage() {
                                     setupFee: "150.00",
                                     monthlyRetainer: "200.00",
                                     projectScope: inv.projectScope || "Custom AI Workflow Automation Architecture",
-                                    paymentLink: "",
+                                    startDate: new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0],
+                                    paymentLink: `https://mithundas.cloud/invoice/${generatedInvId}`,
                                   });
+                                  setIsProposalPreviewing(false);
                                   setShowIssueInvoiceModal(true);
                                 }}
                                 className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:opacity-90 text-slate-950 font-bold text-xs rounded-xl font-sans shadow-md flex items-center gap-1.5 transition-all"
@@ -739,220 +788,384 @@ export default function AdminFinancePage() {
       {/* Standalone Issue Custom Invoice / Configure Welcome Package Modal (SS3) */}
       {showIssueInvoiceModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0f1420] border border-border-app rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative max-h-[90vh] flex flex-col">
+          <div className="bg-[#0f1420] border border-border-app rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl relative max-h-[90vh] flex flex-col">
             <div className="h-1 bg-gradient-to-r from-emerald-500 via-cyan-500 to-emerald-500"></div>
 
             <div className="p-6 border-b border-border-app flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-text-primary">Configure Customer Welcome Package</h3>
+                <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
+                  {isProposalPreviewing ? "👁️ Live Proposal Email Preview" : "Configure Customer Welcome Package"}
+                </h3>
                 <p className="text-xs text-text-secondary font-mono">
-                  Set deposit terms, SOW scope, and dispatch proposal email package
+                  {isProposalPreviewing ? "Review exact client proposal email template before dispatching" : "Set deposit terms, SOW scope, and preview proposal email"}
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <select
-                  value={newInvoiceForm.currency}
-                  onChange={(e) => {
-                    const sel = CURRENCIES.find((c) => c.code === e.target.value);
-                    setNewInvoiceForm({ ...newInvoiceForm, currency: e.target.value, currencySymbol: sel?.symbol || "$" });
+                {!isProposalPreviewing && (
+                  <select
+                    value={newInvoiceForm.currency}
+                    onChange={(e) => {
+                      const sel = CURRENCIES.find((c) => c.code === e.target.value);
+                      setNewInvoiceForm({ ...newInvoiceForm, currency: e.target.value, currencySymbol: sel?.symbol || "$" });
+                    }}
+                    className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-1 text-xs text-cyan-400 font-mono font-bold focus:outline-none cursor-pointer"
+                  >
+                    {CURRENCIES.map((c) => (
+                      <option key={c.code} value={c.code} className="bg-[#121824] text-white font-mono">
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <button
+                  onClick={() => {
+                    setShowIssueInvoiceModal(false);
+                    setIsProposalPreviewing(false);
                   }}
-                  className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-1 text-xs text-cyan-400 font-mono font-bold focus:outline-none cursor-pointer"
+                  className="text-text-secondary hover:text-text-primary"
                 >
-                  {CURRENCIES.map((c) => (
-                    <option key={c.code} value={c.code} className="bg-[#121824] text-white font-mono">
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-                <button onClick={() => setShowIssueInvoiceModal(false)} className="text-text-secondary hover:text-text-primary">
                   <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            <form onSubmit={handleIssueInvoiceSubmit} className="p-6 space-y-4 text-xs font-mono overflow-y-auto">
-              <div className="grid grid-cols-2 gap-3">
+            {!isProposalPreviewing ? (
+              /* Configure Terms Form */
+              <form onSubmit={handleIssueInvoiceSubmit} className="p-6 space-y-4 text-xs font-mono overflow-y-auto">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] text-text-secondary uppercase mb-1">Client Name</label>
+                    <input
+                      type="text"
+                      value={newInvoiceForm.clientName}
+                      onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, clientName: e.target.value })}
+                      placeholder="e.g. Alex Vance"
+                      className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none focus:border-emerald-400 font-mono"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-text-secondary uppercase mb-1">Client Email</label>
+                    <input
+                      type="email"
+                      value={newInvoiceForm.clientEmail}
+                      onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, clientEmail: e.target.value })}
+                      placeholder="alex@vance.com"
+                      className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none focus:border-emerald-400 font-mono"
+                      required
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-[10px] text-text-secondary uppercase mb-1">Client Name</label>
+                  <label className="block text-[10px] text-text-secondary uppercase mb-1">Company Name</label>
                   <input
                     type="text"
-                    value={newInvoiceForm.clientName}
-                    onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, clientName: e.target.value })}
-                    placeholder="e.g. Alex Vance"
+                    value={newInvoiceForm.companyName}
+                    onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, companyName: e.target.value })}
+                    placeholder="Vance Enterprises"
                     className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none focus:border-emerald-400 font-mono"
                     required
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[10px] text-text-secondary uppercase mb-1">Client Email</label>
-                  <input
-                    type="email"
-                    value={newInvoiceForm.clientEmail}
-                    onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, clientEmail: e.target.value })}
-                    placeholder="alex@vance.com"
-                    className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none focus:border-emerald-400 font-mono"
-                    required
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] text-text-secondary uppercase mb-1">Agreed Project Fee</label>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3 font-mono text-xs text-cyan-400 font-bold select-none">
+                        {newInvoiceForm.currencySymbol}
+                      </span>
+                      <input
+                        type="text"
+                        value={newInvoiceForm.totalAmount}
+                        onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, totalAmount: e.target.value })}
+                        placeholder="2500.00"
+                        className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 pl-8 text-text-primary focus:outline-none font-mono"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-text-secondary uppercase mb-1">Upfront Deposit %</label>
+                    <div className="relative flex items-center">
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={newInvoiceForm.depositPercent}
+                        onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, depositPercent: e.target.value })}
+                        className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 pr-8 text-text-primary focus:outline-none font-mono"
+                        placeholder="25"
+                        required
+                      />
+                      <span className="absolute right-3 text-text-secondary font-mono text-xs select-none">%</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-[10px] text-text-secondary uppercase mb-1">Company Name</label>
-                <input
-                  type="text"
-                  value={newInvoiceForm.companyName}
-                  onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, companyName: e.target.value })}
-                  placeholder="Vance Enterprises"
-                  className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none focus:border-emerald-400 font-mono"
-                  required
-                />
-              </div>
+                {/* Dynamic Upfront Payable Banner */}
+                {(() => {
+                  const numericFee = parseFloat((newInvoiceForm.totalAmount || "").replace(/[^0-9.]/g, "")) || 0;
+                  const pct = parseFloat(newInvoiceForm.depositPercent) || 0;
+                  const depositAmt = (numericFee * pct) / 100;
+                  const setupAmt = parseFloat((newInvoiceForm.setupFee || "").replace(/[^0-9.]/g, "")) || 0;
+                  const totalPayable = depositAmt + setupAmt;
+                  const currencySymbol = newInvoiceForm.currencySymbol || "$";
+                  return (
+                    <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-3 font-mono text-xs text-emerald-400 flex justify-between items-center">
+                      <span>💳 Total Upfront Payable ({pct}% Deposit{setupAmt > 0 ? " + Setup" : ""}):</span>
+                      <strong className="font-bold text-sm">{currencySymbol}{totalPayable.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                    </div>
+                  );
+                })()}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] text-text-secondary uppercase mb-1">Agreed Project Fee</label>
-                  <div className="relative flex items-center">
-                    <span className="absolute left-3 font-mono text-xs text-cyan-400 font-bold select-none">
-                      {newInvoiceForm.currencySymbol}
-                    </span>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] text-text-secondary uppercase mb-1">Fixed Setup / Infrastructure Fee</label>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3 font-mono text-xs text-text-secondary font-bold select-none">
+                        {newInvoiceForm.currencySymbol}
+                      </span>
+                      <input
+                        type="text"
+                        value={newInvoiceForm.setupFee}
+                        onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, setupFee: e.target.value })}
+                        className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 pl-8 text-text-primary focus:outline-none font-mono"
+                        placeholder="150.00"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-text-secondary uppercase mb-1">Monthly Support Retainer</label>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3 font-mono text-xs text-text-secondary font-bold select-none">
+                        {newInvoiceForm.currencySymbol}
+                      </span>
+                      <input
+                        type="text"
+                        value={newInvoiceForm.monthlyRetainer}
+                        onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, monthlyRetainer: e.target.value })}
+                        className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 pl-8 pr-14 text-text-primary focus:outline-none font-mono"
+                        placeholder="200.00"
+                      />
+                      <span className="absolute right-3 font-mono text-[10px] text-text-secondary font-semibold select-none">
+                        /month
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] text-text-secondary uppercase mb-1">Invoice Reference ID</label>
                     <input
                       type="text"
-                      value={newInvoiceForm.totalAmount}
-                      onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, totalAmount: e.target.value })}
-                      placeholder="2500.00"
-                      className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 pl-8 text-text-primary focus:outline-none font-mono"
+                      value={newInvoiceForm.invoiceId}
+                      onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, invoiceId: e.target.value })}
+                      className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none font-mono"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-text-secondary uppercase mb-1">Target Start Date</label>
+                    <input
+                      type="date"
+                      value={newInvoiceForm.startDate}
+                      onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, startDate: e.target.value })}
+                      className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none font-mono"
                       required
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-[10px] text-text-secondary uppercase mb-1">Upfront Deposit %</label>
-                  <div className="relative flex items-center">
-                    <input
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={newInvoiceForm.depositPercent}
-                      onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, depositPercent: e.target.value })}
-                      className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 pr-8 text-text-primary focus:outline-none font-mono"
-                      placeholder="25"
-                      required
-                    />
-                    <span className="absolute right-3 text-text-secondary font-mono text-xs select-none">%</span>
+                {/* Auto-Generated System Payment Link (Case 1) */}
+                <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-3 font-mono text-xs text-cyan-400 flex items-center justify-between">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <div className="overflow-hidden">
+                      <div className="text-[10px] text-text-secondary uppercase tracking-wider font-semibold">⚡ Auto-Generated System Payment Link</div>
+                      <div className="font-bold text-white text-[11px] truncate">
+                        {`https://mithundas.cloud/invoice/${newInvoiceForm.invoiceId || 'INV-...'}`}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-
-              {/* Dynamic Upfront Payable Calculation Helper Banner (SS3) */}
-              {(() => {
-                const numericFee = parseFloat((newInvoiceForm.totalAmount || "").replace(/[^0-9.]/g, "")) || 0;
-                const pct = parseFloat(newInvoiceForm.depositPercent) || 0;
-                const depositAmt = (numericFee * pct) / 100;
-                const setupAmt = parseFloat((newInvoiceForm.setupFee || "").replace(/[^0-9.]/g, "")) || 0;
-                const totalPayable = depositAmt + setupAmt;
-                const currencySymbol = newInvoiceForm.currencySymbol || "$";
-                return (
-                  <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-3 font-mono text-xs text-emerald-400 flex justify-between items-center">
-                    <span>💳 Total Upfront Payable ({pct}% Deposit{setupAmt > 0 ? " + Setup" : ""}):</span>
-                    <strong className="font-bold text-sm">{currencySymbol}{totalPayable.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
-                  </div>
-                );
-              })()}
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] text-text-secondary uppercase mb-1">Fixed Setup / Infrastructure Fee</label>
-                  <div className="relative flex items-center">
-                    <span className="absolute left-3 font-mono text-xs text-text-secondary font-bold select-none">
-                      {newInvoiceForm.currencySymbol}
-                    </span>
-                    <input
-                      type="text"
-                      value={newInvoiceForm.setupFee}
-                      onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, setupFee: e.target.value })}
-                      className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 pl-8 text-text-primary focus:outline-none font-mono"
-                      placeholder="150.00"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] text-text-secondary uppercase mb-1">Monthly Support Retainer</label>
-                  <div className="relative flex items-center">
-                    <span className="absolute left-3 font-mono text-xs text-text-secondary font-bold select-none">
-                      {newInvoiceForm.currencySymbol}
-                    </span>
-                    <input
-                      type="text"
-                      value={newInvoiceForm.monthlyRetainer}
-                      onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, monthlyRetainer: e.target.value })}
-                      className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 pl-8 pr-14 text-text-primary focus:outline-none font-mono"
-                      placeholder="200.00"
-                    />
-                    <span className="absolute right-3 font-mono text-[10px] text-text-secondary font-semibold select-none">
-                      /month
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] text-text-secondary uppercase mb-1">Custom Payment Link (Razorpay / Stripe / PayPal)</label>
-                <input
-                  type="url"
-                  value={newInvoiceForm.paymentLink}
-                  onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, paymentLink: e.target.value })}
-                  placeholder="https://rzp.io/l/... or https://buy.stripe.com/..."
-                  className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none font-mono"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-[10px] text-text-secondary uppercase">Statement of Work / Scope Description</label>
                   <button
                     type="button"
-                    onClick={() => {
-                      setNewInvoiceForm((prev) => ({
-                        ...prev,
-                        projectScope: `Custom AI Workflow Automation Architecture & Webhook Integration for ${prev.companyName || "Client"}`,
-                      }));
-                    }}
-                    className="flex items-center gap-1 rounded bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 px-2 py-0.5 font-mono text-[10px] text-cyan-400 font-bold transition-all"
+                    onClick={() => handleCopy(`https://mithundas.cloud/invoice/${newInvoiceForm.invoiceId}`, "Payment Link")}
+                    className="px-2.5 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 rounded-lg text-[10px] text-cyan-300 font-bold flex items-center gap-1 shrink-0"
                   >
-                    <Sparkles className="h-3 w-3" />
-                    <span>✨ AI Polish Scope</span>
+                    <Copy className="w-3 h-3" />
+                    <span>Copy</span>
                   </button>
                 </div>
-                <textarea
-                  value={newInvoiceForm.projectScope}
-                  onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, projectScope: e.target.value })}
-                  rows={3}
-                  className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none font-mono leading-relaxed"
-                  required
-                />
-              </div>
 
-              <div className="pt-3 border-t border-border-app flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowIssueInvoiceModal(false)}
-                  className="px-4 py-2 bg-[#1b2333] text-text-primary rounded-xl text-xs font-mono"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5"
-                >
-                  <FileText className="w-4 h-4" />
-                  <span>{loading ? "Generating..." : "Generate & Dispatch Welcome Package"}</span>
-                </button>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[10px] text-text-secondary uppercase">Statement of Work / Scope Description</label>
+                    <button
+                      type="button"
+                      disabled={isPolishingScope}
+                      onClick={handleAIPolishScope}
+                      className="flex items-center gap-1 rounded bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 px-2 py-0.5 font-mono text-[10px] text-cyan-400 font-bold transition-all disabled:opacity-50"
+                    >
+                      <Sparkles className={`h-3 w-3 ${isPolishingScope ? "animate-spin text-cyan-400" : ""}`} />
+                      <span>{isPolishingScope ? "✨ Polishing..." : "✨ AI Polish Scope"}</span>
+                    </button>
+                  </div>
+                  <textarea
+                    value={newInvoiceForm.projectScope}
+                    onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, projectScope: e.target.value })}
+                    rows={3}
+                    className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none font-mono leading-relaxed"
+                    required
+                  />
+                </div>
+
+                <div className="pt-3 border-t border-border-app flex justify-between items-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowIssueInvoiceModal(false)}
+                    className="px-4 py-2 bg-[#1b2333] text-text-primary rounded-xl text-xs font-mono"
+                  >
+                    Cancel
+                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsProposalPreviewing(true)}
+                      className="px-4 py-2.5 bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>Preview Proposal Email</span>
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5"
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span>{loading ? "Generating..." : "Generate & Dispatch Welcome Package"}</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+            ) : (
+              /* Live Proposal HTML Email Preview Screen (Case 2) */
+              <div className="p-6 space-y-4 text-xs font-sans overflow-y-auto">
+                <div className="rounded-xl bg-[#161d2c] border border-border-app p-3 text-[11px] text-text-secondary font-mono flex justify-between items-center">
+                  <span>To: <strong className="text-white">{newInvoiceForm.clientName}</strong> ({newInvoiceForm.clientEmail})</span>
+                  <span>Currency: <strong className="text-cyan-400">{newInvoiceForm.currency} ({newInvoiceForm.currencySymbol})</strong></span>
+                </div>
+
+                <div className="bg-white rounded-xl p-5 border border-border-app max-h-[50vh] overflow-y-auto">
+                  <div className="max-w-[540px] mx-auto text-slate-800 font-sans text-xs leading-relaxed">
+                    {/* Top Accent Bar */}
+                    <div className="h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-sky-500 rounded-t mb-3"></div>
+                    
+                    {/* Header */}
+                    <div className="flex items-center gap-2 pb-3 mb-3 border-b border-slate-100">
+                      <img src="https://mithundas.cloud/logo.png" alt="M" className="w-8 h-8 rounded" />
+                      <div>
+                        <div className="font-extrabold text-slate-900 text-sm">Mithun Das</div>
+                        <div className="text-[9px] font-bold text-sky-500 uppercase tracking-widest">AI AUTOMATION</div>
+                      </div>
+                    </div>
+
+                    {/* Greeting */}
+                    <p className="mb-2">Hi <strong>{newInvoiceForm.clientName}</strong>,</p>
+                    <p className="mb-3 text-slate-600">We are thrilled to kick off the custom workflow automation build for <strong>{newInvoiceForm.companyName}</strong>!</p>
+
+                    {/* Breakdown Box */}
+                    <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 border-l-4 border-l-sky-500 mb-3 space-y-2 text-[11px]">
+                      <div className="font-extrabold text-sky-600 uppercase text-[10px] tracking-wider mb-2">📋 AGREED PROJECT BREAKDOWN</div>
+                      <div><strong className="text-slate-500">Statement of Work:</strong> <span className="text-slate-900 font-medium">{newInvoiceForm.projectScope}</span></div>
+                      
+                      {(() => {
+                        const rawFee = (newInvoiceForm.totalAmount || "").replace(/[^0-9.]/g, "");
+                        const rawSetup = (newInvoiceForm.setupFee || "").replace(/[^0-9.]/g, "");
+                        const rawRetainer = (newInvoiceForm.monthlyRetainer || "").replace(/[^0-9.]/g, "");
+
+                        const setupAmt = parseFloat(rawSetup) || 0;
+                        const retainerAmt = parseFloat(rawRetainer) || 0;
+                        const numericFee = parseFloat(rawFee) || 0;
+                        const pct = parseFloat(newInvoiceForm.depositPercent) || 0;
+                        const depositAmt = (numericFee * pct) / 100;
+                        const totalPayable = depositAmt + setupAmt;
+                        const sym = newInvoiceForm.currencySymbol || "$";
+
+                        const displayFee = `${sym}${numericFee ? numericFee.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : rawFee}`;
+                        const displaySetup = `${sym}${setupAmt ? setupAmt.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : rawSetup}`;
+                        const displayRetainer = `${sym}${retainerAmt ? retainerAmt.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : rawRetainer}/month`;
+
+                        return (
+                          <>
+                            <div><strong className="text-slate-500">Agreed Project Fee:</strong> <span className="text-slate-900 font-bold">{displayFee}</span></div>
+                            {setupAmt > 0 && (
+                              <div><strong className="text-slate-500">Fixed Setup Fee:</strong> <span className="text-slate-700">{displaySetup}</span></div>
+                            )}
+                            {retainerAmt > 0 && (
+                              <div><strong className="text-slate-500">Monthly Retainer:</strong> <span className="text-slate-700">{displayRetainer}</span></div>
+                            )}
+                            <div><strong className="text-slate-500">Target Start Date:</strong> <span className="text-sky-600 font-semibold">{newInvoiceForm.startDate}</span></div>
+                            <div><strong className="text-slate-500">Deposit Reference:</strong> <span className="text-slate-500 font-mono">{newInvoiceForm.invoiceId}</span></div>
+
+                            {/* Total Upfront Box */}
+                            <div className="mt-2.5 p-2.5 bg-slate-900 text-white rounded flex justify-between items-center font-mono text-[11px]">
+                              <span className="text-sky-400 font-bold">
+                                💳 Total Upfront Payable ({pct}% Deposit{setupAmt > 0 ? " + Setup" : ""}):
+                              </span>
+                              <span className="text-emerald-400 font-extrabold text-xs">{sym}{totalPayable.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Payment Link Button */}
+                    <div className="my-4 text-center">
+                      <a href={`https://mithundas.cloud/invoice/${newInvoiceForm.invoiceId}`} target="_blank" rel="noreferrer" className="inline-block bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-bold px-6 py-3 rounded-lg text-xs shadow-md">
+                        💳 Pay Upfront Deposit &amp; Lock In Start Date
+                      </a>
+                    </div>
+
+                    {/* Signature */}
+                    <div className="pt-3 border-t border-slate-100 mt-3 flex items-center gap-2 text-[10px]">
+                      <img src="https://mithundas.cloud/logo.png" alt="M" className="w-7 h-7 rounded" />
+                      <div>
+                        <div className="font-bold text-slate-900">Mithun Das</div>
+                        <div className="text-slate-500 text-[9px]">Founder &amp; Automation Architect • Mithun Das AI Automation</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-3 flex justify-between items-center border-t border-border-app">
+                  <button
+                    type="button"
+                    onClick={() => setIsProposalPreviewing(false)}
+                    className="px-4 py-2 bg-[#1b2333] text-text-primary rounded-xl text-xs font-mono flex items-center gap-1.5"
+                  >
+                    ✏️ Back to Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleIssueInvoiceSubmit}
+                    disabled={loading}
+                    className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>{loading ? "Dispatching..." : "Confirm & Dispatch Welcome Package Email"}</span>
+                  </button>
+                </div>
               </div>
-            </form>
+            )}
           </div>
         </div>
       )}
