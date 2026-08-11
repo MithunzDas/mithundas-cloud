@@ -881,6 +881,40 @@ export async function getFinancialLedger(): Promise<{
 }> {
   const invoices = await getAllInvoicesFromDB();
 
+  // Merge all WON leads from DB into financial ledger automatically
+  try {
+    const leads = await getLeads();
+    const wonLeads = leads.filter((l: any) => l.status === "won" || l.status === "WON");
+    for (const lead of wonLeads) {
+      const hasInvoice = invoices.some((inv) => inv.leadId === lead.leadId || (inv.clientEmail && inv.clientEmail.toLowerCase() === lead.email.toLowerCase()));
+      if (!hasInvoice) {
+        const invId = `INV-${lead.leadId.replace(/[^0-9]/g, "").slice(-6) || Math.floor(100000 + Math.random() * 900000)}`;
+        invoices.push({
+          invoiceId: invId,
+          leadId: lead.leadId,
+          clientName: lead.name,
+          clientEmail: lead.email,
+          companyName: lead.company,
+          currency: "USD",
+          currencySymbol: "$",
+          totalAmount: "$2,500.00",
+          totalAmountNumeric: 2500,
+          depositPercent: "20",
+          depositAmount: "$500.00",
+          receivedAmountNumeric: 0,
+          remainingAmountNumeric: 2500,
+          setupFee: "150.00",
+          monthlyRetainer: "200.00",
+          projectScope: lead.projectRequirement || "Custom AI Workflow Automation Architecture",
+          paymentStatus: "unpaid",
+          issueDate: new Date().toISOString().split("T")[0],
+          dueDate: new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0],
+          createdAt: lead.submittedAt || new Date().toISOString(),
+        });
+      }
+    }
+  } catch (e) {}
+
   let allTxns: PaymentTransactionPayload[] = [];
   try {
     const txns = await (prisma as any).paymentTransaction.findMany({

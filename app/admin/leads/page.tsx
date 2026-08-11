@@ -837,33 +837,21 @@ export default function AdminLeadsPage() {
                   </div>
                 </div>
 
-                {/* Onboarding Kit Trigger */}
+                {/* Mark Won */}
                 <div className="rounded-lg border border-accent-green/20 bg-accent-green/5 p-3 space-y-2">
                   <div className="flex items-center gap-1.5 text-accent-green font-mono text-[9px] font-bold uppercase">
                     <TrendingUp className="h-3.5 w-3.5" />
-                    Convert to Customer & Onboard
+                    Mark Deal as Won
                   </div>
                   <p className="font-sans text-[11px] text-text-muted leading-snug">
-                    Mark won, compile invoice, terms &amp; MSA and dispatch welcome package via Resend.
+                    Mark deal as WON. Automatically syncs to Financial Ledger for welcome package dispatch.
                   </p>
                   <button
-                    onClick={() => {
-                      const defaultPolished = polishScopeText(
-                        selectedLead.projectRequirement,
-                        selectedLead.company
-                      );
-                      setOnboardingForm((prev) => ({
-                        ...prev,
-                        invoiceAmount: (prev.invoiceAmount || "2,500.00").replace(/[\$₹€£]|A\$|\/mo|\/month/g, "").trim(),
-                        setupFee: (prev.setupFee || "150.00").replace(/[\$₹€£]|A\$|\/mo|\/month/g, "").trim(),
-                        monthlyRetainer: (prev.monthlyRetainer || "200.00").replace(/[\$₹€£]|A\$|\/mo|\/month/g, "").trim(),
-                        projectScope: defaultPolished,
-                      }));
-                      setShowWonModal(true);
-                    }}
-                    className="w-full flex justify-center items-center gap-1.5 rounded bg-accent-green hover:bg-accent-green/90 text-text-inverse font-mono text-[10px] font-bold py-2"
+                    onClick={() => updateLead(selectedLead.leadId, "won")}
+                    className="w-full flex justify-center items-center gap-1.5 rounded bg-accent-green hover:bg-accent-green/90 text-text-inverse font-mono text-[10px] font-bold py-2.5 shadow-sm"
                   >
-                    Onboard Customer (MSA + PDF)
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    Mark Won
                   </button>
                 </div>
 

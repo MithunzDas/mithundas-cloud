@@ -701,25 +701,41 @@ export default function AdminFinancePage() {
         </div>
       </div>
 
-      {/* Standalone Issue Custom Invoice Modal */}
+      {/* Standalone Issue Custom Invoice / Configure Welcome Package Modal (SS3) */}
       {showIssueInvoiceModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0f1420] border border-border-app rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative">
+          <div className="bg-[#0f1420] border border-border-app rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative max-h-[90vh] flex flex-col">
             <div className="h-1 bg-gradient-to-r from-emerald-500 via-cyan-500 to-emerald-500"></div>
 
             <div className="p-6 border-b border-border-app flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold text-text-primary">Issue Standalone Invoice / Contract</h3>
+                <h3 className="text-base font-bold text-text-primary">Configure Customer Welcome Package</h3>
                 <p className="text-xs text-text-secondary font-mono">
-                  For WhatsApp, direct call, or off-platform clients
+                  Set deposit terms, SOW scope, and dispatch proposal email package
                 </p>
               </div>
-              <button onClick={() => setShowIssueInvoiceModal(false)} className="text-text-secondary hover:text-text-primary">
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-3">
+                <select
+                  value={newInvoiceForm.currency}
+                  onChange={(e) => {
+                    const sel = CURRENCIES.find((c) => c.code === e.target.value);
+                    setNewInvoiceForm({ ...newInvoiceForm, currency: e.target.value, currencySymbol: sel?.symbol || "$" });
+                  }}
+                  className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-1 text-xs text-cyan-400 font-mono font-bold focus:outline-none cursor-pointer"
+                >
+                  {CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code} className="bg-[#121824] text-white font-mono">
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+                <button onClick={() => setShowIssueInvoiceModal(false)} className="text-text-secondary hover:text-text-primary">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
-            <form onSubmit={handleIssueInvoiceSubmit} className="p-6 space-y-4 text-xs font-mono">
+            <form onSubmit={handleIssueInvoiceSubmit} className="p-6 space-y-4 text-xs font-mono overflow-y-auto">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] text-text-secondary uppercase mb-1">Client Name</label>
@@ -728,7 +744,7 @@ export default function AdminFinancePage() {
                     value={newInvoiceForm.clientName}
                     onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, clientName: e.target.value })}
                     placeholder="e.g. Alex Vance"
-                    className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none focus:border-emerald-400"
+                    className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none focus:border-emerald-400 font-mono"
                     required
                   />
                 </div>
@@ -740,106 +756,165 @@ export default function AdminFinancePage() {
                     value={newInvoiceForm.clientEmail}
                     onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, clientEmail: e.target.value })}
                     placeholder="alex@vance.com"
-                    className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none focus:border-emerald-400"
+                    className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none focus:border-emerald-400 font-mono"
                     required
                   />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] text-text-secondary uppercase mb-1">Company Name</label>
-                  <input
-                    type="text"
-                    value={newInvoiceForm.companyName}
-                    onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, companyName: e.target.value })}
-                    placeholder="Vance Enterprises"
-                    className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none focus:border-emerald-400"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] text-text-secondary uppercase mb-1">Currency</label>
-                  <select
-                    value={newInvoiceForm.currency}
-                    onChange={(e) => {
-                      const sel = CURRENCIES.find((c) => c.code === e.target.value);
-                      setNewInvoiceForm({ ...newInvoiceForm, currency: e.target.value, currencySymbol: sel?.symbol || "$" });
-                    }}
-                    className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-emerald-400 font-bold focus:outline-none"
-                  >
-                    {CURRENCIES.map((c) => (
-                      <option key={c.code} value={c.code}>{c.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] text-text-secondary uppercase mb-1">Agreed Total Fee ($X)</label>
-                  <input
-                    type="text"
-                    value={newInvoiceForm.totalAmount}
-                    onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, totalAmount: e.target.value })}
-                    placeholder="2500.00"
-                    className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] text-text-secondary uppercase mb-1">Deposit Required (%)</label>
-                  <select
-                    value={newInvoiceForm.depositPercent}
-                    onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, depositPercent: e.target.value })}
-                    className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none"
-                  >
-                    <option value="20">20% Initial Deposit</option>
-                    <option value="25">25% Initial Deposit</option>
-                    <option value="50">50% Upfront Deposit</option>
-                    <option value="100">100% Full Payment</option>
-                  </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] text-text-secondary uppercase mb-1">Project Scope / SOW Description</label>
-                <textarea
-                  value={newInvoiceForm.projectScope}
-                  onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, projectScope: e.target.value })}
-                  rows={3}
-                  className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none"
+                <label className="block text-[10px] text-text-secondary uppercase mb-1">Company Name</label>
+                <input
+                  type="text"
+                  value={newInvoiceForm.companyName}
+                  onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, companyName: e.target.value })}
+                  placeholder="Vance Enterprises"
+                  className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none focus:border-emerald-400 font-mono"
                   required
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] text-text-secondary uppercase mb-1">Agreed Project Fee</label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 font-mono text-xs text-cyan-400 font-bold select-none">
+                      {newInvoiceForm.currencySymbol}
+                    </span>
+                    <input
+                      type="text"
+                      value={newInvoiceForm.totalAmount}
+                      onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, totalAmount: e.target.value })}
+                      placeholder="2500.00"
+                      className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 pl-8 text-text-primary focus:outline-none font-mono"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-text-secondary uppercase mb-1">Upfront Deposit %</label>
+                  <div className="relative flex items-center">
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={newInvoiceForm.depositPercent}
+                      onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, depositPercent: e.target.value })}
+                      className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 pr-8 text-text-primary focus:outline-none font-mono"
+                      placeholder="25"
+                      required
+                    />
+                    <span className="absolute right-3 text-text-secondary font-mono text-xs select-none">%</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dynamic Upfront Payable Calculation Helper Banner (SS3) */}
+              {(() => {
+                const numericFee = parseFloat((newInvoiceForm.totalAmount || "").replace(/[^0-9.]/g, "")) || 0;
+                const pct = parseFloat(newInvoiceForm.depositPercent) || 0;
+                const depositAmt = (numericFee * pct) / 100;
+                const setupAmt = parseFloat((newInvoiceForm.setupFee || "").replace(/[^0-9.]/g, "")) || 0;
+                const totalPayable = depositAmt + setupAmt;
+                const currencySymbol = newInvoiceForm.currencySymbol || "$";
+                return (
+                  <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-3 font-mono text-xs text-emerald-400 flex justify-between items-center">
+                    <span>💳 Total Upfront Payable ({pct}% Deposit{setupAmt > 0 ? " + Setup" : ""}):</span>
+                    <strong className="font-bold text-sm">{currencySymbol}{totalPayable.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                  </div>
+                );
+              })()}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] text-text-secondary uppercase mb-1">Fixed Setup / Infrastructure Fee</label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 font-mono text-xs text-text-secondary font-bold select-none">
+                      {newInvoiceForm.currencySymbol}
+                    </span>
+                    <input
+                      type="text"
+                      value={newInvoiceForm.setupFee}
+                      onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, setupFee: e.target.value })}
+                      className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 pl-8 text-text-primary focus:outline-none font-mono"
+                      placeholder="150.00"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-text-secondary uppercase mb-1">Monthly Support Retainer</label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 font-mono text-xs text-text-secondary font-bold select-none">
+                      {newInvoiceForm.currencySymbol}
+                    </span>
+                    <input
+                      type="text"
+                      value={newInvoiceForm.monthlyRetainer}
+                      onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, monthlyRetainer: e.target.value })}
+                      className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 pl-8 pr-14 text-text-primary focus:outline-none font-mono"
+                      placeholder="200.00"
+                    />
+                    <span className="absolute right-3 font-mono text-[10px] text-text-secondary font-semibold select-none">
+                      /month
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <div>
-                <label className="block text-[10px] text-text-secondary uppercase mb-1">Custom Payment Link (Stripe / Razorpay / PayPal)</label>
+                <label className="block text-[10px] text-text-secondary uppercase mb-1">Custom Payment Link (Razorpay / Stripe / PayPal)</label>
                 <input
                   type="url"
                   value={newInvoiceForm.paymentLink}
                   onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, paymentLink: e.target.value })}
-                  placeholder="https://paypal.me/MithunzDas or https://buy.stripe.com/..."
-                  className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none"
+                  placeholder="https://rzp.io/l/... or https://buy.stripe.com/..."
+                  className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none font-mono"
                 />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[10px] text-text-secondary uppercase">Statement of Work / Scope Description</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewInvoiceForm((prev) => ({
+                        ...prev,
+                        projectScope: `Custom AI Workflow Automation Architecture & Webhook Integration for ${prev.companyName || "Client"}`,
+                      }));
+                    }}
+                    className="flex items-center gap-1 rounded bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 px-2 py-0.5 font-mono text-[10px] text-cyan-400 font-bold transition-all"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    <span>✨ AI Polish Scope</span>
+                  </button>
+                </div>
+                <textarea
+                  value={newInvoiceForm.projectScope}
+                  onChange={(e) => setNewInvoiceForm({ ...newInvoiceForm, projectScope: e.target.value })}
+                  rows={3}
+                  className="w-full bg-[#161d2c] border border-border-app rounded-lg p-2.5 text-text-primary focus:outline-none font-mono leading-relaxed"
+                  required
+                />
+              </div>
+
+              <div className="pt-3 border-t border-border-app flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setShowIssueInvoiceModal(false)}
-                  className="px-4 py-2 bg-[#1b2333] text-text-primary rounded-xl"
+                  className="px-4 py-2 bg-[#1b2333] text-text-primary rounded-xl text-xs font-mono"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-5 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold rounded-xl"
+                  className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5"
                 >
-                  {loading ? "Generating..." : "Generate Digital Invoice"}
+                  <FileText className="w-4 h-4" />
+                  <span>{loading ? "Generating..." : "Generate & Dispatch Welcome Package"}</span>
                 </button>
               </div>
             </form>
