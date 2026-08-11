@@ -76,11 +76,19 @@ export async function POST(req: NextRequest) {
     const n8nWebhookUrl = "https://n8n.srv1594654.hstgr.cloud/webhook/onboarding-trigger";
     const webhookPayload = {
       event: "customer.onboarded",
+      // Keys expected by n8n workflow nodes ($json.body.email, $json.body.name, etc.)
+      email: clientEmail,
+      name: clientName,
+      company: companyName,
+      invoiceAmount: invoicePayload.totalAmount,
+      // Alias fields for full compatibility
+      clientEmail,
+      clientName,
+      companyName,
+      toEmail: clientEmail,
+      to: clientEmail,
       invoiceId,
       leadId,
-      clientName,
-      clientEmail,
-      companyName,
       currency,
       currencySymbol,
       totalAmount: invoicePayload.totalAmount,
