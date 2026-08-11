@@ -524,15 +524,15 @@ export default function AdminFinancePage() {
         )}
 
         {/* Filter & Search Bar */}
-        <div className="bg-[#0f1420] border border-border-app rounded-2xl p-4 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="relative w-full md:w-96">
+        <div className="bg-[#0f1420] border border-border-app rounded-2xl p-4 mb-6 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4 shadow-lg">
+          <div className="relative w-full xl:w-80 shrink-0">
             <Search className="w-4 h-4 text-text-secondary absolute left-3.5 top-3" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by client, email, company or INV-id..."
-              className="w-full bg-[#161d2c] border border-border-app/80 rounded-xl pl-10 pr-4 py-2 text-xs text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:border-emerald-400 font-mono"
+              className="w-full bg-[#161d2c] border border-border-app/80 rounded-xl pl-10 pr-8 py-2 text-xs text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:border-cyan-400 font-mono"
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery("")} className="absolute right-3 top-3 text-text-secondary hover:text-text-primary">
@@ -541,8 +541,8 @@ export default function AdminFinancePage() {
             )}
           </div>
 
-          <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 font-mono text-xs">
-            <span className="text-text-secondary shrink-0 mr-1">Status Filter:</span>
+          <div className="flex flex-wrap items-center gap-2 font-mono text-xs [&-::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <span className="text-[10px] uppercase tracking-wider text-text-secondary/70 shrink-0 font-semibold mr-1">Status:</span>
             {[
               { key: "all", label: `All Invoices (${invoices.filter((i) => i.paymentStatus !== "won_pending" && (!i.invoiceId || !i.invoiceId.startsWith("WON-"))).length})` },
               { key: "won", label: `🏆 WON Deals (${invoices.filter((i) => i.paymentStatus === "won_pending" || (i.invoiceId && i.invoiceId.startsWith("WON-"))).length})` },
@@ -553,10 +553,10 @@ export default function AdminFinancePage() {
               <button
                 key={tab.key}
                 onClick={() => setStatusFilter(tab.key)}
-                className={`px-3.5 py-1.5 rounded-lg transition-all shrink-0 ${
+                className={`px-3.5 py-1.5 rounded-xl transition-all font-mono text-xs border ${
                   statusFilter === tab.key
-                    ? "bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-cyan-400 border border-cyan-500/40 font-bold"
-                    : "bg-[#161d2c] text-text-secondary hover:text-text-primary"
+                    ? "bg-gradient-to-r from-emerald-500/20 via-cyan-500/20 to-emerald-500/20 text-cyan-300 border-cyan-500/50 font-bold shadow-[0_0_15px_rgba(6,182,212,0.15)]"
+                    : "bg-[#131926] text-text-secondary hover:text-text-primary border-border-app/60 hover:bg-[#1b2336]"
                 }`}
               >
                 {tab.label}
