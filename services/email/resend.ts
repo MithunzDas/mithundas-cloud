@@ -509,3 +509,99 @@ export async function sendOnboardingKit(data: OnboardingKitData): Promise<boolea
     return false;
   }
 }
+
+export async function sendPaymentReceiptEmail(data: {
+  toEmail: string;
+  clientName: string;
+  companyName?: string;
+  invoiceId: string;
+  transactionId: string;
+  paidAmount: string;
+  paymentMethod: string;
+  utrOrReference?: string;
+  remainingBalance: string;
+  paidAtDate: string;
+}): Promise<boolean> {
+  if (!resend) return false;
+
+  try {
+    const { error } = await resend.emails.send({
+      from: env.EMAIL_FROM,
+      to: data.toEmail,
+      subject: `Payment Receipt — ${data.paidAmount} Received for Invoice ${data.invoiceId} | Mithun Das`,
+      html: `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#0a0a0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0f;padding:40px 20px;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#12121a;border-radius:12px;border:1px solid #22c55e;overflow:hidden;">
+
+  <tr><td style="background:linear-gradient(135deg,#16a34a 0%,#22c55e 100%);padding:28px 40px;">
+    <h1 style="margin:0;font-size:20px;font-weight:700;color:#fff;">✅ Official Payment Receipt</h1>
+    <p style="margin:6px 0 0;font-size:12px;color:rgba(255,255,255,0.85);font-family:monospace;">MITHUN DAS — AI BUSINESS AUTOMATION</p>
+  </td></tr>
+
+  <tr><td style="padding:32px 40px;">
+    <p style="margin:0 0 20px;font-size:15px;color:#e0e0e8;line-height:1.7;">
+      Hi <strong style="color:#fff;">${data.clientName}</strong>,
+    </p>
+    <p style="margin:0 0 20px;font-size:15px;color:#e0e0e8;line-height:1.7;">
+      We have successfully received and verified your payment of <strong style="color:#22c55e;font-size:16px;">${data.paidAmount}</strong> for project <strong style="color:#fff;">${data.companyName || "Automation Project"}</strong>.
+    </p>
+
+    <!-- Receipt Details -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0f;border:1px solid #1e1e2e;border-radius:8px;margin:24px 0;">
+      <tr><td style="padding:20px 24px;">
+        <p style="margin:0 0 16px;font-size:11px;color:#22c55e;font-family:monospace;text-transform:uppercase;letter-spacing:1px;">Verified Transaction Summary</p>
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr><td style="padding:6px 0;font-size:13px;color:#888;width:160px;">Invoice Reference</td><td style="padding:6px 0;font-size:14px;color:#06b6d4;font-family:monospace;">${data.invoiceId}</td></tr>
+          <tr><td style="padding:6px 0;font-size:13px;color:#888;">Transaction ID</td><td style="padding:6px 0;font-size:13px;color:#ccc;font-family:monospace;">${data.transactionId}</td></tr>
+          <tr><td style="padding:6px 0;font-size:13px;color:#888;">Paid Amount</td><td style="padding:6px 0;font-size:16px;color:#22c55e;font-weight:700;">${data.paidAmount}</td></tr>
+          <tr><td style="padding:6px 0;font-size:13px;color:#888;">Payment Method</td><td style="padding:6px 0;font-size:13px;color:#e0e0e8;text-transform:uppercase;">${data.paymentMethod}</td></tr>
+          ${data.utrOrReference ? `<tr><td style="padding:6px 0;font-size:13px;color:#888;">UTR / Reference #</td><td style="padding:6px 0;font-size:13px;color:#06b6d4;font-family:monospace;">${data.utrOrReference}</td></tr>` : ""}
+          <tr><td style="padding:6px 0;font-size:13px;color:#888;">Remaining Balance</td><td style="padding:6px 0;font-size:15px;color:#f59e0b;font-weight:700;">${data.remainingBalance}</td></tr>
+          <tr><td style="padding:6px 0;font-size:13px;color:#888;">Date Received</td><td style="padding:6px 0;font-size:13px;color:#ccc;">${data.paidAtDate}</td></tr>
+        </table>
+      </td></tr>
+    </table>
+
+    <div style="margin:24px 0;text-align:center;">
+      <a href="https://mithundas.cloud/invoice/${data.invoiceId}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;font-size:14px;font-weight:700;text-decoration:none;padding:12px 28px;border-radius:8px;">
+        📄 View &amp; Print Official Digital Receipt ➔
+      </a>
+    </div>
+
+    <p style="margin:20px 0 0;font-size:14px;color:#888;">
+      Thank you for your business. Project development is actively progressing according to our agreed timeline.
+    </p>
+    <p style="margin:16px 0 0;font-size:14px;color:#e0e0e8;">
+      — Mithun Das AI Automation Architecture
+    </p>
+  </td></tr>
+
+  <tr><td style="padding:16px 40px;border-top:1px solid #1e1e2e;">
+    <p style="margin:0;font-size:11px;color:#555;font-family:monospace;">mithundas.cloud • Financial Operations</p>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body></html>
+      `,
+    });
+
+    if (error) {
+      logger.error("Failed to send payment receipt email", "email_receipt_error", error);
+      return false;
+    }
+
+    logger.info(`Payment receipt sent to ${data.toEmail} for invoice ${data.invoiceId}`, "email_receipt_sent");
+    return true;
+  } catch (error) {
+    logger.error("Resend API exception during payment receipt email", "email_receipt_exception", error);
+    return false;
+  }
+}
+

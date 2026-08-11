@@ -505,8 +505,11 @@ export interface InvoicePayload {
   currency?: string;
   currencySymbol?: string;
   totalAmount: string;
+  totalAmountNumeric?: number;
   depositPercent?: string;
   depositAmount: string;
+  receivedAmountNumeric?: number;
+  remainingAmountNumeric?: number;
   setupFee?: string;
   monthlyRetainer?: string;
   projectScope: string;
@@ -646,5 +649,305 @@ export async function updateInvoiceStatusInDB(invoiceId: string, status: string,
 
   return updated;
 }
+
+export interface PaymentTransactionPayload {
+  id?: string;
+  transactionId: string;
+  invoiceId: string;
+  clientName: string;
+  clientEmail: string;
+  companyName?: string;
+  amount: number;
+  currency?: string;
+  currencySymbol?: string;
+  paymentMethod: string; // "stripe", "razorpay", "upi", "cash", "paypal", "wise", "wire"
+  utrOrReference?: string;
+  verificationStatus?: string; // "pending", "verified", "rejected"
+  notes?: string;
+  verifiedBy?: string;
+  verifiedAt?: string;
+  createdAt?: string;
+}
+
+const LOCAL_TXNS_FILE = path.join(process.cwd(), ".transactions.json");
+const TMP_TXNS_FILE = "/tmp/transactions.json";
+
+function getLocalTransactions(): PaymentTransactionPayload[] {
+  try {
+    const fileToRead = fs.existsSync(LOCAL_TXNS_FILE) ? LOCAL_TXNS_FILE : (fs.existsSync(TMP_TXNS_FILE) ? TMP_TXNS_FILE : null);
+    if (fileToRead) {
+      const data = fs.readFileSync(fileToRead, "utf-8");
+      return JSON.parse(data);
+    }
+  } catch (e) {}
+  return [];
+}
+
+function saveLocalTransaction(txn: PaymentTransactionPayload) {
+  try {
+    const current = getLocalTransactions().filter((t) => t.transactionId !== txn.transactionId);
+    current.unshift(txn);
+    const data = JSON.stringify(current, null, 2);
+    try { fs.writeFileSync(LOCAL_TXNS_FILE, data); } catch (e) {}
+    try { fs.writeFileSync(TMP_TXNS_FILE, data); } catch (e) {}
+  } catch (e) {}
+}
+
+export async function recordPaymentTransaction(txn: PaymentTransactionPayload): Promise<void> {
+  saveLocalTransaction(txn);
+
+  try {
+    await (prisma as any).paymentTransaction.upsert({
+      where: { transactionId: txn.transactionId },
+      update: {
+        amount: txn.amount,
+        verificationStatus: txn.verificationStatus || "pending",
+        utrOrReference: txn.utrOrReference || null,
+        notes: txn.notes || null,
+        verifiedBy: txn.verifiedBy || null,
+        verifiedAt: txn.verifiedAt ? new Date(txn.verifiedAt) : null,
+      },
+      create: {
+        transactionId: txn.transactionId,
+        invoiceId: txn.invoiceId,
+        clientName: txn.clientName,
+        clientEmail: txn.clientEmail,
+        companyName: txn.companyName || null,
+        amount: txn.amount,
+        currency: txn.currency || "USD",
+        currencySymbol: txn.currencySymbol || "$",
+        paymentMethod: txn.paymentMethod,
+        utrOrReference: txn.utrOrReference || null,
+        verificationStatus: txn.verificationStatus || "pending",
+        notes: txn.notes || null,
+        verifiedBy: txn.verifiedBy || null,
+        verifiedAt: txn.verifiedAt ? new Date(txn.verifiedAt) : null,
+      },
+    });
+    logger.info(`Recorded payment transaction ${txn.transactionId} for invoice ${txn.invoiceId}`, "txn_recorded");
+  } catch (e) {
+    logger.warn(`Failed to save txn ${txn.transactionId} to DB, saved to local cache`, "txn_save_warn");
+  }
+}
+
+export async function verifyPaymentTransaction(transactionId: string, verifiedBy: string = "Admin"): Promise<PaymentTransactionPayload | null> {
+  let matchedTxn: PaymentTransactionPayload | null = null;
+  const now = new Date().toISOString();
+
+  // Local update
+  try {
+    const local = getLocalTransactions();
+    const txn = local.find((t) => t.transactionId === transactionId);
+    if (txn) {
+      txn.verificationStatus = "verified";
+      txn.verifiedBy = verifiedBy;
+      txn.verifiedAt = now;
+      matchedTxn = txn;
+      const data = JSON.stringify(local, null, 2);
+      try { fs.writeFileSync(LOCAL_TXNS_FILE, data); } catch (e) {}
+      try { fs.writeFileSync(TMP_TXNS_FILE, data); } catch (e) {}
+    }
+  } catch (e) {}
+
+  // DB update
+  try {
+    const updated = await (prisma as any).paymentTransaction.update({
+      where: { transactionId },
+      data: {
+        verificationStatus: "verified",
+        verifiedBy,
+        verifiedAt: new Date(),
+      },
+    });
+    if (updated) {
+      matchedTxn = {
+        ...updated,
+        createdAt: updated.createdAt ? updated.createdAt.toISOString() : now,
+        verifiedAt: updated.verifiedAt ? updated.verifiedAt.toISOString() : now,
+      };
+    }
+  } catch (e) {}
+
+  if (matchedTxn) {
+    // Recalculate invoice balance for matched invoice
+    await recalculateInvoiceBalance(matchedTxn.invoiceId);
+  }
+
+  return matchedTxn;
+}
+
+export async function recalculateInvoiceBalance(invoiceId: string): Promise<void> {
+  const invoice = await getInvoiceFromDB(invoiceId);
+  if (!invoice) return;
+
+  const allTxns = await getTransactionsForInvoice(invoiceId);
+  const verifiedTxns = allTxns.filter((t) => t.verificationStatus === "verified");
+  const totalReceived = verifiedTxns.reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+
+  const rawTotal = parseFloat((invoice.totalAmount || "").replace(/[^0-9.]/g, "")) || 0;
+  const remaining = Math.max(0, rawTotal - totalReceived);
+
+  let newStatus = "unpaid";
+  if (remaining <= 0 && rawTotal > 0) {
+    newStatus = "paid_in_full";
+  } else if (totalReceived > 0) {
+    newStatus = "partially_paid";
+  }
+
+  // Update Invoice in local & DB
+  try {
+    const local = getLocalInvoices();
+    const inv = local.find((i) => i.invoiceId === invoiceId);
+    if (inv) {
+      inv.receivedAmountNumeric = totalReceived;
+      inv.remainingAmountNumeric = remaining;
+      inv.paymentStatus = newStatus;
+      const data = JSON.stringify(local, null, 2);
+      try { fs.writeFileSync(LOCAL_INVOICES_FILE, data); } catch (e) {}
+      try { fs.writeFileSync(TMP_INVOICES_FILE, data); } catch (e) {}
+    }
+  } catch (e) {}
+
+  try {
+    await (prisma as any).invoice.update({
+      where: { invoiceId },
+      data: {
+        receivedAmountNumeric: totalReceived,
+        remainingAmountNumeric: remaining,
+        paymentStatus: newStatus,
+        paidAt: newStatus === "paid_in_full" ? new Date() : undefined,
+      },
+    });
+  } catch (e) {}
+}
+
+export async function getTransactionsForInvoice(invoiceId: string): Promise<PaymentTransactionPayload[]> {
+  try {
+    const txns = await (prisma as any).paymentTransaction.findMany({
+      where: { invoiceId },
+      orderBy: { createdAt: "desc" },
+    });
+    if (Array.isArray(txns) && txns.length > 0) {
+      return txns.map((t: any) => ({
+        ...t,
+        createdAt: t.createdAt ? t.createdAt.toISOString() : new Date().toISOString(),
+        verifiedAt: t.verifiedAt ? t.verifiedAt.toISOString() : undefined,
+      }));
+    }
+  } catch (e) {}
+
+  const local = getLocalTransactions();
+  return local.filter((t) => t.invoiceId === invoiceId);
+}
+
+export async function getAllInvoicesFromDB(): Promise<InvoicePayload[]> {
+  const map = new Map<string, InvoicePayload>();
+
+  try {
+    const invoices = await (prisma as any).invoice.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+    if (Array.isArray(invoices)) {
+      for (const inv of invoices) {
+        map.set(inv.invoiceId, {
+          ...inv,
+          createdAt: inv.createdAt ? inv.createdAt.toISOString() : new Date().toISOString(),
+          paidAt: inv.paidAt ? inv.paidAt.toISOString() : undefined,
+        });
+      }
+    }
+  } catch (e) {}
+
+  const local = getLocalInvoices();
+  for (const inv of local) {
+    if (!map.has(inv.invoiceId)) {
+      map.set(inv.invoiceId, inv);
+    }
+  }
+
+  return Array.from(map.values());
+}
+
+export async function getFinancialLedger(): Promise<{
+  invoices: InvoicePayload[];
+  transactions: PaymentTransactionPayload[];
+  metrics: {
+    totalGrossValue: number;
+    totalCollected: number;
+    totalOutstanding: number;
+    pendingQueueCount: number;
+    currencyTotals: Record<string, { total: number; collected: number; remaining: number }>;
+  };
+}> {
+  const invoices = await getAllInvoicesFromDB();
+
+  let allTxns: PaymentTransactionPayload[] = [];
+  try {
+    const txns = await (prisma as any).paymentTransaction.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+    if (Array.isArray(txns) && txns.length > 0) {
+      allTxns = txns.map((t: any) => ({
+        ...t,
+        createdAt: t.createdAt ? t.createdAt.toISOString() : new Date().toISOString(),
+        verifiedAt: t.verifiedAt ? t.verifiedAt.toISOString() : undefined,
+      }));
+    }
+  } catch (e) {}
+
+  if (allTxns.length === 0) {
+    allTxns = getLocalTransactions();
+  }
+
+  // Calculate currency metrics
+  const currencyTotals: Record<string, { total: number; collected: number; remaining: number }> = {
+    USD: { total: 0, collected: 0, remaining: 0 },
+    INR: { total: 0, collected: 0, remaining: 0 },
+    EUR: { total: 0, collected: 0, remaining: 0 },
+    GBP: { total: 0, collected: 0, remaining: 0 },
+    AUD: { total: 0, collected: 0, remaining: 0 },
+  };
+
+  let totalGrossValue = 0;
+  let totalCollected = 0;
+  let totalOutstanding = 0;
+
+  for (const inv of invoices) {
+    const curr = inv.currency || "USD";
+    if (!currencyTotals[curr]) {
+      currencyTotals[curr] = { total: 0, collected: 0, remaining: 0 };
+    }
+
+    const rawTotal = parseFloat((inv.totalAmount || "").replace(/[^0-9.]/g, "")) || inv.totalAmountNumeric || 0;
+    
+    // Find all verified txns for this invoice
+    const invTxns = allTxns.filter((t) => t.invoiceId === inv.invoiceId && t.verificationStatus === "verified");
+    const invCollected = invTxns.reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+    const invRemaining = Math.max(0, rawTotal - invCollected);
+
+    currencyTotals[curr].total += rawTotal;
+    currencyTotals[curr].collected += invCollected;
+    currencyTotals[curr].remaining += invRemaining;
+
+    totalGrossValue += rawTotal;
+    totalCollected += invCollected;
+    totalOutstanding += invRemaining;
+  }
+
+  const pendingQueueCount = allTxns.filter((t) => t.verificationStatus === "pending").length;
+
+  return {
+    invoices,
+    transactions: allTxns,
+    metrics: {
+      totalGrossValue,
+      totalCollected,
+      totalOutstanding,
+      pendingQueueCount,
+      currencyTotals,
+    },
+  };
+}
+
 
 

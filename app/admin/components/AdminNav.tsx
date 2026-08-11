@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, Calendar, ShieldCheck, Cpu } from "lucide-react";
+import { Users, Calendar, ShieldCheck, Cpu, DollarSign } from "lucide-react";
 
 export function AdminNav() {
   const pathname = usePathname();
 
   const isLeads = pathname?.includes("/admin/leads");
   const isBookings = pathname?.includes("/admin/bookings");
+  const isFinance = pathname?.includes("/admin/finance");
 
   return (
     <header className="sticky top-0 z-30 bg-[#0b0f17]/90 backdrop-blur-md border-b border-border-app px-6 py-3.5 mb-8">
@@ -23,7 +24,7 @@ export function AdminNav() {
               Mithun Das <span className="text-xs px-2 py-0.5 rounded-full bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan font-mono font-medium">ADMIN OPS</span>
             </h1>
             <p className="text-xs text-text-secondary font-mono">
-              Automation Architecture &amp; Discovery Session Control Center
+              Automation Architecture &amp; Revenue Control Center
             </p>
           </div>
         </div>
@@ -40,6 +41,18 @@ export function AdminNav() {
           >
             <Calendar className="w-4 h-4" />
             <span>Discovery Meetings</span>
+          </Link>
+
+          <Link
+            href="/admin/finance"
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              isFinance
+                ? "bg-gradient-to-r from-brand-cyan/20 to-brand-indigo/20 text-brand-cyan border border-brand-cyan/40 shadow-sm"
+                : "text-text-secondary hover:text-text-primary hover:bg-white/5"
+            }`}
+          >
+            <DollarSign className="w-4 h-4 text-emerald-400" />
+            <span>Financial Ledger</span>
           </Link>
 
           <Link

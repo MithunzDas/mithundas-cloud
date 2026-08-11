@@ -20,6 +20,7 @@ import {
   QrCode,
   DollarSign,
   Lock,
+  X,
 } from "lucide-react";
 
 interface InvoiceData {
@@ -31,8 +32,11 @@ interface InvoiceData {
   currency: string;
   currencySymbol: string;
   totalAmount: string;
+  totalAmountNumeric?: number;
   depositPercent: string;
   depositAmount: string;
+  receivedAmountNumeric?: number;
+  remainingAmountNumeric?: number;
   setupFee?: string;
   monthlyRetainer?: string;
   projectScope: string;
@@ -85,6 +89,45 @@ export default function DigitalInvoicePage() {
     navigator.clipboard.writeText(text);
     setCopiedText(label);
     setTimeout(() => setCopiedText(null), 2000);
+  };
+
+  const [utrInput, setUtrInput] = useState("");
+  const [utrAmountInput, setUtrAmountInput] = useState("");
+  const [submittingUtr, setSubmittingUtr] = useState(false);
+  const [utrNotice, setUtrNotice] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const handleUtrSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!utrInput.trim() || !utrAmountInput.trim() || !invoice) return;
+
+    setSubmittingUtr(true);
+    try {
+      const res = await fetch("/api/finance/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          invoiceId: invoice.invoiceId,
+          amount: utrAmountInput.replace(/[^0-9.]/g, ""),
+          paymentMethod: activePaymentTab,
+          utrOrReference: utrInput.trim(),
+          clientName: invoice.clientName,
+          clientEmail: invoice.clientEmail,
+          notes: `Client submitted reference via digital portal (${activePaymentTab.toUpperCase()})`,
+        }),
+      });
+
+      if (res.ok) {
+        setUtrNotice({ type: "success", text: `Payment reference ${utrInput} submitted successfully! Awaiting admin verification.` });
+        setUtrInput("");
+        setUtrAmountInput("");
+      } else {
+        setUtrNotice({ type: "error", text: "Failed to submit payment reference. Please try again." });
+      }
+    } catch (err) {
+      setUtrNotice({ type: "error", text: "Network error submitting reference." });
+    } finally {
+      setSubmittingUtr(false);
+    }
   };
 
   const handlePrint = () => {
@@ -264,18 +307,22 @@ export default function DigitalInvoicePage() {
             </table>
           </div>
 
-          {/* Totals Box */}
-          <div className="mt-6 flex justify-end font-mono">
-            <div className="w-full max-w-sm bg-[#141b2b] print:bg-slate-50 p-5 rounded-2xl border border-slate-800/80 print:border-slate-300 space-y-3">
-              <div className="flex justify-between text-xs text-slate-400 print:text-slate-600">
-                <span>Agreed Total Project Fee:</span>
-                <span className="font-bold text-white print:text-slate-900 text-sm">{invoice.totalAmount}</span>
+          {/* Financial Math Breakdown (Total X, Paid Received, Remaining Balance) */}
+          <div className="mt-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#141b2b] print:bg-slate-50 p-5 rounded-2xl border border-slate-800/80 print:border-slate-300 font-mono">
+            <div className="space-y-1">
+              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Financial Progress Ledger:</span>
+              <div className="flex items-center gap-3 text-xs">
+                <span className="text-slate-300">Total Agreed: <strong className="text-white font-bold">{invoice.totalAmount}</strong></span>
+                <span className="text-slate-500">•</span>
+                <span className="text-emerald-400">Verified Paid: <strong className="font-bold">{invoice.currencySymbol || "$"}{(invoice.receivedAmountNumeric || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
               </div>
+            </div>
 
-              <div className="flex justify-between text-sm pt-2 border-t border-slate-800 print:border-slate-300 font-bold text-emerald-400 print:text-slate-900">
-                <span>Required Upfront Deposit ({invoice.depositPercent}):</span>
-                <span className="text-base">{invoice.depositAmount}</span>
-              </div>
+            <div className="bg-[#0b0f17] print:bg-slate-200 px-4 py-2.5 rounded-xl border border-slate-800 text-right w-full md:w-auto">
+              <span className="text-[10px] text-slate-400 uppercase font-bold block">Remaining Outstanding Balance:</span>
+              <span className="text-base font-bold text-amber-400 print:text-slate-900">
+                {invoice.currencySymbol || "$"}{((parseFloat((invoice.totalAmount || "").replace(/[^0-9.]/g, "")) || 0) - (invoice.receivedAmountNumeric || 0)).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
             </div>
           </div>
         </div>
@@ -454,6 +501,56 @@ export default function DigitalInvoicePage() {
                       <div className="text-slate-200 mt-0.5">USDT TRC20 wallet address available on request.</div>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* UTR / Payment Reference Submission Form for manual payments */}
+              {activePaymentTab !== "card" && (
+                <div className="mt-6 pt-6 border-t border-slate-800 font-mono">
+                  <h5 className="text-xs font-bold text-slate-200 mb-2 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    Submit Payment UTR / Transaction Reference for Verification
+                  </h5>
+                  <p className="text-[11px] text-slate-400 mb-3">
+                    Paid via UPI, Wise, PayPal, or Bank Transfer? Enter your UTR reference number or Cash receipt note below to notify admin for instant verification.
+                  </p>
+
+                  {utrNotice && (
+                    <div className={`p-3 rounded-xl text-xs font-mono mb-3 flex items-center justify-between ${
+                      utrNotice.type === "error" ? "bg-rose-500/10 border border-rose-500/30 text-rose-400" : "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
+                    }`}>
+                      <span>{utrNotice.text}</span>
+                      <button onClick={() => setUtrNotice(null)} className="text-slate-400 hover:text-white">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleUtrSubmit} className="flex flex-col sm:flex-row items-center gap-2">
+                    <input
+                      type="text"
+                      value={utrInput}
+                      onChange={(e) => setUtrInput(e.target.value)}
+                      placeholder="Enter 12-digit UTR #, Txn ID, or Cash Ref..."
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 font-mono"
+                      required
+                    />
+                    <input
+                      type="text"
+                      value={utrAmountInput}
+                      onChange={(e) => setUtrAmountInput(e.target.value)}
+                      placeholder={`Amount paid (${invoice.currencySymbol || "$"})...`}
+                      className="w-full sm:w-44 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 font-mono"
+                      required
+                    />
+                    <button
+                      type="submit"
+                      disabled={submittingUtr}
+                      className="w-full sm:w-auto shrink-0 px-4 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:opacity-90 text-slate-950 font-bold text-xs rounded-xl font-sans transition-all disabled:opacity-50"
+                    >
+                      {submittingUtr ? "Submitting..." : "Submit UTR Reference"}
+                    </button>
+                  </form>
                 </div>
               )}
             </div>
