@@ -664,6 +664,22 @@ export default function AdminFinancePage() {
                         {/* Actions */}
                         <td className="py-4 px-4 text-right">
                           <div className="flex items-center justify-end gap-2">
+                            {(() => {
+                              const waText = encodeURIComponent(`Hi ${inv.clientName}! Here is your project proposal & initial deposit payment link for ${inv.companyName}: https://mithundas.cloud/invoice/${inv.invoiceId}`);
+                              return (
+                                <a
+                                  href={`https://wa.me/?text=${waText}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-lg text-xs font-mono text-emerald-400 flex items-center gap-1.5 transition-all"
+                                  title="Share payment link on WhatsApp"
+                                >
+                                  <Send className="w-3.5 h-3.5" />
+                                  <span>WhatsApp</span>
+                                </a>
+                              );
+                            })()}
+
                             <a
                               href={`/invoice/${inv.invoiceId}`}
                               target="_blank"
