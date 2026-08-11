@@ -72,36 +72,42 @@ export async function POST(req: NextRequest) {
 
     const digitalInvoiceUrl = `https://mithundas.cloud/invoice/${invoiceId}`;
 
-    // Trigger n8n onboarding webhook (Case 2)
+    // Trigger n8n onboarding webhook
     const n8nWebhookUrl = "https://n8n.srv1594654.hstgr.cloud/webhook/onboarding-trigger";
+    const webhookPayload = {
+      event: "customer.onboarded",
+      invoiceId,
+      leadId,
+      clientName,
+      clientEmail,
+      companyName,
+      currency,
+      currencySymbol,
+      totalAmount: invoicePayload.totalAmount,
+      depositPercent: invoicePayload.depositPercent,
+      depositAmount: invoicePayload.depositAmount,
+      setupFee: invoicePayload.setupFee || "",
+      monthlyRetainer: invoicePayload.monthlyRetainer || "",
+      projectScope,
+      startDate: body.startDate || issueDateStr,
+      invoiceUrl: digitalInvoiceUrl,
+      paymentLink: paymentLink || digitalInvoiceUrl,
+      timestamp: new Date().toISOString(),
+    };
+
     try {
-      fetch(n8nWebhookUrl, {
+      const webhookRes = await fetch(n8nWebhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          event: "customer.onboarded",
-          invoiceId,
-          leadId,
-          clientName,
-          clientEmail,
-          companyName,
-          currency,
-          currencySymbol,
-          totalAmount: invoicePayload.totalAmount,
-          depositPercent: invoicePayload.depositPercent,
-          depositAmount: invoicePayload.depositAmount,
-          setupFee: invoicePayload.setupFee || "",
-          monthlyRetainer: invoicePayload.monthlyRetainer || "",
-          projectScope,
-          startDate: body.startDate || issueDateStr,
-          invoiceUrl: digitalInvoiceUrl,
-          paymentLink: paymentLink || digitalInvoiceUrl,
-          timestamp: new Date().toISOString(),
-        }),
-      }).catch((err) => {
-        logger.error("Failed to trigger n8n onboarding webhook", "n8n_onboarding_webhook_error", err);
+        body: JSON.stringify(webhookPayload),
       });
-    } catch (e) {}
+      logger.info(
+        `n8n onboarding webhook triggered for ${invoiceId} — status: ${webhookRes.status}`,
+        "n8n_onboarding_webhook_sent"
+      );
+    } catch (webhookErr) {
+      logger.error("Failed to trigger n8n onboarding webhook", "n8n_onboarding_webhook_error", webhookErr);
+    }
 
     logger.info(`Generated invoice ${invoiceId} for ${companyName}`, "invoice_created");
 

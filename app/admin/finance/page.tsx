@@ -234,8 +234,8 @@ export default function AdminFinancePage() {
     }
   };
 
-  const handleIssueInvoiceSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleIssueInvoiceSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e && 'preventDefault' in e) e.preventDefault();
     setLoading(true);
     try {
       const res = await fetch("/api/invoices/create", {
@@ -249,11 +249,13 @@ export default function AdminFinancePage() {
 
       if (res.ok) {
         const data = await res.json();
-        setNotification({ type: "success", text: `Custom Invoice ${data.invoice?.invoiceId} generated & active!` });
+        setNotification({ type: "success", text: `✅ Invoice ${data.invoice?.invoiceId} created & onboarding webhook dispatched!` });
         setShowIssueInvoiceModal(false);
+        setIsProposalPreviewing(false);
         fetchFinancialData(adminSecret);
       } else {
-        setNotification({ type: "error", text: "Failed to generate custom invoice" });
+        const errData = await res.json().catch(() => ({}));
+        setNotification({ type: "error", text: errData.error || "Failed to generate custom invoice" });
       }
     } catch (err) {
       setNotification({ type: "error", text: "Network error creating invoice" });
@@ -296,24 +298,38 @@ export default function AdminFinancePage() {
 
   const pendingTxns = transactions.filter((t) => t.verificationStatus === "pending");
 
-  const filteredInvoices = invoices.filter((item) => {
+  // Helper: is this item a WON deal (not yet invoiced)?
+  const isWonDeal = (item: InvoiceItem) =>
+    item.paymentStatus === "won_pending" ||
+    item.paymentStatus === "won" ||
+    (item.invoiceId && item.invoiceId.toUpperCase().startsWith("WON"));
+
+  // Deduplicate WON deals by email on frontend as safety net
+  const seenWonEmails = new Set<string>();
+  const deduplicatedInvoices = invoices.filter((item) => {
+    if (isWonDeal(item)) {
+      const emailKey = (item.clientEmail || "").toLowerCase().trim();
+      if (emailKey && seenWonEmails.has(emailKey)) return false;
+      if (emailKey) seenWonEmails.add(emailKey);
+    }
+    return true;
+  });
+
+  const filteredInvoices = deduplicatedInvoices.filter((item) => {
     const matchesSearch =
       (item.clientName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.clientEmail || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.companyName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.invoiceId || "").toLowerCase().includes(searchQuery.toLowerCase());
 
-    const isWonItem =
-      item.paymentStatus === "won_pending" ||
-      item.paymentStatus === "won" ||
-      (item.invoiceId && item.invoiceId.toUpperCase().includes("WON-"));
+    const won = isWonDeal(item);
 
     const matchesStatus =
-      (statusFilter === "all" && !isWonItem) ||
-      (statusFilter === "won" && isWonItem) ||
-      (statusFilter === "unpaid" && !isWonItem && item.paymentStatus === "unpaid") ||
-      (statusFilter === "partially_paid" && !isWonItem && item.paymentStatus === "partially_paid") ||
-      (statusFilter === "paid_in_full" && !isWonItem && item.paymentStatus === "paid_in_full");
+      (statusFilter === "all" && !won) ||
+      (statusFilter === "won" && won) ||
+      (statusFilter === "unpaid" && !won && item.paymentStatus === "unpaid") ||
+      (statusFilter === "partially_paid" && !won && item.paymentStatus === "partially_paid") ||
+      (statusFilter === "paid_in_full" && !won && item.paymentStatus === "paid_in_full");
 
     return matchesSearch && matchesStatus;
   });
@@ -592,8 +608,8 @@ export default function AdminFinancePage() {
           <div className="flex flex-wrap items-center gap-2 font-mono text-xs [&-::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <span className="text-[10px] uppercase tracking-wider text-text-secondary/70 shrink-0 font-semibold mr-1">Status:</span>
             {[
-              { key: "all", label: `All Invoices (${invoices.filter((i) => i.paymentStatus !== "won_pending" && (!i.invoiceId || !i.invoiceId.startsWith("WON-"))).length})` },
-              { key: "won", label: `🏆 WON Deals (${invoices.filter((i) => i.paymentStatus === "won_pending" || (i.invoiceId && i.invoiceId.startsWith("WON-"))).length})` },
+              { key: "all", label: `All Invoices (${deduplicatedInvoices.filter((i) => !isWonDeal(i)).length})` },
+              { key: "won", label: `🏆 WON Deals (${deduplicatedInvoices.filter((i) => isWonDeal(i)).length})` },
               { key: "partially_paid", label: "Initial Deposit Paid" },
               { key: "paid_in_full", label: "Fully Settled (100%)" },
               { key: "unpaid", label: "Unpaid" },
@@ -636,7 +652,7 @@ export default function AdminFinancePage() {
                 </thead>
                 <tbody className="divide-y divide-border-app/50">
                   {filteredInvoices.map((inv) => {
-                    const isWonPending = inv.paymentStatus === "won_pending" || (inv.invoiceId && inv.invoiceId.startsWith("WON-"));
+                    const isWonPending = isWonDeal(inv);
                     const sym = inv.currencySymbol || "$";
                     const totalRaw = parseFloat((inv.totalAmount || "").replace(/[^0-9.]/g, "")) || inv.totalAmountNumeric || 0;
                     const recRaw = Number(inv.receivedAmountNumeric) || 0;
