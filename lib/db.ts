@@ -881,32 +881,32 @@ export async function getFinancialLedger(): Promise<{
 }> {
   const invoices = await getAllInvoicesFromDB();
 
-  // Merge all WON leads from DB into financial ledger automatically
+  // Tag all WON leads awaiting invoice generation
+  let pendingWonLeads: InvoicePayload[] = [];
   try {
     const leads = await getLeads();
     const wonLeads = leads.filter((l: any) => l.status === "won" || l.status === "WON");
     for (const lead of wonLeads) {
       const hasInvoice = invoices.some((inv) => inv.leadId === lead.leadId || (inv.clientEmail && inv.clientEmail.toLowerCase() === lead.email.toLowerCase()));
       if (!hasInvoice) {
-        const invId = `INV-${lead.leadId.replace(/[^0-9]/g, "").slice(-6) || Math.floor(100000 + Math.random() * 900000)}`;
-        invoices.push({
-          invoiceId: invId,
+        pendingWonLeads.push({
+          invoiceId: `WON-${lead.leadId.replace(/[^0-9]/g, "").slice(-6) || Math.floor(100000 + Math.random() * 900000)}`,
           leadId: lead.leadId,
           clientName: lead.name,
           clientEmail: lead.email,
           companyName: lead.company,
           currency: "USD",
           currencySymbol: "$",
-          totalAmount: "$2,500.00",
-          totalAmountNumeric: 2500,
+          totalAmount: "$0.00",
+          totalAmountNumeric: 0,
           depositPercent: "20",
-          depositAmount: "$500.00",
+          depositAmount: "$0.00",
           receivedAmountNumeric: 0,
-          remainingAmountNumeric: 2500,
+          remainingAmountNumeric: 0,
           setupFee: "150.00",
           monthlyRetainer: "200.00",
           projectScope: lead.projectRequirement || "Custom AI Workflow Automation Architecture",
-          paymentStatus: "unpaid",
+          paymentStatus: "won_pending",
           issueDate: new Date().toISOString().split("T")[0],
           dueDate: new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0],
           createdAt: lead.submittedAt || new Date().toISOString(),
@@ -914,6 +914,9 @@ export async function getFinancialLedger(): Promise<{
       }
     }
   } catch (e) {}
+
+  // Combine created invoices + pending WON leads for complete ledger view
+  const combinedInvoices = [...invoices, ...pendingWonLeads];
 
   let allTxns: PaymentTransactionPayload[] = [];
   try {
@@ -946,7 +949,7 @@ export async function getFinancialLedger(): Promise<{
   let totalCollected = 0;
   let totalOutstanding = 0;
 
-  for (const inv of invoices) {
+  for (const inv of combinedInvoices) {
     const curr = inv.currency || "USD";
     if (!currencyTotals[curr]) {
       currencyTotals[curr] = { total: 0, collected: 0, remaining: 0 };
@@ -971,7 +974,7 @@ export async function getFinancialLedger(): Promise<{
   const pendingQueueCount = allTxns.filter((t) => t.verificationStatus === "pending").length;
 
   return {
-    invoices,
+    invoices: combinedInvoices,
     transactions: allTxns,
     metrics: {
       totalGrossValue,

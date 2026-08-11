@@ -278,7 +278,8 @@ export default function AdminFinancePage() {
       (item.invoiceId || "").toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus =
-      statusFilter === "all" ||
+      (statusFilter === "all" && item.paymentStatus !== "won_pending") ||
+      (statusFilter === "won" && item.paymentStatus === "won_pending") ||
       (statusFilter === "unpaid" && item.paymentStatus === "unpaid") ||
       (statusFilter === "partially_paid" && item.paymentStatus === "partially_paid") ||
       (statusFilter === "paid_in_full" && item.paymentStatus === "paid_in_full");
@@ -541,7 +542,8 @@ export default function AdminFinancePage() {
           <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 font-mono text-xs">
             <span className="text-text-secondary shrink-0 mr-1">Status Filter:</span>
             {[
-              { key: "all", label: "All Invoices" },
+              { key: "all", label: `All Invoices (${invoices.filter((i) => i.paymentStatus !== "won_pending").length})` },
+              { key: "won", label: `🏆 WON Deals (${invoices.filter((i) => i.paymentStatus === "won_pending").length})` },
               { key: "partially_paid", label: "Initial Deposit Paid" },
               { key: "paid_in_full", label: "Fully Settled (100%)" },
               { key: "unpaid", label: "Unpaid" },
@@ -549,9 +551,9 @@ export default function AdminFinancePage() {
               <button
                 key={tab.key}
                 onClick={() => setStatusFilter(tab.key)}
-                className={`px-3 py-1.5 rounded-lg transition-all shrink-0 ${
+                className={`px-3.5 py-1.5 rounded-lg transition-all shrink-0 ${
                   statusFilter === tab.key
-                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold"
+                    ? "bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-cyan-400 border border-cyan-500/40 font-bold"
                     : "bg-[#161d2c] text-text-secondary hover:text-text-primary"
                 }`}
               >
@@ -566,14 +568,14 @@ export default function AdminFinancePage() {
           {filteredInvoices.length === 0 ? (
             <div className="p-12 text-center">
               <FileText className="w-12 h-12 text-text-secondary/30 mx-auto mb-3" />
-              <h3 className="text-sm font-mono text-text-secondary">No invoices found matching your criteria</h3>
+              <h3 className="text-sm font-mono text-text-secondary">No records found matching your filter criteria</h3>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs font-sans">
                 <thead>
                   <tr className="bg-[#121824] border-b border-border-app text-text-secondary font-mono text-[11px] uppercase">
-                    <th className="py-3.5 px-4">Invoice ID</th>
+                    <th className="py-3.5 px-4">Ref / Invoice ID</th>
                     <th className="py-3.5 px-4">Client &amp; Company</th>
                     <th className="py-3.5 px-4">Total Contract ($X)</th>
                     <th className="py-3.5 px-4">Deposit Paid ($Received)</th>
@@ -584,13 +586,14 @@ export default function AdminFinancePage() {
                 </thead>
                 <tbody className="divide-y divide-border-app/50">
                   {filteredInvoices.map((inv) => {
+                    const isWonPending = inv.paymentStatus === "won_pending";
                     const sym = inv.currencySymbol || "$";
                     const totalRaw = parseFloat((inv.totalAmount || "").replace(/[^0-9.]/g, "")) || inv.totalAmountNumeric || 0;
                     const recRaw = Number(inv.receivedAmountNumeric) || 0;
                     const remRaw = Math.max(0, totalRaw - recRaw);
                     const pct = totalRaw > 0 ? Math.min(100, Math.round((recRaw / totalRaw) * 100)) : 0;
 
-                    const isPaidFull = inv.paymentStatus === "paid_in_full" || remRaw <= 0;
+                    const isPaidFull = inv.paymentStatus === "paid_in_full" || (totalRaw > 0 && remRaw <= 0);
                     const isPartial = inv.paymentStatus === "partially_paid" || (recRaw > 0 && remRaw > 0);
 
                     return (
@@ -598,16 +601,13 @@ export default function AdminFinancePage() {
                         {/* ID */}
                         <td className="py-4 px-4 font-mono">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-cyan-400 bg-cyan-500/10 px-2 py-1 rounded border border-cyan-500/20">
+                            <span className={`font-bold px-2 py-1 rounded border ${
+                              isWonPending
+                                ? "text-amber-400 bg-amber-500/10 border-amber-500/30"
+                                : "text-cyan-400 bg-cyan-500/10 border-cyan-500/20"
+                            }`}>
                               {inv.invoiceId}
                             </span>
-                            <button
-                              onClick={() => handleCopy(inv.invoiceId, inv.invoiceId)}
-                              className="text-text-secondary hover:text-text-primary p-1"
-                              title="Copy Invoice ID"
-                            >
-                              {copiedText === inv.invoiceId ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                            </button>
                           </div>
                         </td>
 
@@ -621,7 +621,7 @@ export default function AdminFinancePage() {
                         {/* Total Contract ($X) */}
                         <td className="py-4 px-4 font-mono">
                           <div className="text-white font-bold text-sm">
-                            {sym}{totalRaw.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {isWonPending ? "Awaiting Quote" : `${sym}${totalRaw.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                           </div>
                           <div className="text-[10px] text-text-secondary">{inv.currency} Currency</div>
                         </td>
@@ -629,24 +629,30 @@ export default function AdminFinancePage() {
                         {/* Paid Received */}
                         <td className="py-4 px-4 font-mono">
                           <div className="text-emerald-400 font-bold text-sm">
-                            {sym}{recRaw.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {isWonPending ? "—" : `${sym}${recRaw.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                           </div>
-                          <div className="w-24 bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1">
-                            <div className="bg-emerald-400 h-full transition-all" style={{ width: `${pct}%` }}></div>
-                          </div>
+                          {!isWonPending && (
+                            <div className="w-24 bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1">
+                              <div className="bg-emerald-400 h-full transition-all" style={{ width: `${pct}%` }}></div>
+                            </div>
+                          )}
                         </td>
 
                         {/* Balance Remaining */}
                         <td className="py-4 px-4 font-mono">
                           <div className="text-amber-400 font-bold text-sm">
-                            {sym}{remRaw.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {isWonPending ? "—" : `${sym}${remRaw.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                           </div>
-                          <div className="text-[10px] text-text-secondary">{100 - pct}% Outstanding</div>
+                          {!isWonPending && <div className="text-[10px] text-text-secondary">{100 - pct}% Outstanding</div>}
                         </td>
 
                         {/* Status */}
                         <td className="py-4 px-4 font-mono">
-                          {isPaidFull ? (
+                          {isWonPending ? (
+                            <span className="px-2.5 py-1 rounded-full text-[11px] bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold">
+                              🏆 WON (Awaiting Invoice)
+                            </span>
+                          ) : isPaidFull ? (
                             <span className="px-2.5 py-1 rounded-full text-[11px] bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold">
                               🟢 Fully Settled
                             </span>
@@ -655,7 +661,7 @@ export default function AdminFinancePage() {
                               🟡 Deposit Paid ({pct}%)
                             </span>
                           ) : (
-                            <span className="px-2.5 py-1 rounded-full text-[11px] bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold">
+                            <span className="px-2.5 py-1 rounded-full text-[11px] bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold">
                               🔴 Unpaid
                             </span>
                           )}
@@ -664,31 +670,58 @@ export default function AdminFinancePage() {
                         {/* Actions */}
                         <td className="py-4 px-4 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            {(() => {
-                              const waText = encodeURIComponent(`Hi ${inv.clientName}! Here is your project proposal & initial deposit payment link for ${inv.companyName}: https://mithundas.cloud/invoice/${inv.invoiceId}`);
-                              return (
+                            {isWonPending ? (
+                              <button
+                                onClick={() => {
+                                  setNewInvoiceForm({
+                                    clientName: inv.clientName,
+                                    clientEmail: inv.clientEmail,
+                                    companyName: inv.companyName,
+                                    currency: "USD",
+                                    currencySymbol: "$",
+                                    totalAmount: "2500.00",
+                                    depositPercent: "20",
+                                    setupFee: "150.00",
+                                    monthlyRetainer: "200.00",
+                                    projectScope: inv.projectScope || "Custom AI Workflow Automation Architecture",
+                                    paymentLink: "",
+                                  });
+                                  setShowIssueInvoiceModal(true);
+                                }}
+                                className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:opacity-90 text-slate-950 font-bold text-xs rounded-xl font-sans shadow-md flex items-center gap-1.5 transition-all"
+                              >
+                                <FileText className="w-3.5 h-3.5" />
+                                <span>Create Invoice / Welcome Package</span>
+                              </button>
+                            ) : (
+                              <>
+                                {(() => {
+                                  const waText = encodeURIComponent(`Hi ${inv.clientName}! Here is your project proposal & initial deposit payment link for ${inv.companyName}: https://mithundas.cloud/invoice/${inv.invoiceId}`);
+                                  return (
+                                    <a
+                                      href={`https://wa.me/?text=${waText}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-lg text-xs font-mono text-emerald-400 flex items-center gap-1.5 transition-all"
+                                      title="Share payment link on WhatsApp"
+                                    >
+                                      <Send className="w-3.5 h-3.5" />
+                                      <span>WhatsApp</span>
+                                    </a>
+                                  );
+                                })()}
+
                                 <a
-                                  href={`https://wa.me/?text=${waText}`}
+                                  href={`/invoice/${inv.invoiceId}`}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-lg text-xs font-mono text-emerald-400 flex items-center gap-1.5 transition-all"
-                                  title="Share payment link on WhatsApp"
+                                  className="px-3 py-1.5 bg-[#161d2c] hover:bg-[#1f293d] border border-border-app/80 rounded-lg text-xs font-mono text-cyan-400 flex items-center gap-1"
                                 >
-                                  <Send className="w-3.5 h-3.5" />
-                                  <span>WhatsApp</span>
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  <span>View Portal</span>
                                 </a>
-                              );
-                            })()}
-
-                            <a
-                              href={`/invoice/${inv.invoiceId}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="px-3 py-1.5 bg-[#161d2c] hover:bg-[#1f293d] border border-border-app/80 rounded-lg text-xs font-mono text-cyan-400 flex items-center gap-1"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                              <span>View Portal</span>
-                            </a>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
