@@ -81,6 +81,10 @@ export async function POST(req: NextRequest) {
       name: clientName,
       company: companyName,
       invoiceAmount: invoicePayload.totalAmount,
+      // Status update callback defaults for n8n Update Status node
+      leadId: leadId || invoiceId || `LEAD-${Date.now().toString().slice(-6)}`,
+      action: "status_update",
+      status: "won",
       // Alias fields for full compatibility
       clientEmail,
       clientName,
@@ -88,7 +92,6 @@ export async function POST(req: NextRequest) {
       toEmail: clientEmail,
       to: clientEmail,
       invoiceId,
-      leadId,
       currency,
       currencySymbol,
       totalAmount: invoicePayload.totalAmount,

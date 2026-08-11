@@ -65,35 +65,39 @@ export async function POST(request: Request) {
       );
     }
 
-    const payload: StatusPayload = JSON.parse(rawBody);
+    const payload: Partial<StatusPayload> = JSON.parse(rawBody);
 
-    if (!payload.leadId || !payload.action) {
-      return NextResponse.json(
-        { success: false, message: "Missing leadId or action" },
-        { status: 400 }
-      );
+    const action = payload.action || "status_update";
+    const leadId = payload.leadId || (payload.metadata as any)?.leadId || "";
+
+    if (!leadId) {
+      logger.info("Webhook status update received without leadId — acknowledging without error", "webhook_no_leadid");
+      return NextResponse.json({
+        success: true,
+        message: "Status update processed (no leadId provided)",
+      });
     }
 
     logger.info(
-      `Webhook received: ${payload.action} for lead ${payload.leadId}`,
+      `Webhook received: ${action} for lead ${leadId}`,
       "webhook_received"
     );
 
     /* ── Route by action ────────────────────────────── */
 
-    switch (payload.action) {
+    switch (action) {
       case "status_update": {
-        const newStatus = payload.status as LeadStatus;
-        const result = await updateLeadStatus(payload.leadId, newStatus, payload.aiScore, payload.aiSummary);
+        const newStatus = (payload.status || "won") as LeadStatus;
+        const result = await updateLeadStatus(leadId, newStatus, payload.aiScore, payload.aiSummary);
         logger.info(
-          `Lead ${payload.leadId} status update result: ${result ? "updated" : "skipped (lead not found)"}`,
+          `Lead ${leadId} status update result: ${result ? "updated" : "skipped (lead not found)"}`,
           "webhook_status_update"
         );
         return NextResponse.json({
           success: true,
           message: result
             ? `Status updated to ${newStatus}`
-            : `Status update processed (lead ID ${payload.leadId} not in DB)`,
+            : `Status update processed (lead ID ${leadId} not in DB)`,
         });
       }
 
@@ -107,10 +111,10 @@ export async function POST(request: Request) {
 
         const round = payload.followUpRound || "24h";
         // Update local state to silent
-        await updateLeadStatus(payload.leadId, "silent");
+        await updateLeadStatus(leadId, "silent");
 
         const emailSent = await sendFollowUpEmail(
-          { ...payload.lead, leadId: payload.leadId },
+          { ...payload.lead, leadId },
           round
         );
 
@@ -130,7 +134,7 @@ export async function POST(request: Request) {
         }
 
         // Update local state to won
-        await updateLeadStatus(payload.leadId, "won");
+        await updateLeadStatus(leadId, "won");
 
         const onboardingSent = await sendOnboardingKit({
           name: payload.lead.name,
