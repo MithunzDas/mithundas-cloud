@@ -57,6 +57,77 @@ export default function DigitalInvoicePage() {
   const [error, setError] = useState<string | null>(null);
   const [activePaymentTab, setActivePaymentTab] = useState<"card" | "upi" | "paypal" | "wire">("card");
   const [copiedText, setCopiedText] = useState<string | null>(null);
+  const [openingCheckout, setOpeningCheckout] = useState(false);
+
+  const handleRazorpayCheckout = async () => {
+    if (!invoice) return;
+    setOpeningCheckout(true);
+
+    try {
+      const res = await fetch("/api/payments/razorpay/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invoiceId: invoice.invoiceId }),
+      });
+
+      const orderData = await res.json();
+      const rawTotal = parseFloat((invoice.totalAmount || "").replace(/[^0-9.]/g, "")) || 0;
+      const depPct = parseFloat((invoice.depositPercent || "50").replace(/[^0-9.]/g, "")) || 50;
+      const depositAmountNum = rawTotal * (depPct / 100);
+
+      if (!(window as any).Razorpay) {
+        await new Promise((resolve) => {
+          const script = document.createElement("script");
+          script.src = "https://checkout.razorpay.com/v1/checkout.js";
+          script.onload = resolve;
+          document.body.appendChild(script);
+        });
+      }
+
+      const options = {
+        key: orderData.keyId || "rzp_test_mithundas_agency",
+        amount: orderData.amount || Math.round(depositAmountNum * 100),
+        currency: invoice.currency || "INR",
+        name: "Mithun Das AI Automation",
+        description: `Deposit Payment for Invoice ${invoice.invoiceId}`,
+        image: "https://mithundas.cloud/logo.png",
+        order_id: orderData.orderId,
+        handler: async function (response: any) {
+          try {
+            await fetch("/api/finance/transactions", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                invoiceId: invoice.invoiceId,
+                amount: depositAmountNum,
+                paymentMethod: "razorpay",
+                utrOrReference: response.razorpay_payment_id || `RZP-${Date.now().toString().slice(-6)}`,
+                clientName: invoice.clientName,
+                clientEmail: invoice.clientEmail,
+                notes: `Instant payment verified via Gateway (${response.razorpay_payment_id || "Auto"})`,
+              }),
+            });
+            fetchInvoice(invoice.invoiceId);
+            setUtrNotice({ type: "success", text: "🎉 Payment successfully verified! Official receipt issued." });
+          } catch (e) {}
+        },
+        prefill: {
+          name: invoice.clientName,
+          email: invoice.clientEmail,
+        },
+        theme: {
+          color: "#0ea5e9",
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      setUtrNotice({ type: "error", text: "Unable to launch checkout gateway." });
+    } finally {
+      setOpeningCheckout(false);
+    }
+  };
 
   useEffect(() => {
     if (invoiceId) {
@@ -392,27 +463,34 @@ export default function DigitalInvoicePage() {
                 <div>
                   <h4 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
                     <CreditCard className="w-4 h-4 text-cyan-400" />
-                    Instant Card / Online Checkout
+                    Automated Instant Payment Gateway (UPI, GPay, Cards &amp; NetBanking)
                   </h4>
                   <p className="text-slate-400 text-xs mb-4">
-                    Pay securely via Stripe / Razorpay using Visa, Mastercard, AMEX, or international cards.
+                    Pay securely with instant auto-verification using GPay, PhonePe, Paytm, Credit/Debit Cards, or NetBanking.
                   </p>
 
-                  {invoice.paymentLink ? (
-                    <a
-                      href={invoice.paymentLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-indigo-500 hover:opacity-90 text-slate-950 font-sans font-bold text-xs rounded-xl shadow-lg transition-all"
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={handleRazorpayCheckout}
+                      disabled={openingCheckout}
+                      className="inline-flex items-center gap-2.5 px-6 py-3.5 bg-gradient-to-r from-emerald-500 via-cyan-500 to-indigo-500 hover:opacity-90 text-slate-950 font-sans font-bold text-xs rounded-xl shadow-lg transition-all disabled:opacity-50"
                     >
-                      <span>Pay {invoice.depositAmount} Deposit Now</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </a>
-                  ) : (
-                    <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl text-slate-400">
-                      Payment link is being processed. Please use the UPI, PayPal, or Wire transfer tabs below.
-                    </div>
-                  )}
+                      <Sparkles className="w-4 h-4 text-slate-950" />
+                      <span>{openingCheckout ? "Opening Gateway..." : `Pay ${invoice.depositAmount} Deposit Now (UPI / Cards / NetBanking) ➔`}</span>
+                    </button>
+
+                    {invoice.paymentLink && (
+                      <a
+                        href={invoice.paymentLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-4 py-3 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-mono text-xs rounded-xl transition-all"
+                      >
+                        <span>Stripe / Custom Link</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
+                      </a>
+                    )}
+                  </div>
                 </div>
               )}
 

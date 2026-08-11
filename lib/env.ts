@@ -22,5 +22,8 @@ export const env = {
   ADMIN_AUTH_SECRET: process.env.ADMIN_AUTH_SECRET || "",
   RATE_LIMIT_REDIS_URL: process.env.RATE_LIMIT_REDIS_URL || "",
   RATE_LIMIT_REDIS_TOKEN: process.env.RATE_LIMIT_REDIS_TOKEN || "",
+  NEXT_PUBLIC_RAZORPAY_KEY_ID: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || "",
+  RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || "",
+  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || "",
 };
 
