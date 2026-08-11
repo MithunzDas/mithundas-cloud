@@ -303,7 +303,10 @@ export default function AdminFinancePage() {
       (item.companyName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.invoiceId || "").toLowerCase().includes(searchQuery.toLowerCase());
 
-    const isWonItem = item.paymentStatus === "won_pending" || (item.invoiceId && item.invoiceId.startsWith("WON-"));
+    const isWonItem =
+      item.paymentStatus === "won_pending" ||
+      item.paymentStatus === "won" ||
+      (item.invoiceId && item.invoiceId.toUpperCase().includes("WON-"));
 
     const matchesStatus =
       (statusFilter === "all" && !isWonItem) ||

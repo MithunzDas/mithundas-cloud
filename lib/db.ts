@@ -881,16 +881,36 @@ export async function getFinancialLedger(): Promise<{
 }> {
   const invoices = await getAllInvoicesFromDB();
 
-  // Tag all WON leads awaiting invoice generation
-  let pendingWonLeads: InvoicePayload[] = [];
+  // Tag all WON leads awaiting invoice generation (Deduplicated)
+  const pendingWonLeads: InvoicePayload[] = [];
+  const processedWonKeys = new Set<string>();
+
   try {
     const leads = await getLeads();
     const wonLeads = leads.filter((l: any) => l.status === "won" || l.status === "WON");
     for (const lead of wonLeads) {
-      const hasInvoice = invoices.some((inv) => inv.leadId === lead.leadId || (inv.clientEmail && inv.clientEmail.toLowerCase() === lead.email.toLowerCase()));
+      const emailKey = (lead.email || "").toLowerCase().trim();
+      const leadKey = lead.leadId || emailKey;
+
+      if (!leadKey || processedWonKeys.has(leadKey) || (emailKey && processedWonKeys.has(emailKey))) {
+        continue; // Skip duplicate lead entries
+      }
+
+      const hasInvoice = invoices.some(
+        (inv) =>
+          inv.leadId === lead.leadId ||
+          (inv.clientEmail && inv.clientEmail.toLowerCase().trim() === emailKey)
+      );
+
       if (!hasInvoice) {
+        processedWonKeys.add(leadKey);
+        if (emailKey) processedWonKeys.add(emailKey);
+
+        const cleanIdNum = lead.leadId ? lead.leadId.replace(/[^0-9]/g, "") : "";
+        const invId = `WON-${cleanIdNum.slice(-6) || Math.floor(100000 + Math.random() * 900000)}`;
+
         pendingWonLeads.push({
-          invoiceId: `WON-${lead.leadId.replace(/[^0-9]/g, "").slice(-6) || Math.floor(100000 + Math.random() * 900000)}`,
+          invoiceId: invId,
           leadId: lead.leadId,
           clientName: lead.name,
           clientEmail: lead.email,
