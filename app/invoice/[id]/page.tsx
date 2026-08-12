@@ -73,7 +73,8 @@ export default function DigitalInvoicePage() {
       const orderData = await res.json();
       const rawTotal = parseFloat((invoice.totalAmount || "").replace(/[^0-9.]/g, "")) || 0;
       const depPct = parseFloat((invoice.depositPercent || "50").replace(/[^0-9.]/g, "")) || 50;
-      const depositAmountNum = rawTotal * (depPct / 100);
+      const setupFeeNum = parseFloat((invoice.setupFee || "").replace(/[^0-9.]/g, "")) || 0;
+      const depositAmountNum = (rawTotal * (depPct / 100)) + setupFeeNum;
 
       if (!(window as any).Razorpay) {
         await new Promise((resolve) => {
