@@ -378,95 +378,82 @@ export default function DigitalInvoicePage() {
             </table>
           </div>
 
-          {/* Financial Math Breakdown (Total X, Paid Received, Remaining Balance) */}
-          <div className="mt-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#141b2b] print:bg-slate-50 p-5 rounded-2xl border border-slate-800/80 print:border-slate-300 font-mono">
-            <div className="space-y-1">
-              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Financial Progress Ledger:</span>
-              <div className="flex items-center gap-3 text-xs">
-                <span className="text-slate-300">Total Agreed: <strong className="text-white font-bold">{invoice.totalAmount}</strong></span>
-                <span className="text-slate-500">•</span>
-                <span className="text-emerald-400">Verified Paid: <strong className="font-bold">{invoice.currencySymbol || "$"}{(invoice.receivedAmountNumeric || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
-              </div>
-            </div>
+          {/* Financial Math Breakdown (Total Contract = Project + Setup, Paid Received, Remaining Balance) */}
+          {(() => {
+            const projectFee = parseFloat((invoice.totalAmount || "").replace(/[^0-9.]/g, "")) || 0;
+            const setupFeeNum = parseFloat((invoice.setupFee || "").replace(/[^0-9.]/g, "")) || 0;
+            const totalContractValue = projectFee + setupFeeNum;
+            const verifiedPaidNum = Number(invoice.receivedAmountNumeric) || 0;
+            const remainingBalanceNum = Math.max(0, totalContractValue - verifiedPaidNum);
+            const sym = invoice.currencySymbol || "$";
 
-            <div className="bg-[#0b0f17] print:bg-slate-200 px-4 py-2.5 rounded-xl border border-slate-800 text-right w-full md:w-auto">
-              <span className="text-[10px] text-slate-400 uppercase font-bold block">Remaining Outstanding Balance:</span>
-              <span className="text-base font-bold text-amber-400 print:text-slate-900">
-                {invoice.currencySymbol || "$"}{((parseFloat((invoice.totalAmount || "").replace(/[^0-9.]/g, "")) || 0) - (invoice.receivedAmountNumeric || 0)).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            </div>
-          </div>
+            return (
+              <div className="mt-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#141b2b] print:bg-slate-50 p-5 rounded-2xl border border-slate-800/80 print:border-slate-300 font-mono print:break-inside-avoid">
+                <div className="space-y-1">
+                  <span className="text-[10px] text-slate-400 print:text-slate-600 uppercase font-bold tracking-wider">Financial Progress Ledger:</span>
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className="text-slate-300 print:text-slate-800">Total Contract: <strong className="text-white print:text-slate-900 font-bold">{sym}{totalContractValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                    <span className="text-slate-500">•</span>
+                    <span className="text-emerald-400 print:text-emerald-600 font-bold">Verified Paid: <strong>{sym}{verifiedPaidNum.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                  </div>
+                </div>
+
+                <div className="bg-[#0b0f17] print:bg-slate-100 px-4 py-2.5 rounded-xl border border-slate-800 print:border-slate-300 text-right w-full md:w-auto">
+                  <span className="text-[10px] text-slate-400 print:text-slate-600 uppercase font-bold block">Remaining Outstanding Balance:</span>
+                  <span className="text-base font-bold text-amber-400 print:text-slate-900">
+                    {sym}{remainingBalanceNum.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
-        {/* Custom Payment Methods & Selector */}
+        {/* Custom Simplified Payment Methods & Selector */}
         {!isPaid && (
           <div className="pt-8 print:hidden">
             <h3 className="text-xs font-mono text-slate-400 uppercase font-bold tracking-wider mb-4 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-cyan-400" />
-              Select Payment Method ({invoice.depositAmount} Deposit Required)
+              Select Payment Option ({invoice.depositAmount} Upfront Deposit Required)
             </h3>
 
-            {/* Tabs */}
+            {/* Simplified Tabs */}
             <div className="flex items-center gap-2 bg-[#141b2b] p-1.5 rounded-2xl border border-slate-800 mb-6 overflow-x-auto">
               <button
                 onClick={() => setActivePaymentTab("card")}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-mono font-medium transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-mono font-bold transition-all ${
                   activePaymentTab === "card"
                     ? "bg-gradient-to-r from-cyan-500/20 to-indigo-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm"
                     : "text-slate-400 hover:text-white hover:bg-white/5"
                 }`}
               >
-                <CreditCard className="w-4 h-4" />
-                <span>Cards / Checkout</span>
-              </button>
-
-              <button
-                onClick={() => setActivePaymentTab("upi")}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-mono font-medium transition-all ${
-                  activePaymentTab === "upi"
-                    ? "bg-gradient-to-r from-cyan-500/20 to-indigo-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                <QrCode className="w-4 h-4" />
-                <span>UPI / India Transfer (0% Fee)</span>
-              </button>
-
-              <button
-                onClick={() => setActivePaymentTab("paypal")}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-mono font-medium transition-all ${
-                  activePaymentTab === "paypal"
-                    ? "bg-gradient-to-r from-cyan-500/20 to-indigo-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                <Globe className="w-4 h-4" />
-                <span>PayPal / Wise (Global)</span>
+                <Sparkles className="w-4 h-4 text-cyan-400" />
+                <span>⚡ Instant Gateway (UPI, GPay, PhonePe, Cards)</span>
               </button>
 
               <button
                 onClick={() => setActivePaymentTab("wire")}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-mono font-medium transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-mono font-medium transition-all ${
                   activePaymentTab === "wire"
                     ? "bg-gradient-to-r from-cyan-500/20 to-indigo-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm"
                     : "text-slate-400 hover:text-white hover:bg-white/5"
                 }`}
               >
                 <Building2 className="w-4 h-4" />
-                <span>Bank Wire / Crypto</span>
+                <span>🏛️ Direct Bank Wire / Account Details</span>
               </button>
             </div>
 
             {/* Tab Contents */}
             <div className="bg-[#141b2b] border border-slate-800 rounded-2xl p-6 font-mono text-xs">
-              {activePaymentTab === "card" && (
+              {activePaymentTab === "card" ? (
                 <div>
                   <h4 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
                     <CreditCard className="w-4 h-4 text-cyan-400" />
-                    Automated Instant Payment Gateway (UPI, GPay, Cards &amp; NetBanking)
+                    Automated Instant Payment Gateway (UPI, GPay, PhonePe, Cards &amp; NetBanking)
                   </h4>
                   <p className="text-slate-400 text-xs mb-4">
-                    Pay securely with instant auto-verification using GPay, PhonePe, Paytm, Credit/Debit Cards, or NetBanking.
+                    Pay securely with 1-click instant verification using GPay, PhonePe, Paytm, Credit/Debit Cards, or NetBanking.
                   </p>
 
                   <div className="flex flex-wrap items-center gap-3">
@@ -486,174 +473,45 @@ export default function DigitalInvoicePage() {
                         rel="noreferrer"
                         className="inline-flex items-center gap-1.5 px-4 py-3 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-mono text-xs rounded-xl transition-all"
                       >
-                        <span>Stripe / Custom Link</span>
+                        <span>Alternative Gateway Link</span>
                         <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
                       </a>
                     )}
                   </div>
                 </div>
-              )}
-
-              {activePaymentTab === "upi" && (
+              ) : (
                 <div className="space-y-4">
                   <h4 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
-                    <QrCode className="w-4 h-4 text-emerald-400" />
-                    Direct UPI &amp; Mobile App Launcher (GPay / PhonePe / Paytm - 0% Fee)
+                    <Building2 className="w-4 h-4 text-indigo-400" />
+                    Direct International Wire Transfer &amp; UPI
                   </h4>
-
-                  {(() => {
-                    const rawTotal = parseFloat((invoice.totalAmount || "").replace(/[^0-9.]/g, "")) || 0;
-                    const depPct = parseFloat((invoice.depositPercent || "50").replace(/[^0-9.]/g, "")) || 50;
-                    const depAmt = (rawTotal * (depPct / 100)).toFixed(2);
-                    const upiDeepLink = `upi://pay?pa=mithun.here01@okaxis&pn=Mithun%20Das&am=${depAmt}&cu=INR&tn=Invoice%20${invoice.invoiceId}`;
-
-                    return (
-                      <div className="bg-slate-900/90 p-4 rounded-xl border border-emerald-500/30 space-y-3">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                          <div>
-                            <span className="text-[10px] text-slate-400 uppercase">1-Click Mobile App Launcher:</span>
-                            <div className="text-xs text-slate-200 mt-0.5">Tapping opens GPay / PhonePe with pre-filled deposit amount (₹{depAmt})</div>
-                          </div>
-                          <a
-                            href={upiDeepLink}
-                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:opacity-90 text-slate-950 font-sans font-bold text-xs rounded-xl shadow-md transition-all shrink-0"
-                          >
-                            <QrCode className="w-4 h-4" />
-                            <span>Pay ₹{depAmt} via UPI App ➔</span>
-                          </a>
-                        </div>
-                      </div>
-                    );
-                  })()}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-400 uppercase">UPI ID (GPay / PhonePe / Paytm / BHIM)</span>
+                      <span className="text-[10px] text-slate-400 uppercase">Direct UPI ID (GPay / PhonePe)</span>
                       <div className="flex items-center justify-between mt-1">
                         <span className="text-sm font-bold text-emerald-400">mithun.here01@okaxis</span>
                         <button
                           onClick={() => handleCopy("mithun.here01@okaxis", "upi")}
-                          className="px-2.5 py-1 bg-white/5 hover:bg-white/10 rounded-md text-[10px] text-slate-300"
+                          className="px-2.5 py-1 bg-white/5 hover:bg-white/10 rounded-md text-[10px] text-slate-300 flex items-center gap-1"
                         >
                           {copiedText === "upi" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{copiedText === "upi" ? "Copied" : "Copy"}</span>
                         </button>
                       </div>
                     </div>
 
                     <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-400 uppercase">Account Holder</span>
-                      <div className="text-sm font-bold text-white mt-1">MITHUN DAS</div>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold">SWIFT / International Bank Wire</span>
+                      <div className="text-slate-300 text-xs mt-1">
+                        Contact <strong className="text-cyan-400">mithun@mithundas.cloud</strong> for SWIFT / IBAN wire details.
+                      </div>
                     </div>
                   </div>
 
                   <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-slate-300 text-[11px]">
-                    💡 <strong>Note:</strong> Mention Invoice Reference ID <strong>{invoice.invoiceId}</strong> in the payment remarks/notes.
+                    💡 <strong>Note:</strong> When sending direct wire or UPI, please include Invoice Reference ID <strong>{invoice.invoiceId}</strong> in the transfer remarks.
                   </div>
-                </div>
-              )}
-
-              {activePaymentTab === "paypal" && (
-                <div className="space-y-4">
-                  <h4 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-cyan-400" />
-                    Global PayPal &amp; Wise Direct Transfer
-                  </h4>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-400 uppercase">PayPal Payment Link</span>
-                      <div className="mt-2">
-                        <a
-                          href="https://paypal.me/MithunzDas"
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 text-cyan-400 font-bold hover:underline"
-                        >
-                          <span>paypal.me/MithunzDas</span>
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      </div>
-                    </div>
-
-                    <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-400 uppercase">Wise Account (USD / EUR / GBP)</span>
-                      <div className="text-slate-300 text-xs mt-1">Available upon request (0.4% fee)</div>
-                    </div>
-                  </div>
-
-                  <div className="p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-xl text-slate-300 text-[11px]">
-                    💡 <strong>Note:</strong> Include Invoice ID <strong>{invoice.invoiceId}</strong> in your transfer note.
-                  </div>
-                </div>
-              )}
-
-              {activePaymentTab === "wire" && (
-                <div className="space-y-4">
-                  <h4 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-indigo-400" />
-                    Direct International Wire Transfer &amp; Crypto
-                  </h4>
-
-                  <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-2">
-                    <div>
-                      <span className="text-[10px] text-slate-400 uppercase">SWIFT / Bank Wire:</span>
-                      <div className="text-slate-200 mt-0.5">Contact mithun@mithundas.cloud for official SWIFT/IBAN wire instructions.</div>
-                    </div>
-                    <div className="pt-2 border-t border-slate-800">
-                      <span className="text-[10px] text-slate-400 uppercase">Crypto (USDT / TRC20):</span>
-                      <div className="text-slate-200 mt-0.5">USDT TRC20 wallet address available on request.</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* UTR / Payment Reference Submission Form for manual payments */}
-              {activePaymentTab !== "card" && (
-                <div className="mt-6 pt-6 border-t border-slate-800 font-mono">
-                  <h5 className="text-xs font-bold text-slate-200 mb-2 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    Submit Payment UTR / Transaction Reference for Verification
-                  </h5>
-                  <p className="text-[11px] text-slate-400 mb-3">
-                    Paid via UPI, Wise, PayPal, or Bank Transfer? Enter your UTR reference number or Cash receipt note below to notify admin for instant verification.
-                  </p>
-
-                  {utrNotice && (
-                    <div className={`p-3 rounded-xl text-xs font-mono mb-3 flex items-center justify-between ${
-                      utrNotice.type === "error" ? "bg-rose-500/10 border border-rose-500/30 text-rose-400" : "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
-                    }`}>
-                      <span>{utrNotice.text}</span>
-                      <button onClick={() => setUtrNotice(null)} className="text-slate-400 hover:text-white">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
-
-                  <form onSubmit={handleUtrSubmit} className="flex flex-col sm:flex-row items-center gap-2">
-                    <input
-                      type="text"
-                      value={utrInput}
-                      onChange={(e) => setUtrInput(e.target.value)}
-                      placeholder="Enter 12-digit UTR #, Txn ID, or Cash Ref..."
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 font-mono"
-                      required
-                    />
-                    <input
-                      type="text"
-                      value={utrAmountInput}
-                      onChange={(e) => setUtrAmountInput(e.target.value)}
-                      placeholder={`Amount paid (${invoice.currencySymbol || "$"})...`}
-                      className="w-full sm:w-44 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 font-mono"
-                      required
-                    />
-                    <button
-                      type="submit"
-                      disabled={submittingUtr}
-                      className="w-full sm:w-auto shrink-0 px-4 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:opacity-90 text-slate-950 font-bold text-xs rounded-xl font-sans transition-all disabled:opacity-50"
-                    >
-                      {submittingUtr ? "Submitting..." : "Submit UTR Reference"}
-                    </button>
-                  </form>
                 </div>
               )}
             </div>
