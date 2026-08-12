@@ -19,8 +19,12 @@ export async function POST(req: NextRequest) {
 
     const rawTotal = parseFloat((invoice.totalAmount || "").replace(/[^0-9.]/g, "")) || 0;
     const depPct = parseFloat((invoice.depositPercent || "50").replace(/[^0-9.]/g, "")) || 50;
-    const depositAmount = (rawTotal * (depPct / 100)).toFixed(2);
-    const amountInCents = Math.round(parseFloat(depositAmount) * 100);
+    const setupFeeNum = parseFloat((invoice.setupFee || "").replace(/[^0-9.]/g, "")) || 0;
+
+    // Upfront Deposit Payable = (% of Project Fee) + (Fixed Setup Fee)
+    const baseDeposit = rawTotal * (depPct / 100);
+    const totalUpfrontPayable = baseDeposit + setupFeeNum;
+    const amountInCents = Math.round(totalUpfrontPayable * 100);
 
     const stripeSecretKey = env.STRIPE_SECRET_KEY;
     const siteUrl = env.NEXT_PUBLIC_SITE_URL || "https://mithundas.cloud";

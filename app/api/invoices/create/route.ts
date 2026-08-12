@@ -41,8 +41,12 @@ export async function POST(req: NextRequest) {
     const invoiceId = body.invoiceId || `INV-${Date.now().toString().slice(-6)}`;
     const numericTotal = parseFloat(String(totalAmount).replace(/[^0-9.]/g, "")) || 0;
     const numericDepositPct = parseFloat(String(depositPercent).replace(/[^0-9.]/g, "")) || 50;
-    const calculatedDeposit = (numericTotal * (numericDepositPct / 100)).toFixed(2);
-    const formattedDeposit = `${currencySymbol}${calculatedDeposit}`;
+    const numericSetupFee = parseFloat(String(setupFee || "").replace(/[^0-9.]/g, "")) || 0;
+
+    // Upfront Deposit Payable = (% of Project Fee) + (Fixed Setup / Integration Fee)
+    const baseDepositAmt = numericTotal * (numericDepositPct / 100);
+    const totalUpfrontPayable = (baseDepositAmt + numericSetupFee).toFixed(2);
+    const formattedDeposit = `${currencySymbol}${totalUpfrontPayable}`;
 
     const issueDateStr = new Date().toISOString().split("T")[0];
     const dueDateStr = dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];

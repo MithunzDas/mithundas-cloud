@@ -19,8 +19,12 @@ export async function POST(req: NextRequest) {
 
     const rawTotal = parseFloat((invoice.totalAmount || "").replace(/[^0-9.]/g, "")) || 0;
     const depPct = parseFloat((invoice.depositPercent || "50").replace(/[^0-9.]/g, "")) || 50;
-    const depositAmount = (rawTotal * (depPct / 100)).toFixed(2);
-    const amountInSubunits = Math.round(parseFloat(depositAmount) * 100); // Amount in paisa/cents
+    const setupFeeNum = parseFloat((invoice.setupFee || "").replace(/[^0-9.]/g, "")) || 0;
+
+    // Upfront Deposit Payable = (% of Project Fee) + (Fixed Setup Fee)
+    const baseDeposit = rawTotal * (depPct / 100);
+    const totalUpfrontPayable = baseDeposit + setupFeeNum;
+    const amountInSubunits = Math.round(totalUpfrontPayable * 100); // Amount in paisa/cents
 
     const razorpayKeyId = env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     const razorpaySecret = env.RAZORPAY_KEY_SECRET;
@@ -67,7 +71,7 @@ export async function POST(req: NextRequest) {
       success: true,
       amount: amountInSubunits,
       currency: invoice.currency || "INR",
-      depositAmount,
+      depositAmount: totalUpfrontPayable.toFixed(2),
       invoiceId: invoice.invoiceId,
       keyId: razorpayKeyId || "rzp_test_mithundas_agency",
     });
