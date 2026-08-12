@@ -24,6 +24,8 @@ import {
   Sparkles,
   Eye,
   Calendar,
+  Trash2,
+  Lock,
 } from "lucide-react";
 import { AdminNav } from "../components/AdminNav";
 
@@ -116,6 +118,45 @@ export default function AdminFinancePage() {
   const [showRecordCashModal, setShowRecordCashModal] = useState(false);
   const [isProposalPreviewing, setIsProposalPreviewing] = useState(false);
   const [isPolishingScope, setIsPolishingScope] = useState(false);
+
+  // Delete Invoice Password Modal State
+  const [deleteInvoiceTarget, setDeleteInvoiceTarget] = useState<InvoiceItem | null>(null);
+  const [deletePasswordInput, setDeletePasswordInput] = useState("");
+  const [isDeletingInvoice, setIsDeletingInvoice] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
+  const handleConfirmDeleteInvoice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deleteInvoiceTarget) return;
+
+    setIsDeletingInvoice(true);
+    setDeleteError("");
+
+    const secretToUse = deletePasswordInput.trim() || adminSecret;
+
+    try {
+      const res = await fetch(`/api/invoices/${deleteInvoiceTarget.invoiceId}`, {
+        method: "DELETE",
+        headers: {
+          "x-admin-secret": secretToUse,
+        },
+      });
+
+      if (res.ok) {
+        setNotification({ type: "success", text: `🗑️ Invoice ${deleteInvoiceTarget.invoiceId} successfully deleted!` });
+        setDeleteInvoiceTarget(null);
+        setDeletePasswordInput("");
+        fetchFinancialData(adminSecret);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setDeleteError(errData.error || "Incorrect admin password. Deletion denied.");
+      }
+    } catch (err) {
+      setDeleteError("Network error deleting invoice.");
+    } finally {
+      setIsDeletingInvoice(false);
+    }
+  };
 
   // New Invoice / Welcome Package Form
   const [newInvoiceForm, setNewInvoiceForm] = useState({
@@ -790,6 +831,19 @@ export default function AdminFinancePage() {
                                   <ExternalLink className="w-3.5 h-3.5" />
                                   <span>View Portal</span>
                                 </a>
+
+                                <button
+                                  onClick={() => {
+                                    setDeleteInvoiceTarget(inv);
+                                    setDeletePasswordInput(adminSecret);
+                                    setDeleteError("");
+                                  }}
+                                  className="px-2.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-lg text-xs font-mono text-rose-400 flex items-center gap-1 transition-all"
+                                  title="Delete invoice (Requires Admin Password)"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>Delete</span>
+                                </button>
                               </>
                             )}
                           </div>
@@ -1275,6 +1329,90 @@ export default function AdminFinancePage() {
                   className="px-5 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold rounded-xl"
                 >
                   {loading ? "Recording..." : "Record & Issue Receipt"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Password Protected Delete Invoice Modal */}
+      {deleteInvoiceTarget && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0f1420] border border-rose-500/40 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl relative flex flex-col">
+            <div className="h-1 bg-gradient-to-r from-rose-500 via-amber-500 to-rose-500"></div>
+
+            <div className="p-6 border-b border-border-app flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-rose-400 flex items-center gap-2">
+                  <Trash2 className="w-4 h-4 text-rose-400" />
+                  <span>Delete Invoice {deleteInvoiceTarget.invoiceId}</span>
+                </h3>
+                <p className="text-xs text-text-secondary font-mono mt-0.5">
+                  Confirm admin password to permanently remove this invoice.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setDeleteInvoiceTarget(null);
+                  setDeletePasswordInput("");
+                  setDeleteError("");
+                }}
+                className="text-text-secondary hover:text-text-primary"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmDeleteInvoice} className="p-6 space-y-4 font-mono text-xs">
+              <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-3 text-rose-300 text-xs leading-relaxed">
+                ⚠️ <strong>Warning:</strong> Deleting invoice <strong className="text-white font-bold">{deleteInvoiceTarget.invoiceId}</strong> for <strong className="text-white font-bold">{deleteInvoiceTarget.clientName} ({deleteInvoiceTarget.companyName})</strong> will permanently erase it from the database and allow you to issue a new invoice.
+              </div>
+
+              {deleteError && (
+                <div className="p-3 bg-rose-500/20 border border-rose-500/40 rounded-xl text-rose-300 text-xs font-bold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                  <span>{deleteError}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[10px] text-text-secondary uppercase mb-1.5 font-semibold">
+                  Admin Authorization Secret / Password
+                </label>
+                <div className="relative flex items-center">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3" />
+                  <input
+                    type="password"
+                    value={deletePasswordInput}
+                    onChange={(e) => setDeletePasswordInput(e.target.value)}
+                    placeholder="Enter admin secret..."
+                    className="w-full bg-[#161d2c] border border-border-app rounded-xl p-2.5 pl-9 text-text-primary focus:outline-none focus:border-rose-500 font-mono text-xs"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 flex justify-between items-center border-t border-border-app">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeleteInvoiceTarget(null);
+                    setDeletePasswordInput("");
+                    setDeleteError("");
+                  }}
+                  className="px-4 py-2 bg-[#1b2333] text-text-primary rounded-xl text-xs font-mono"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isDeletingInvoice}
+                  className="px-5 py-2.5 bg-gradient-to-r from-rose-500 to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>{isDeletingInvoice ? "Deleting..." : "Confirm & Permanently Delete"}</span>
                 </button>
               </div>
             </form>

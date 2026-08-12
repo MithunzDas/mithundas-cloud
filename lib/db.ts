@@ -614,6 +614,33 @@ export async function saveInvoiceToDB(inv: InvoicePayload): Promise<void> {
   }
 }
 
+export async function deleteInvoiceFromDB(invoiceId: string): Promise<boolean> {
+  // 1. Delete from Prisma DB (transactions + invoice)
+  try {
+    await (prisma as any).paymentTransaction.deleteMany({
+      where: { invoiceId },
+    });
+    await (prisma as any).invoice.deleteMany({
+      where: { invoiceId },
+    });
+  } catch (e) {}
+
+  // 2. Remove from local JSON caches
+  const current = getLocalInvoices().filter((i) => i.invoiceId !== invoiceId);
+  const data = JSON.stringify(current, null, 2);
+
+  try {
+    const dir = path.dirname(REPO_INVOICES_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(REPO_INVOICES_FILE, data);
+  } catch (e) {}
+  try { fs.writeFileSync(LOCAL_INVOICES_FILE, data); } catch (e) {}
+  try { fs.writeFileSync(TMP_INVOICES_FILE, data); } catch (e) {}
+
+  logger.info(`Invoice ${invoiceId} deleted from database and cache`, "invoice_delete_success");
+  return true;
+}
+
 export async function getInvoiceFromDB(invoiceId: string): Promise<InvoicePayload | null> {
   // 1. Try Prisma Invoice table
   try {

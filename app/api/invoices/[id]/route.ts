@@ -51,3 +51,31 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const authHeader = req.headers.get("x-admin-secret");
+    const { env } = await import("@/lib/env");
+    const expectedSecret = env.ADMIN_AUTH_SECRET || "mithundas_admin_secret_2026";
+
+    if (authHeader !== expectedSecret) {
+      return NextResponse.json({ success: false, error: "Incorrect Admin Password" }, { status: 401 });
+    }
+
+    const { id: invoiceId } = await params;
+    if (!invoiceId) {
+      return NextResponse.json({ success: false, error: "Missing invoice ID" }, { status: 400 });
+    }
+
+    const { deleteInvoiceFromDB } = await import("@/lib/db");
+    await deleteInvoiceFromDB(invoiceId);
+
+    return NextResponse.json({
+      success: true,
+      message: `Invoice ${invoiceId} successfully deleted`,
+    });
+  } catch (error) {
+    logger.error("Failed to delete invoice", "invoice_delete_error", error);
+    return NextResponse.json({ success: false, error: "Failed to delete invoice" }, { status: 500 });
+  }
+}
