@@ -207,7 +207,7 @@ function AffidavitAppContent() {
     witness_state: "West Bengal",
     entry_date: "",
     verification_date: getTodayDate(),
-    advocate: ADVOCATE_PRESETS[0],
+    advocate: "",
     custom_court: "",
   });
 
@@ -664,8 +664,11 @@ function AffidavitAppContent() {
       witness_state: "West Bengal",
       entry_date: "",
       verification_date: getTodayDate(),
-      advocate: ADVOCATE_PRESETS[0],
-      custom_court: "",
+      advocate:
+        user?.defaultAdvocateName && user?.defaultAdvocateEnrollment
+          ? `${user.defaultAdvocateName}, Adv, ${user.defaultAdvocateEnrollment}`
+          : "",
+      custom_court: user?.defaultCourtHeader || "",
     });
     setFormErrors({});
   };
@@ -1721,7 +1724,7 @@ function AffidavitAppContent() {
                       name="advocate"
                       value={formData.advocate}
                       onChange={handleInputChange}
-                      placeholder="e.g. Debabrata Sarkar, Adv, F/1675/856/2020"
+                      placeholder="e.g., Debabrata Sarkar, Adv, F/1675/856/2020"
                       className="w-full rounded-lg border px-3.5 py-2.5 text-[14px] text-white focus:border-sky-400 focus:outline-none"
                       style={{
                         backgroundColor: "hsl(225, 20%, 10%)",
@@ -1729,19 +1732,21 @@ function AffidavitAppContent() {
                       }}
                     />
 
-                    {/* Quick Presets / Suggestions */}
+                    {/* Quick Example / Presets */}
                     <div className="flex flex-wrap items-center gap-2 mt-2">
-                      <span className="text-[11px] text-slate-500 font-mono">Quick Presets:</span>
-                      {ADVOCATE_PRESETS.map((adv) => (
-                        <button
-                          key={adv}
-                          type="button"
-                          onClick={() => setFormData((prev) => ({ ...prev, advocate: adv }))}
-                          className="rounded-md border border-slate-700 bg-slate-900/80 px-2 py-0.5 text-[11px] text-slate-300 hover:border-sky-400 hover:text-sky-300 transition-colors"
-                        >
-                          {adv.split(",")[0]}
-                        </button>
-                      ))}
+                      <span className="text-[11px] text-slate-500 font-mono">Example:</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            advocate: "Debabrata Sarkar, Adv, F/1675/856/2020",
+                          }))
+                        }
+                        className="rounded-md border border-slate-700 bg-slate-900/80 px-2 py-0.5 text-[11px] text-slate-400 hover:border-sky-400 hover:text-sky-300 transition-colors"
+                      >
+                        Debabrata Sarkar, Adv
+                      </button>
                     </div>
 
                     {/* 1-Click Save as Default Profile Checkbox */}
