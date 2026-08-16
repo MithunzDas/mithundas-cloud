@@ -127,6 +127,8 @@ model AffidavitUser {
   email                     String?             @unique
   phone                     String?             @unique
   name                      String?
+  avatarUrl                 String?
+  googleId                  String?             @unique
   creditBalance             Int                 @default(0)
   isFirstPurchaseDone       Boolean             @default(false)
   defaultAdvocateName       String?
@@ -141,6 +143,7 @@ model AffidavitUser {
 
   @@index([email])
   @@index([phone])
+  @@index([googleId])
 }
 
 model AffidavitPurchase {

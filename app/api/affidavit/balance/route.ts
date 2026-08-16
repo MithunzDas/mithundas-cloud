@@ -28,9 +28,14 @@ export async function GET(req: NextRequest) {
       select: {
         id: true,
         email: true,
+        phone: true,
         name: true,
+        avatarUrl: true,
         creditBalance: true,
         isFirstPurchaseDone: true,
+        defaultAdvocateName: true,
+        defaultAdvocateEnrollment: true,
+        defaultCourtHeader: true,
       },
     });
 
