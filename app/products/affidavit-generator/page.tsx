@@ -2247,14 +2247,13 @@ function AffidavitAppContent() {
                 </div>
               )}
 
-              {!otpSent ? (
-                <div className="mt-5 space-y-4">
-                  {/* Google 1-Click Sign-In (Primary & Fastest) */}
+                <div className="mt-6 space-y-4">
+                  {/* Google 1-Click Sign-In (Primary & Clean) */}
                   <button
                     type="button"
                     onClick={handleGoogleSignIn}
                     disabled={authLoading}
-                    className="w-full flex items-center justify-center gap-3 rounded-xl border border-slate-700 bg-slate-900/90 hover:bg-slate-800 text-white font-semibold py-3 text-[14px] transition-all hover:border-slate-600 shadow-sm active:scale-95 disabled:opacity-50 group"
+                    className="w-full flex items-center justify-center gap-3.5 rounded-xl border border-slate-700 bg-slate-900/90 hover:bg-slate-800 text-white font-semibold py-3.5 text-[15px] transition-all hover:border-sky-500/50 hover:shadow-[0_0_25px_rgba(56,189,248,0.2)] active:scale-95 disabled:opacity-50 group"
                   >
                     <svg className="h-5 w-5 transition-transform group-hover:scale-110" viewBox="0 0 24 24">
                       <path
@@ -2274,132 +2273,29 @@ function AffidavitAppContent() {
                         d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16c1.8 3.7 5.6 7 10.1 7z"
                       />
                     </svg>
-                    Continue with Google (1-Click)
+                    <span>{authLoading ? "Signing in with Google..." : "Continue with Google (1-Click)"}</span>
                   </button>
 
-                  <div className="relative flex items-center justify-center pt-1 pb-1">
-                    <div className="border-t border-slate-800 w-full"></div>
-                    <span className="bg-slate-900 px-3 text-[10px] font-mono text-slate-500 uppercase tracking-wider absolute">
-                      or use mobile otp
-                    </span>
-                  </div>
-
-                  <form onSubmit={handleSendOtp} className="space-y-4 pt-1">
-                    <div>
-                      <label className="block text-[12px] font-mono text-slate-300 uppercase mb-1.5">
-                        10-Digit Mobile Number
-                      </label>
-                      <div className="relative flex items-center">
-                        <span className="absolute left-3.5 flex items-center gap-1.5 text-[13px] font-mono font-semibold text-sky-400 border-r border-slate-700 pr-2.5">
-                          🇮🇳 +91
-                        </span>
-                        <input
-                          type="tel"
-                          value={authIdentifier}
-                          onChange={(e) => setAuthIdentifier(e.target.value)}
-                          placeholder="98765 43210"
-                          maxLength={10}
-                          className="w-full rounded-xl border py-2.5 pl-20 pr-3.5 text-[14px] text-white focus:border-sky-400 focus:outline-none transition-colors"
-                          style={{
-                            backgroundColor: "hsl(225, 20%, 10%)",
-                            borderColor: "hsl(225, 15%, 20%)",
-                          }}
-                        />
-                      </div>
+                  {/* Benefit list */}
+                  <div className="rounded-xl border border-slate-800/80 bg-slate-950/40 p-3.5 space-y-2 text-[12px] text-slate-300">
+                    <div className="flex items-center gap-2 text-slate-300 font-mono">
+                      <Zap className="h-3.5 w-3.5 text-sky-400 shrink-0" />
+                      <span>Instant 1-Click Access · No OTP or password</span>
                     </div>
+                    <div className="flex items-center gap-2 text-slate-300 font-mono">
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                      <span>Secure Google Identity & Automatic Cloud Backup</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-300 font-mono">
+                      <Check className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                      <span>Saves Advocate Profile & Court Jurisdiction</span>
+                    </div>
+                  </div>
 
-                    <button
-                      type="submit"
-                      disabled={authLoading}
-                      className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-2.5 text-[14px] transition-all shadow-[0_0_20px_rgba(56,189,248,0.3)] active:scale-95 disabled:opacity-50"
-                    >
-                      {authLoading ? (
-                        <>
-                          <RefreshCw className="h-4 w-4 animate-spin" /> Sending OTP...
-                        </>
-                      ) : (
-                        <>
-                          Get Mobile OTP <ArrowRight className="h-4 w-4" />
-                        </>
-                      )}
-                    </button>
-                  </form>
+                  <p className="text-center text-[11px] text-slate-500 font-mono pt-1">
+                    By continuing, you agree to our Terms of Service & Privacy Policy.
+                  </p>
                 </div>
-              ) : (
-                <div className="mt-5 space-y-4">
-                  <div className="text-center">
-                    <p className="text-[13px] text-slate-300">
-                      Enter the 6-digit code sent to{" "}
-                      <strong className="text-white font-mono">{authIdentifier}</strong>
-                    </p>
-                  </div>
-
-                  {/* 6 Discrete Digit Boxes */}
-                  <div className="flex items-center justify-center gap-2.5 my-4">
-                    {otpDigits.map((digit, idx) => (
-                      <input
-                        key={idx}
-                        ref={(el) => {
-                          otpInputRefs.current[idx] = el;
-                        }}
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={1}
-                        value={digit}
-                        onChange={(e) => handleOtpDigitChange(idx, e.target.value)}
-                        onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                        onPaste={handleOtpPaste}
-                        className="h-12 w-11 rounded-xl border text-center font-mono text-[20px] font-bold text-white focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 transition-all"
-                        style={{
-                          backgroundColor: "hsl(225, 20%, 10%)",
-                          borderColor: digit ? "#38BDF8" : "hsl(225, 15%, 20%)",
-                        }}
-                      />
-                    ))}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleVerifyOtp(otpDigits.join(""))}
-                    disabled={authLoading || otpDigits.some((d) => d === "")}
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-3 text-[14px] transition-all shadow-[0_0_20px_rgba(56,189,248,0.3)] active:scale-95 disabled:opacity-50"
-                  >
-                    {authLoading ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 animate-spin" /> Verifying...
-                      </>
-                    ) : (
-                      <>
-                        Verify & Sign In <Check className="h-4 w-4 stroke-[3]" />
-                      </>
-                    )}
-                  </button>
-
-                  <div className="flex items-center justify-between text-[12px] pt-2 border-t border-slate-800">
-                    <button
-                      type="button"
-                      onClick={() => setOtpSent(false)}
-                      className="text-slate-400 hover:text-white underline transition-colors"
-                    >
-                      ← Change number
-                    </button>
-
-                    {resendCountdown > 0 ? (
-                      <span className="font-mono text-slate-500">
-                        Resend in {resendCountdown}s
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleSendOtp}
-                        className="text-sky-400 hover:text-sky-300 font-semibold transition-colors"
-                      >
-                        Resend Code
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         )}
