@@ -23,6 +23,7 @@ import {
   LogOut,
   ShieldCheck,
   Sparkles,
+  Calendar,
 } from "lucide-react";
 
 /* ─── n8n Webhook Backend URL ─── */
@@ -146,6 +147,29 @@ function AffidavitAppContent() {
     const dd = String(today.getDate()).padStart(2, "0");
     const mm = String(today.getMonth() + 1).padStart(2, "0");
     const yyyy = today.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  };
+
+  // Today in YYYY-MM-DD format for HTML5 min/max
+  const getTodayIso = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  // Convert DD/MM/YYYY to YYYY-MM-DD
+  const ddmmyyyyToIso = (val: string) => {
+    if (!val || !/^\d{2}\/\d{2}\/\d{4}$/.test(val)) return "";
+    const [dd, mm, yyyy] = val.split("/");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  // Convert YYYY-MM-DD to DD/MM/YYYY
+  const isoToDdmmyyyy = (iso: string) => {
+    if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "";
+    const [yyyy, mm, dd] = iso.split("-");
     return `${dd}/${mm}/${yyyy}`;
   };
 
@@ -484,8 +508,17 @@ function AffidavitAppContent() {
     if (
       !formData.verification_date.trim() ||
       !/^\d{2}\/\d{2}\/\d{4}$/.test(formData.verification_date.trim())
-    )
+    ) {
       errors.verification_date = "Verification date must be in DD/MM/YYYY format";
+    } else {
+      const [vd, vm, vy] = formData.verification_date.split("/").map(Number);
+      const inputDate = new Date(vy, vm - 1, vd);
+      const todayDate = new Date();
+      todayDate.setHours(0, 0, 0, 0);
+      if (inputDate < todayDate) {
+        errors.verification_date = "Verification date must be today or a future date";
+      }
+    }
     if (!formData.advocate.trim()) errors.advocate = "Advocate selection is required";
 
     setFormErrors(errors);
@@ -1448,21 +1481,50 @@ function AffidavitAppContent() {
                     <label className="block text-[13px] font-medium text-slate-300 mb-1.5">
                       Date of Entry into India <span className="text-rose-400">*</span>
                     </label>
-                    <input
-                      type="text"
-                      name="entry_date"
-                      value={formData.entry_date}
-                      onChange={(e) => handleDateInput("entry_date", e.target.value)}
-                      placeholder="DD/MM/YYYY"
-                      maxLength={10}
-                      className="w-full rounded-lg border px-3.5 py-2.5 text-[14px] text-white focus:border-sky-400 focus:outline-none"
-                      style={{
-                        backgroundColor: "hsl(225, 20%, 10%)",
-                        borderColor: formErrors.entry_date ? "#F43F5E" : "hsl(225, 15%, 20%)",
-                      }}
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="entry_date"
+                        value={formData.entry_date}
+                        onChange={(e) => handleDateInput("entry_date", e.target.value)}
+                        placeholder="DD/MM/YYYY"
+                        maxLength={10}
+                        className="w-full rounded-lg border px-3.5 py-2.5 pr-11 text-[14px] text-white focus:border-sky-400 focus:outline-none"
+                        style={{
+                          backgroundColor: "hsl(225, 20%, 10%)",
+                          borderColor: formErrors.entry_date ? "#F43F5E" : "hsl(225, 15%, 20%)",
+                        }}
+                      />
+                      <label
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center h-7 w-7 rounded-md bg-slate-800 hover:bg-sky-500/20 text-slate-400 hover:text-sky-400 cursor-pointer transition-colors"
+                        title="Pick entry date from calendar"
+                      >
+                        <Calendar className="h-4 w-4" />
+                        <input
+                          type="date"
+                          max={getTodayIso()}
+                          value={ddmmyyyyToIso(formData.entry_date)}
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              const formatted = isoToDdmmyyyy(e.target.value);
+                              setFormData((prev) => ({ ...prev, entry_date: formatted }));
+                              if (formErrors.entry_date) {
+                                setFormErrors((prev) => ({ ...prev, entry_date: "" }));
+                              }
+                            }
+                          }}
+                          className="sr-only"
+                          aria-label="Select Entry Date"
+                          onClick={(e) => {
+                            try {
+                              (e.target as HTMLInputElement).showPicker();
+                            } catch {}
+                          }}
+                        />
+                      </label>
+                    </div>
                     <span className="text-slate-400 text-[11px] block mt-1">
-                      Format: DD/MM/YYYY
+                      Format: DD/MM/YYYY (Past arrival date)
                     </span>
                     {formErrors.entry_date && (
                       <p className="text-rose-400 text-[12px] mt-1">{formErrors.entry_date}</p>
@@ -1470,26 +1532,58 @@ function AffidavitAppContent() {
                   </div>
 
                   <div>
-                    <label className="block text-[13px] font-medium text-slate-300 mb-1.5">
-                      Verification Date <span className="text-rose-400">*</span>
+                    <label className="block text-[13px] font-medium text-slate-300 mb-1.5 flex items-center justify-between">
+                      <span>
+                        Verification Date <span className="text-rose-400">*</span>
+                      </span>
+                      <span className="text-[11px] font-mono text-sky-400">Today / Future only</span>
                     </label>
-                    <input
-                      type="text"
-                      name="verification_date"
-                      value={formData.verification_date}
-                      onChange={(e) => handleDateInput("verification_date", e.target.value)}
-                      placeholder="DD/MM/YYYY"
-                      maxLength={10}
-                      className="w-full rounded-lg border px-3.5 py-2.5 text-[14px] text-white focus:border-sky-400 focus:outline-none"
-                      style={{
-                        backgroundColor: "hsl(225, 20%, 10%)",
-                        borderColor: formErrors.verification_date
-                          ? "#F43F5E"
-                          : "hsl(225, 15%, 20%)",
-                      }}
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="verification_date"
+                        value={formData.verification_date}
+                        onChange={(e) => handleDateInput("verification_date", e.target.value)}
+                        placeholder="DD/MM/YYYY"
+                        maxLength={10}
+                        className="w-full rounded-lg border px-3.5 py-2.5 pr-11 text-[14px] text-white focus:border-sky-400 focus:outline-none"
+                        style={{
+                          backgroundColor: "hsl(225, 20%, 10%)",
+                          borderColor: formErrors.verification_date
+                            ? "#F43F5E"
+                            : "hsl(225, 15%, 20%)",
+                        }}
+                      />
+                      <label
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center h-7 w-7 rounded-md bg-slate-800 hover:bg-sky-500/20 text-slate-400 hover:text-sky-400 cursor-pointer transition-colors"
+                        title="Pick verification date (Today & Future only)"
+                      >
+                        <Calendar className="h-4 w-4 text-sky-400" />
+                        <input
+                          type="date"
+                          min={getTodayIso()}
+                          value={ddmmyyyyToIso(formData.verification_date)}
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              const formatted = isoToDdmmyyyy(e.target.value);
+                              setFormData((prev) => ({ ...prev, verification_date: formatted }));
+                              if (formErrors.verification_date) {
+                                setFormErrors((prev) => ({ ...prev, verification_date: "" }));
+                              }
+                            }
+                          }}
+                          className="sr-only"
+                          aria-label="Select Verification Date"
+                          onClick={(e) => {
+                            try {
+                              (e.target as HTMLInputElement).showPicker();
+                            } catch {}
+                          }}
+                        />
+                      </label>
+                    </div>
                     <span className="text-slate-400 text-[11px] block mt-1">
-                      Format: DD/MM/YYYY — today&apos;s date auto-filled
+                      Format: DD/MM/YYYY — today or future court submission date
                     </span>
                     {formErrors.verification_date && (
                       <p className="text-rose-400 text-[12px] mt-1">
