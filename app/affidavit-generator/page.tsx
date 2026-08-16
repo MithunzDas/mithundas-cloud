@@ -155,6 +155,7 @@ function AffidavitAppContent() {
   // Settings State
   const [settingsAdvocateName, setSettingsAdvocateName] = useState<string>("");
   const [settingsAdvocateEnrollment, setSettingsAdvocateEnrollment] = useState<string>("");
+  const [settingsPhone, setSettingsPhone] = useState<string>("");
   const [settingsCourtHeader, setSettingsCourtHeader] = useState<string>(COURT_PRESETS[0]);
   const [settingsCustomCourt, setSettingsCustomCourt] = useState<string>("");
   const [settingsSaving, setSettingsSaving] = useState<boolean>(false);
@@ -255,6 +256,7 @@ function AffidavitAppContent() {
       if (user.defaultAdvocateName) setSettingsAdvocateName(user.defaultAdvocateName);
       if (user.defaultAdvocateEnrollment)
         setSettingsAdvocateEnrollment(user.defaultAdvocateEnrollment);
+      if (user.phone) setSettingsPhone(user.phone);
       if (user.defaultCourtHeader) setSettingsCourtHeader(user.defaultCourtHeader);
     }
   }, [user]);
@@ -567,6 +569,7 @@ function AffidavitAppContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: user.id,
+          phone: settingsPhone.trim(),
           defaultAdvocateName: settingsAdvocateName.trim(),
           defaultAdvocateEnrollment: settingsAdvocateEnrollment.trim(),
           defaultCourtHeader: courtVal,
@@ -2585,6 +2588,29 @@ function AffidavitAppContent() {
                       borderColor: "hsl(225, 15%, 20%)",
                     }}
                   />
+                </div>
+
+                <div>
+                  <label className="block text-[12px] font-mono text-slate-300 uppercase mb-1">
+                    WhatsApp / Mobile Number (For Payment Receipts & Alerts)
+                  </label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 flex items-center gap-1 text-[13px] font-mono text-sky-400 font-bold border-r border-slate-700 pr-2">
+                      🇮🇳 +91
+                    </span>
+                    <input
+                      type="tel"
+                      value={settingsPhone}
+                      onChange={(e) => setSettingsPhone(e.target.value)}
+                      placeholder="98765 43210"
+                      maxLength={10}
+                      className="w-full rounded-lg border py-2 pl-20 pr-3.5 text-[14px] text-white focus:border-sky-400 focus:outline-none"
+                      style={{
+                        backgroundColor: "hsl(225, 20%, 10%)",
+                        borderColor: "hsl(225, 15%, 20%)",
+                      }}
+                    />
+                  </div>
                 </div>
 
                 <div>
