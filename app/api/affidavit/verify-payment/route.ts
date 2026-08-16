@@ -152,9 +152,16 @@ export async function POST(req: NextRequest) {
           creditsAdded: updatedPurchase.creditsAdded,
           paymentId: razorpay_payment_id,
           date: new Date().toLocaleDateString("en-IN", {
+            timeZone: "Asia/Kolkata",
             day: "2-digit",
             month: "short",
             year: "numeric",
+          }),
+          time: new Date().toLocaleTimeString("en-IN", {
+            timeZone: "Asia/Kolkata",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
           }),
           timestamp: new Date().toISOString(),
           provider: "razorpay",

@@ -88,13 +88,16 @@ export async function POST(req: NextRequest) {
           affidavitType,
           pageCount,
           date: new Date().toLocaleDateString("en-IN", {
+            timeZone: "Asia/Kolkata",
             day: "2-digit",
             month: "short",
             year: "numeric",
           }),
           time: new Date().toLocaleTimeString("en-IN", {
+            timeZone: "Asia/Kolkata",
             hour: "2-digit",
             minute: "2-digit",
+            hour12: true,
           }),
           timestamp: new Date().toISOString(),
           // Complete Filled Client Form Data
