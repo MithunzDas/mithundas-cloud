@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import Script from "next/script";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -84,7 +84,7 @@ const COURT_OPTIONS = [
   "Custom Court Header",
 ];
 
-export default function AffidavitGeneratePage() {
+function AffidavitGenerateContent() {
   const searchParams = useSearchParams();
   const initialPlan = searchParams?.get("plan") || null;
 
@@ -1555,3 +1555,18 @@ export default function AffidavitGeneratePage() {
     </>
   );
 }
+
+export default function AffidavitGeneratePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background-app flex items-center justify-center p-6 text-text-secondary font-mono text-small">
+          Loading Court Document Engine...
+        </div>
+      }
+    >
+      <AffidavitGenerateContent />
+    </Suspense>
+  );
+}
+
