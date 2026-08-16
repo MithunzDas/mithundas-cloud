@@ -98,16 +98,54 @@ export async function POST(req: NextRequest) {
       newBalance: updatedUser.creditBalance,
     });
 
+    // Asynchronously trigger n8n Automated Payment Receipt & Confirmation Workflow
+    const n8nReceiptWebhook = "https://n8n.srv1594654.hstgr.cloud/webhook/affidavit-payment-receipt";
+    try {
+      fetch(n8nReceiptWebhook, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventType: "affidavit.payment.verified",
+          userId: updatedUser.id,
+          customerEmail: updatedUser.email,
+          customerPhone: updatedUser.phone,
+          customerName: updatedUser.name || "Valued Legal Practitioner",
+          amount: updatedPurchase.amount,
+          currency: "INR",
+          planName: updatedPurchase.planName,
+          creditsAdded: updatedPurchase.creditsAdded,
+          newTotalCredits: updatedUser.creditBalance,
+          paymentId: razorpay_payment_id,
+          orderId: razorpay_order_id,
+          date: new Date().toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          }),
+          timestamp: new Date().toISOString(),
+          productUrl: "https://mithundas.cloud/products/affidavit-generator",
+        }),
+      }).catch((webhookErr) => {
+        logger.warn("n8n payment receipt trigger failed", "n8n_receipt_warn", {
+          err: String(webhookErr),
+        });
+      });
+    } catch {
+      // ignore webhook trigger errors so payment response is not blocked
+    }
+
     return NextResponse.json({
       success: true,
       creditsAdded: purchase.creditsAdded,
       newBalance: updatedUser.creditBalance,
-      planName: updatedPurchase.planName,
+      message: `Successfully added ${purchase.creditsAdded} credits to your balance.`,
     });
-  } catch (error) {
-    logger.error("Failed to verify affidavit payment", "affidavit_verify_error", error);
+  } catch (error: unknown) {
+    logger.error("Failed to verify affidavit payment", "affidavit_verify_error", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     return NextResponse.json(
-      { success: false, error: "Internal server error" },
+      { success: false, error: "Internal server error during verification" },
       { status: 500 }
     );
   }
