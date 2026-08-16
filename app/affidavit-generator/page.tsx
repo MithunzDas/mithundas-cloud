@@ -25,6 +25,10 @@ import {
   Sparkles,
   Calendar,
   AlertTriangle,
+  Phone,
+  Mail,
+  ArrowRight,
+  Check,
 } from "lucide-react";
 
 /* ─── n8n Webhook Backend URL ─── */
@@ -120,13 +124,26 @@ function AffidavitAppContent() {
   const [saveAsDefaultAdvocate, setSaveAsDefaultAdvocate] = useState<boolean>(true);
   const [isCustomCourtEditing, setIsCustomCourtEditing] = useState<boolean>(false);
 
-  // Auth Flow State
+  // Enhanced Auth Flow State
+  const [authTab, setAuthTab] = useState<"phone" | "email">("phone");
   const [authIdentifier, setAuthIdentifier] = useState<string>("");
   const [authOtp, setAuthOtp] = useState<string>("");
+  const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
   const [otpSent, setOtpSent] = useState<boolean>(false);
   const [authLoading, setAuthLoading] = useState<boolean>(false);
   const [authMsg, setAuthMsg] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [resendCountdown, setResendCountdown] = useState<number>(0);
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Resend Countdown Timer effect
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (resendCountdown > 0) {
+      timer = setTimeout(() => setResendCountdown((prev) => prev - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [resendCountdown]);
 
   // Payment State
   const [selectedPlan, setSelectedPlan] = useState<string>(initialPlan || "starter");
@@ -303,12 +320,17 @@ function AffidavitAppContent() {
   const handleSendOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!authIdentifier.trim()) {
-      setAuthError("Please enter your email or 10-digit mobile number");
+      setAuthError(
+        authTab === "phone"
+          ? "Please enter your 10-digit mobile number"
+          : "Please enter your email address"
+      );
       return;
     }
     setAuthLoading(true);
     setAuthError(null);
     setAuthMsg(null);
+    setOtpDigits(["", "", "", "", "", ""]);
 
     try {
       const res = await fetch("/api/affidavit/auth/send-otp", {
@@ -319,7 +341,11 @@ function AffidavitAppContent() {
       const data = await res.json();
       if (data.success) {
         setOtpSent(true);
+        setResendCountdown(30);
         setAuthMsg(data.previewOtp ? `OTP sent! (Test OTP: ${data.previewOtp})` : data.message);
+        setTimeout(() => {
+          otpInputRefs.current[0]?.focus();
+        }, 150);
       } else {
         setAuthError(data.error || "Failed to send OTP.");
       }
@@ -330,11 +356,12 @@ function AffidavitAppContent() {
     }
   };
 
-  // Verify OTP Flow
-  const handleVerifyOtp = async (e?: React.FormEvent) => {
+  // Verify OTP Flow (Accepts direct code string for instant verification)
+  const handleVerifyOtp = async (codeToVerify?: string, e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!authOtp.trim()) {
-      setAuthError("Please enter the 6-digit OTP code");
+    const finalOtp = (codeToVerify || otpDigits.join("") || authOtp).trim();
+    if (!finalOtp || finalOtp.length < 6) {
+      setAuthError("Please enter the complete 6-digit OTP code");
       return;
     }
     setAuthLoading(true);
@@ -344,7 +371,7 @@ function AffidavitAppContent() {
       const res = await fetch("/api/affidavit/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier: authIdentifier.trim(), otp: authOtp.trim() }),
+        body: JSON.stringify({ identifier: authIdentifier.trim(), otp: finalOtp }),
       });
       const data = await res.json();
       if (data.success && data.user) {
@@ -354,14 +381,66 @@ function AffidavitAppContent() {
         setShowAuthModal(false);
         setOtpSent(false);
         setAuthOtp("");
+        setOtpDigits(["", "", "", "", "", ""]);
         setAuthMsg(null);
       } else {
         setAuthError(data.error || "Invalid OTP code.");
+        setOtpDigits(["", "", "", "", "", ""]);
+        otpInputRefs.current[0]?.focus();
       }
     } catch {
       setAuthError("Failed to verify OTP.");
     } finally {
       setAuthLoading(false);
+    }
+  };
+
+  // Discrete OTP Digit Handlers
+  const handleOtpDigitChange = (index: number, val: string) => {
+    const clean = val.replace(/\D/g, "");
+    if (!clean) {
+      const newDigits = [...otpDigits];
+      newDigits[index] = "";
+      setOtpDigits(newDigits);
+      return;
+    }
+
+    const digit = clean.slice(-1);
+    const newDigits = [...otpDigits];
+    newDigits[index] = digit;
+    setOtpDigits(newDigits);
+
+    // Auto-focus next input
+    if (index < 5 && digit) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+
+    // Auto-submit if all 6 filled
+    if (newDigits.every((d) => d !== "") && newDigits.join("").length === 6) {
+      handleVerifyOtp(newDigits.join(""));
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pasted.length > 0) {
+      const newDigits = ["", "", "", "", "", ""];
+      for (let i = 0; i < pasted.length; i++) {
+        newDigits[i] = pasted[i];
+      }
+      setOtpDigits(newDigits);
+      if (pasted.length === 6) {
+        handleVerifyOtp(pasted);
+      } else {
+        otpInputRefs.current[Math.min(pasted.length, 5)]?.focus();
+      }
     }
   };
 
@@ -402,11 +481,9 @@ function AffidavitAppContent() {
 
   // Buy Credits Flow (Razorpay)
   const handlePurchaseCredits = async (planId: string) => {
-    const emailToUse = user?.email || user?.phone || authIdentifier;
+    const emailToUse = user?.email || user?.phone || authIdentifier.trim();
     if (!emailToUse) {
-      setShowBuyModal(false);
-      setShowAuthModal(true);
-      setAuthError("Please sign in with your phone or email to purchase credits.");
+      setGeneralError("Please enter your mobile number or email address below to proceed.");
       return;
     }
 
@@ -439,8 +516,8 @@ function AffidavitAppContent() {
         order_id: orderData.orderId,
         prefill: {
           name: user?.name || "",
-          email: user?.email || "",
-          contact: user?.phone || "",
+          email: user?.email || (emailToUse.includes("@") ? emailToUse : ""),
+          contact: user?.phone || (!emailToUse.includes("@") ? emailToUse : ""),
         },
         theme: {
           color: "#00C6FF",
@@ -464,14 +541,24 @@ function AffidavitAppContent() {
 
             const verifyData = await verifyRes.json();
             if (verifyData.success) {
-              if (user) {
-                setUser((prev) => (prev ? { ...prev, creditBalance: verifyData.newBalance } : null));
-              }
+              setUser((prev) =>
+                prev
+                  ? { ...prev, creditBalance: verifyData.newBalance, isFirstPurchaseDone: true }
+                  : {
+                      id: orderData.userId,
+                      email: user?.email || (emailToUse.includes("@") ? emailToUse : null),
+                      phone: user?.phone || (!emailToUse.includes("@") ? emailToUse : null),
+                      creditBalance: verifyData.newBalance,
+                      isFirstPurchaseDone: true,
+                    }
+              );
+              localStorage.setItem("affidavit_user_id", orderData.userId);
+              localStorage.setItem("affidavit_user_identifier", emailToUse);
               setShowBuyModal(false);
               setPaymentSuccessMsg(
-                `🎉 Success! ${verifyData.creditsAdded} credits added! Current balance: ${verifyData.newBalance} credits.`
+                `🎉 Success! ${verifyData.creditsAdded} credits added! Balance: ${verifyData.newBalance} credits.`
               );
-              setTimeout(() => setPaymentSuccessMsg(null), 7000);
+              setTimeout(() => setPaymentSuccessMsg(null), 8000);
             } else {
               setGeneralError(verifyData.error || "Payment verification failed.");
             }
@@ -1998,102 +2085,202 @@ function AffidavitAppContent() {
 
         {/* ──────── AUTH MODAL (Email / Phone OTP) ──────── */}
         {showAuthModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
             <div
-              className="w-full max-w-[420px] rounded-2xl border p-6 shadow-2xl"
+              className="w-full max-w-[440px] rounded-2xl border p-6 shadow-2xl"
               style={{
                 backgroundColor: "hsl(225, 18%, 14%)",
                 borderColor: "hsl(225, 15%, 20%)",
               }}
             >
+              {/* Header */}
               <div className="flex items-center justify-between border-b pb-4 border-slate-700/60">
-                <h3 className="text-[17px] font-bold text-white flex items-center gap-2">
-                  <Lock className="h-4 w-4 text-sky-400" /> Sign In / Register
-                </h3>
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-400">
+                    <Lock className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-bold text-white">Sign In / Register</h3>
+                    <p className="text-[11px] font-mono text-slate-400">
+                      Instant OTP • No password needed
+                    </p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setShowAuthModal(false)}
-                  className="text-slate-400 hover:text-white"
+                  className="text-slate-400 hover:text-white transition-colors"
                 >
                   ✕
                 </button>
               </div>
 
+              {/* Status Message Banners */}
               {authMsg && (
-                <div className="mt-4 p-3 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-300 text-[12px]">
-                  {authMsg}
+                <div className="mt-4 p-3 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-300 text-[12px] flex items-center gap-2 animate-in fade-in">
+                  <Sparkles className="h-4 w-4 shrink-0 text-sky-400" />
+                  <span>{authMsg}</span>
                 </div>
               )}
 
               {authError && (
-                <div className="mt-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[12px]">
-                  {authError}
+                <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[12px] flex items-center gap-2 animate-in fade-in">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+                  <span>{authError}</span>
                 </div>
               )}
 
               {!otpSent ? (
                 <form onSubmit={handleSendOtp} className="mt-5 space-y-4">
-                  <div>
-                    <label className="block text-[12px] font-mono text-slate-300 uppercase mb-1">
-                      Email Address or Mobile Number
-                    </label>
-                    <input
-                      type="text"
-                      value={authIdentifier}
-                      onChange={(e) => setAuthIdentifier(e.target.value)}
-                      placeholder="e.g. advocate@gmail.com or 9876543210"
-                      className="w-full rounded-lg border px-3.5 py-2.5 text-[14px] text-white focus:border-sky-400 focus:outline-none"
-                      style={{
-                        backgroundColor: "hsl(225, 20%, 10%)",
-                        borderColor: "hsl(225, 15%, 20%)",
+                  {/* Method Tabs: Phone vs Email */}
+                  <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-900/80 border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthTab("phone");
+                        setAuthError(null);
                       }}
-                      autoFocus
-                    />
+                      className={`flex items-center justify-center gap-2 py-2 rounded-lg text-[13px] font-medium transition-all ${
+                        authTab === "phone"
+                          ? "bg-sky-500 text-slate-950 font-bold shadow"
+                          : "text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      <Phone className="h-3.5 w-3.5" /> Mobile No.
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthTab("email");
+                        setAuthError(null);
+                      }}
+                      className={`flex items-center justify-center gap-2 py-2 rounded-lg text-[13px] font-medium transition-all ${
+                        authTab === "email"
+                          ? "bg-sky-500 text-slate-950 font-bold shadow"
+                          : "text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      <Mail className="h-3.5 w-3.5" /> Email
+                    </button>
                   </div>
+
+                  <div>
+                    <label className="block text-[12px] font-mono text-slate-300 uppercase mb-1.5">
+                      {authTab === "phone" ? "10-Digit Mobile Number" : "Email Address"}
+                    </label>
+                    <div className="relative flex items-center">
+                      {authTab === "phone" && (
+                        <span className="absolute left-3.5 flex items-center gap-1.5 text-[13px] font-mono font-semibold text-sky-400 border-r border-slate-700 pr-2.5">
+                          🇮🇳 +91
+                        </span>
+                      )}
+                      <input
+                        type={authTab === "phone" ? "tel" : "email"}
+                        value={authIdentifier}
+                        onChange={(e) => setAuthIdentifier(e.target.value)}
+                        placeholder={authTab === "phone" ? "98765 43210" : "advocate@gmail.com"}
+                        maxLength={authTab === "phone" ? 10 : 80}
+                        className={`w-full rounded-xl border py-2.5 text-[14px] text-white focus:border-sky-400 focus:outline-none transition-colors ${
+                          authTab === "phone" ? "pl-20 pr-3.5" : "px-3.5"
+                        }`}
+                        style={{
+                          backgroundColor: "hsl(225, 20%, 10%)",
+                          borderColor: "hsl(225, 15%, 20%)",
+                        }}
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
                   <button
                     type="submit"
                     disabled={authLoading}
-                    className="w-full rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-2.5 text-[14px] transition-all active:scale-95"
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-3 text-[14px] transition-all shadow-[0_0_20px_rgba(56,189,248,0.3)] active:scale-95 disabled:opacity-50"
                   >
-                    {authLoading ? "Sending OTP..." : "Get Login OTP"}
+                    {authLoading ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" /> Sending OTP...
+                      </>
+                    ) : (
+                      <>
+                        Get Verification Code <ArrowRight className="h-4 w-4" />
+                      </>
+                    )}
                   </button>
                 </form>
               ) : (
-                <form onSubmit={handleVerifyOtp} className="mt-5 space-y-4">
-                  <div>
-                    <label className="block text-[12px] font-mono text-slate-300 uppercase mb-1">
-                      Enter 6-digit OTP Code
-                    </label>
-                    <input
-                      type="text"
-                      value={authOtp}
-                      onChange={(e) => setAuthOtp(e.target.value)}
-                      placeholder="123456"
-                      maxLength={6}
-                      className="w-full rounded-lg border px-3.5 py-2.5 text-center tracking-widest font-mono text-[18px] text-white focus:border-sky-400 focus:outline-none"
-                      style={{
-                        backgroundColor: "hsl(225, 20%, 10%)",
-                        borderColor: "hsl(225, 15%, 20%)",
-                      }}
-                      autoFocus
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={authLoading}
-                    className="w-full rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-2.5 text-[14px] transition-all active:scale-95"
-                  >
-                    {authLoading ? "Verifying..." : "Verify & Sign In"}
-                  </button>
+                <div className="mt-5 space-y-4">
                   <div className="text-center">
+                    <p className="text-[13px] text-slate-300">
+                      Enter the 6-digit code sent to{" "}
+                      <strong className="text-white font-mono">{authIdentifier}</strong>
+                    </p>
+                  </div>
+
+                  {/* 6 Discrete Digit Boxes */}
+                  <div className="flex items-center justify-center gap-2.5 my-4">
+                    {otpDigits.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        ref={(el) => {
+                          otpInputRefs.current[idx] = el;
+                        }}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleOtpDigitChange(idx, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                        onPaste={handleOtpPaste}
+                        className="h-12 w-11 rounded-xl border text-center font-mono text-[20px] font-bold text-white focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 transition-all"
+                        style={{
+                          backgroundColor: "hsl(225, 20%, 10%)",
+                          borderColor: digit ? "#38BDF8" : "hsl(225, 15%, 20%)",
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleVerifyOtp(otpDigits.join(""))}
+                    disabled={authLoading || otpDigits.some((d) => d === "")}
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-3 text-[14px] transition-all shadow-[0_0_20px_rgba(56,189,248,0.3)] active:scale-95 disabled:opacity-50"
+                  >
+                    {authLoading ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" /> Verifying...
+                      </>
+                    ) : (
+                      <>
+                        Verify & Sign In <Check className="h-4 w-4 stroke-[3]" />
+                      </>
+                    )}
+                  </button>
+
+                  <div className="flex items-center justify-between text-[12px] pt-2 border-t border-slate-800">
                     <button
                       type="button"
                       onClick={() => setOtpSent(false)}
-                      className="text-[12px] text-slate-400 hover:text-sky-400 underline"
+                      className="text-slate-400 hover:text-white underline transition-colors"
                     >
-                      Change Email / Phone
+                      ← Change number/email
                     </button>
+
+                    {resendCountdown > 0 ? (
+                      <span className="font-mono text-slate-500">
+                        Resend in {resendCountdown}s
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleSendOtp}
+                        className="text-sky-400 hover:text-sky-300 font-semibold transition-colors"
+                      >
+                        Resend Code
+                      </button>
+                    )}
                   </div>
-                </form>
+                </div>
               )}
             </div>
           </div>
