@@ -72,6 +72,34 @@ export async function POST(req: NextRequest) {
       downloadId: downloadRecord.id,
     });
 
+    // Asynchronously trigger n8n User Sync Webhook for Google Sheet log
+    const n8nUserSyncWebhook = "https://n8n.srv1594654.hstgr.cloud/webhook/affidavit-user-sync";
+    try {
+      fetch(n8nUserSyncWebhook, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventType: "affidavit.generated",
+          userId: updatedUser.id,
+          name: updatedUser.name || "N/A",
+          email: updatedUser.email || "N/A",
+          phone: updatedUser.phone || "N/A",
+          creditBalance: updatedUser.creditBalance,
+          affidavitType,
+          applicantName: formData?.applicant_name || "N/A",
+          pageCount,
+          date: new Date().toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          }),
+          timestamp: new Date().toISOString(),
+        }),
+      }).catch(() => {});
+    } catch {
+      // ignore
+    }
+
     return NextResponse.json({
       success: true,
       deducted: pageCount,

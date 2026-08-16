@@ -125,13 +125,38 @@ export async function POST(req: NextRequest) {
           timestamp: new Date().toISOString(),
           productUrl: "https://mithundas.cloud/products/affidavit-generator",
         }),
-      }).catch((webhookErr) => {
-        logger.warn("n8n payment receipt trigger failed", "n8n_receipt_warn", {
-          err: String(webhookErr),
-        });
-      });
+    // Asynchronously trigger n8n User Sync Webhook for real-time Google Sheets update
+    const n8nUserSyncWebhook = "https://n8n.srv1594654.hstgr.cloud/webhook/affidavit-user-sync";
+    try {
+      fetch(n8nUserSyncWebhook, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventType: "payment.completed",
+          userId: updatedUser.id,
+          name: updatedUser.name || "N/A",
+          email: updatedUser.email || "N/A",
+          phone: updatedUser.phone || "N/A",
+          avatarUrl: updatedUser.avatarUrl || "N/A",
+          creditBalance: updatedUser.creditBalance,
+          isFirstPurchaseDone: updatedUser.isFirstPurchaseDone,
+          defaultAdvocateName: updatedUser.defaultAdvocateName || "N/A",
+          defaultCourtHeader: updatedUser.defaultCourtHeader || "N/A",
+          lastPaymentAmount: updatedPurchase.amount,
+          lastPlanName: updatedPurchase.planName,
+          creditsAdded: updatedPurchase.creditsAdded,
+          paymentId: razorpay_payment_id,
+          date: new Date().toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          }),
+          timestamp: new Date().toISOString(),
+          provider: "razorpay",
+        }),
+      }).catch(() => {});
     } catch {
-      // ignore webhook trigger errors so payment response is not blocked
+      // ignore
     }
 
     return NextResponse.json({
