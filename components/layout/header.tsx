@@ -13,6 +13,7 @@ const navLinks = [
   { href: "/demo", label: "Demo" },
   { href: "/case-studies", label: "Case Studies" },
   { href: "/process", label: "Process" },
+  { href: "/affidavit-generator", label: "Products" },
   { href: "/insights", label: "Insights" },
 ];
 
@@ -20,6 +21,7 @@ const mobileNavLinks = [
   { href: "/systems", label: "Systems" },
   { href: "/demo", label: "Demo" },
   { href: "/process", label: "Process" },
+  { href: "/affidavit-generator", label: "Products" },
   { href: "/contact", label: "Contact" },
 ];
 

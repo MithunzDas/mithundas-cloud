@@ -120,5 +120,50 @@ model PaymentTransaction {
   @@index([verificationStatus])
 }
 
+// ===== Affidavit Generator SaaS Models =====
 
+model AffidavitUser {
+  id                  String              @id @default(cuid())
+  email               String?             @unique
+  phone               String?             @unique
+  name                String?
+  creditBalance       Int                 @default(0)
+  isFirstPurchaseDone Boolean             @default(false)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  purchases           AffidavitPurchase[]
+  downloads           AffidavitDownload[]
 
+  @@index([email])
+  @@index([phone])
+}
+
+model AffidavitPurchase {
+  id                String        @id @default(cuid())
+  userId            String
+  user              AffidavitUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planName          String        // "starter", "basic", "pro", "bulk"
+  amount            Float
+  creditsAdded      Int
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  status            String        @default("pending") // "pending", "completed", "failed"
+  createdAt         DateTime      @default(now())
+
+  @@index([userId])
+  @@index([razorpayOrderId])
+}
+
+model AffidavitDownload {
+  id              String        @id @default(cuid())
+  userId          String
+  user            AffidavitUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  affidavitType   String        // "caa", "rent", "general", etc.
+  pageCount       Int
+  creditsDeducted Int
+  formData        String?       @db.Text // JSON of the form data used
+  createdAt       DateTime      @default(now())
+
+  @@index([userId])
+  @@index([affidavitType])
+}
