@@ -10,7 +10,6 @@ import {
   CreditCard,
   CheckCircle2,
   AlertCircle,
-  ChevronLeft,
   Zap,
   RefreshCw,
   Scale,
@@ -22,14 +21,11 @@ import {
   ArrowLeft,
   Settings,
   LogOut,
-  Phone,
-  Mail,
   ShieldCheck,
-  Check,
+  Sparkles,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
-/* ─── n8n Webhook Backend URL from Original App ─── */
+/* ─── n8n Webhook Backend URL ─── */
 const API_URL = "https://n8n.srv1594654.hstgr.cloud/webhook/generate-affidavit";
 
 /* ─── Pricing Plans ─── */
@@ -39,7 +35,7 @@ const PLANS = [
     name: "Starter",
     price: 9,
     credits: 9,
-    badge: "1st Time Only",
+    badge: "1st Time Deal",
     firstTimeOnly: true,
     desc: "9 Credits (3 Affidavits)",
   },
@@ -208,7 +204,8 @@ function AffidavitAppContent() {
         setFormData((prev) => ({ ...prev, custom_court: user.defaultCourtHeader! }));
       }
       if (user.defaultAdvocateName) setSettingsAdvocateName(user.defaultAdvocateName);
-      if (user.defaultAdvocateEnrollment) setSettingsAdvocateEnrollment(user.defaultAdvocateEnrollment);
+      if (user.defaultAdvocateEnrollment)
+        setSettingsAdvocateEnrollment(user.defaultAdvocateEnrollment);
       if (user.defaultCourtHeader) setSettingsCourtHeader(user.defaultCourtHeader);
     }
   }, [user]);
@@ -385,7 +382,7 @@ function AffidavitAppContent() {
         key: orderData.keyId,
         amount: orderData.amount,
         currency: orderData.currency,
-        name: "CAA Affidavit Generator",
+        name: "Mithun Das AI Automation",
         description: `Affidavit Credits (${orderData.planCredits} Credits)`,
         image: "/logo.png",
         order_id: orderData.orderId,
@@ -395,7 +392,7 @@ function AffidavitAppContent() {
           contact: user?.phone || "",
         },
         theme: {
-          color: "#3B82F6",
+          color: "#00C6FF",
         },
         handler: async function (response: {
           razorpay_order_id: string;
@@ -601,7 +598,7 @@ function AffidavitAppContent() {
     <>
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
 
-      {/* Main Container styled exactly as caa-court-affidavit theme */}
+      {/* Main Container styled with smooth dark theme */}
       <div
         className="min-h-screen text-slate-100 font-sans"
         style={{
@@ -632,13 +629,13 @@ function AffidavitAppContent() {
             </div>
           </Link>
 
-          {/* User Account / Credits Area on Right (as circled in screenshot 1) */}
+          {/* User Account / Credits Area on Right */}
           <div className="flex items-center gap-3">
             {user ? (
               <div className="flex items-center gap-2.5">
                 {/* Credit Balance Badge */}
                 <div
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-mono text-[13px] border"
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-mono text-[13px] border transition-all hover:border-sky-400/40"
                   style={{
                     backgroundColor: "hsl(225, 20%, 12%)",
                     borderColor: "hsl(225, 15%, 24%)",
@@ -652,7 +649,7 @@ function AffidavitAppContent() {
                 {/* Buy Credits Button */}
                 <button
                   onClick={() => setShowBuyModal(true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold px-3 py-1.5 text-[13px] transition-all shadow-[0_0_15px_rgba(56,189,248,0.25)]"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold px-3 py-1.5 text-[13px] transition-all hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] active:scale-95"
                 >
                   <CreditCard className="h-3.5 w-3.5" /> Buy Credits
                 </button>
@@ -661,7 +658,7 @@ function AffidavitAppContent() {
                 <button
                   onClick={() => setShowSettingsModal(true)}
                   title="My Default Advocate & Court Settings"
-                  className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] text-slate-300 hover:text-white transition-colors"
+                  className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] text-slate-300 hover:text-white transition-all hover:border-slate-600"
                   style={{
                     backgroundColor: "hsl(225, 20%, 12%)",
                     borderColor: "hsl(225, 15%, 24%)",
@@ -678,7 +675,7 @@ function AffidavitAppContent() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowAuthModal(true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold px-4 py-1.5 text-[13px] transition-all"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold px-4 py-1.5 text-[13px] transition-all hover:shadow-[0_0_20px_rgba(56,189,248,0.35)] active:scale-95"
                 >
                   Sign In / Register
                 </button>
@@ -714,7 +711,7 @@ function AffidavitAppContent() {
           </div>
         )}
 
-        {/* ──────── 1. DASHBOARD VIEW (Exact match to Screenshot 1) ──────── */}
+        {/* ──────── 1. DASHBOARD VIEW (With Smooth Hover Effects) ──────── */}
         {currentView === "dashboard" && (
           <div className="flex flex-col items-center justify-center min-h-[calc(100vh-140px)] px-6 py-12">
             {/* Center App Header */}
@@ -801,16 +798,16 @@ function AffidavitAppContent() {
           </div>
         )}
 
-        {/* ──────── 2. FORM VIEW (Exact match to Screenshot 2) ──────── */}
+        {/* ──────── 2. FORM VIEW ──────── */}
         {currentView === "form" && (
           <div className="mx-auto max-w-[760px] px-6 py-10">
             {/* Back Button & Title Header */}
             <div className="mb-8">
               <button
                 onClick={() => setCurrentView("dashboard")}
-                className="inline-flex items-center gap-2 text-slate-400 hover:text-white text-[14px] font-medium mb-3 transition-colors"
+                className="inline-flex items-center gap-2 text-slate-400 hover:text-white text-[14px] font-medium mb-3 transition-colors group"
               >
-                <ArrowLeft className="h-4 w-4" /> Dashboard
+                <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" /> Dashboard
               </button>
               <h1 className="text-[26px] font-bold text-white">New Citizenship Affidavit</h1>
               <p className="text-slate-400 text-[13px] mt-1 font-mono">
@@ -822,7 +819,7 @@ function AffidavitAppContent() {
             <form onSubmit={handleFormSubmit} className="space-y-6" noValidate>
               {/* Section 1: Applicant Information */}
               <div
-                className="rounded-2xl border p-6"
+                className="rounded-2xl border p-6 transition-all hover:border-slate-700"
                 style={{
                   backgroundColor: "hsl(225, 18%, 14%)",
                   borderColor: "hsl(225, 15%, 20%)",
@@ -846,7 +843,7 @@ function AffidavitAppContent() {
                       value={formData.applicant_name}
                       onChange={handleInputChange}
                       placeholder="e.g., SUSANTA NATH"
-                      className="w-full rounded-lg border px-3.5 py-2.5 text-[14px] text-white uppercase focus:border-sky-400 focus:outline-none"
+                      className="w-full rounded-lg border px-3.5 py-2.5 text-[14px] text-white uppercase focus:border-sky-400 focus:outline-none transition-colors"
                       style={{
                         backgroundColor: "hsl(225, 20%, 10%)",
                         borderColor: formErrors.applicant_name ? "#F43F5E" : "hsl(225, 15%, 20%)",
@@ -865,7 +862,7 @@ function AffidavitAppContent() {
                       name="guardian_type"
                       value={formData.guardian_type}
                       onChange={handleInputChange}
-                      className="w-full rounded-lg border px-3.5 py-2.5 text-[14px] text-white focus:border-sky-400 focus:outline-none"
+                      className="w-full rounded-lg border px-3.5 py-2.5 text-[14px] text-white focus:border-sky-400 focus:outline-none transition-colors"
                       style={{
                         backgroundColor: "hsl(225, 20%, 10%)",
                         borderColor: formErrors.guardian_type ? "#F43F5E" : "hsl(225, 15%, 20%)",
@@ -891,7 +888,7 @@ function AffidavitAppContent() {
                       value={formData.father_name}
                       onChange={handleInputChange}
                       placeholder="e.g., SUBASH NATH"
-                      className="w-full rounded-lg border px-3.5 py-2.5 text-[14px] text-white uppercase focus:border-sky-400 focus:outline-none"
+                      className="w-full rounded-lg border px-3.5 py-2.5 text-[14px] text-white uppercase focus:border-sky-400 focus:outline-none transition-colors"
                       style={{
                         backgroundColor: "hsl(225, 20%, 10%)",
                         borderColor: formErrors.father_name ? "#F43F5E" : "hsl(225, 15%, 20%)",
@@ -906,7 +903,7 @@ function AffidavitAppContent() {
 
               {/* Section 2: India Address */}
               <div
-                className="rounded-2xl border p-6"
+                className="rounded-2xl border p-6 transition-all hover:border-slate-700"
                 style={{
                   backgroundColor: "hsl(225, 18%, 14%)",
                   borderColor: "hsl(225, 15%, 20%)",
@@ -1056,7 +1053,7 @@ function AffidavitAppContent() {
 
               {/* Section 3: Bangladesh Address */}
               <div
-                className="rounded-2xl border p-6"
+                className="rounded-2xl border p-6 transition-all hover:border-slate-700"
                 style={{
                   backgroundColor: "hsl(225, 18%, 14%)",
                   borderColor: "hsl(225, 15%, 20%)",
@@ -1163,7 +1160,7 @@ function AffidavitAppContent() {
 
               {/* Section 4: Witness Information */}
               <div
-                className="rounded-2xl border p-6"
+                className="rounded-2xl border p-6 transition-all hover:border-slate-700"
                 style={{
                   backgroundColor: "hsl(225, 18%, 14%)",
                   borderColor: "hsl(225, 15%, 20%)",
@@ -1433,7 +1430,7 @@ function AffidavitAppContent() {
 
               {/* Section 5: Dates & Advocate */}
               <div
-                className="rounded-2xl border p-6"
+                className="rounded-2xl border p-6 transition-all hover:border-slate-700"
                 style={{
                   backgroundColor: "hsl(225, 18%, 14%)",
                   borderColor: "hsl(225, 15%, 20%)",
@@ -1547,7 +1544,7 @@ function AffidavitAppContent() {
                 <button
                   type="submit"
                   disabled={formSubmitting}
-                  className="inline-flex items-center gap-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-8 py-3 text-[15px] transition-all shadow-[0_0_25px_rgba(56,189,248,0.3)] disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-8 py-3 text-[15px] transition-all shadow-[0_0_25px_rgba(56,189,248,0.3)] hover:shadow-[0_0_35px_rgba(56,189,248,0.5)] active:scale-95 disabled:opacity-50"
                 >
                   {formSubmitting ? (
                     <>
@@ -1568,7 +1565,7 @@ function AffidavitAppContent() {
         {currentView === "success" && (
           <div className="flex flex-col items-center justify-center min-h-[calc(100vh-140px)] px-6 py-12">
             <div
-              className="w-full max-w-[500px] rounded-2xl border p-8 text-center shadow-2xl"
+              className="w-full max-w-[500px] rounded-2xl border p-8 text-center shadow-2xl animate-in fade-in zoom-in duration-300"
               style={{
                 backgroundColor: "hsl(225, 18%, 14%)",
                 borderColor: "hsl(225, 15%, 20%)",
@@ -1591,7 +1588,7 @@ function AffidavitAppContent() {
                   target="_blank"
                   rel="noreferrer"
                   download
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 text-[15px] transition-all shadow-[0_0_20px_rgba(225,29,72,0.3)]"
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 text-[15px] transition-all shadow-[0_0_20px_rgba(225,29,72,0.35)] active:scale-95"
                 >
                   <Download className="h-4 w-4" /> Download PDF (Court Formatted)
                 </a>
@@ -1622,7 +1619,7 @@ function AffidavitAppContent() {
 
         {/* ──────── AUTH MODAL (Email / Phone OTP) ──────── */}
         {showAuthModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
             <div
               className="w-full max-w-[420px] rounded-2xl border p-6 shadow-2xl"
               style={{
@@ -1676,7 +1673,7 @@ function AffidavitAppContent() {
                   <button
                     type="submit"
                     disabled={authLoading}
-                    className="w-full rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-2.5 text-[14px] transition-all"
+                    className="w-full rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-2.5 text-[14px] transition-all active:scale-95"
                   >
                     {authLoading ? "Sending OTP..." : "Get Login OTP"}
                   </button>
@@ -1704,7 +1701,7 @@ function AffidavitAppContent() {
                   <button
                     type="submit"
                     disabled={authLoading}
-                    className="w-full rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-2.5 text-[14px] transition-all"
+                    className="w-full rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-2.5 text-[14px] transition-all active:scale-95"
                   >
                     {authLoading ? "Verifying..." : "Verify & Sign In"}
                   </button>
@@ -1725,7 +1722,7 @@ function AffidavitAppContent() {
 
         {/* ──────── BUY CREDITS MODAL ──────── */}
         {showBuyModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
             <div
               className="w-full max-w-[540px] rounded-2xl border p-6 shadow-2xl"
               style={{
@@ -1777,9 +1774,9 @@ function AffidavitAppContent() {
                     <div
                       key={plan.id}
                       onClick={() => setSelectedPlan(plan.id)}
-                      className={`relative cursor-pointer rounded-xl border p-4 transition-all ${
+                      className={`relative cursor-pointer rounded-xl border p-4 transition-all duration-200 hover:-translate-y-0.5 ${
                         isSelected
-                          ? "border-sky-400 bg-sky-500/10 shadow-[0_0_15px_rgba(56,189,248,0.2)]"
+                          ? "border-sky-400 bg-sky-500/10 shadow-[0_0_20px_rgba(56,189,248,0.25)]"
                           : "border-slate-800 bg-slate-900/60 hover:border-slate-700"
                       }`}
                     >
@@ -1806,7 +1803,7 @@ function AffidavitAppContent() {
                 <button
                   onClick={() => handlePurchaseCredits(selectedPlan)}
                   disabled={isPaying}
-                  className="rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-6 py-2.5 text-[14px] transition-all shadow-[0_0_20px_rgba(56,189,248,0.3)]"
+                  className="rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-6 py-2.5 text-[14px] transition-all shadow-[0_0_20px_rgba(56,189,248,0.3)] active:scale-95"
                 >
                   {isPaying ? "Processing..." : "Pay with Razorpay"}
                 </button>
@@ -1817,7 +1814,7 @@ function AffidavitAppContent() {
 
         {/* ──────── 4. USER SETTINGS MODAL (Default Advocate & Court) ──────── */}
         {showSettingsModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
             <div
               className="w-full max-w-[480px] rounded-2xl border p-6 shadow-2xl"
               style={{
@@ -1944,7 +1941,7 @@ function AffidavitAppContent() {
   );
 }
 
-export default function AffidavitGeneratorPage() {
+export default function AffidavitGeneratorProductPage() {
   return (
     <Suspense
       fallback={
