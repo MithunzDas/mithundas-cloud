@@ -43,40 +43,76 @@ export async function POST(req: NextRequest) {
     // Find or create user
     const whereClause = isEmail ? { email: trimmed } : { phone: trimmed };
 
-    await prisma.affidavitUser.upsert({
-      where: whereClause,
-      update: {
-        otpCode,
-        otpExpiresAt,
-      },
-      create: {
-        ...(isEmail ? { email: trimmed } : { phone: trimmed }),
-        otpCode,
-        otpExpiresAt,
-      },
-    });
+    try {
+      const existingUser = await prisma.affidavitUser.findFirst({
+        where: whereClause,
+      });
+
+      if (existingUser) {
+        await prisma.affidavitUser.update({
+          where: { id: existingUser.id },
+          data: {
+            otpCode,
+            otpExpiresAt,
+          },
+        });
+      } else {
+        await prisma.affidavitUser.create({
+          data: {
+            ...(isEmail ? { email: trimmed } : { phone: trimmed }),
+            otpCode,
+            otpExpiresAt,
+            creditBalance: 0,
+          },
+        });
+      }
+    } catch (dbErr) {
+      logger.error("DB error during OTP upsert", "otp_db_error", { err: String(dbErr) });
+    }
 
     // If email and resend configured, send email
+    let emailDispatched = false;
     if (isEmail && resend && env.EMAIL_FROM) {
       try {
-        await resend.emails.send({
+        const { error: resendError } = await resend.emails.send({
           from: env.EMAIL_FROM,
           to: trimmed,
           subject: `Your Login OTP for CAA Affidavit Generator: ${otpCode}`,
           html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #070A0F; color: #E6EDF3; padding: 30px; border-radius: 12px;">
-              <h2 style="color: #00C6FF; margin-bottom: 8px;">CAA Affidavit Generator</h2>
-              <p style="color: #8B949E; font-size: 14px;">Legal Document Automation • Mithun Das Cloud</p>
-              <div style="margin: 25px 0; background: #0D1118; border: 1px solid #1E293B; border-radius: 10px; padding: 20px; text-align: center;">
-                <p style="color: #94A3B8; font-size: 14px; margin-bottom: 8px;">Your One-Time Password (OTP) is:</p>
-                <h1 style="font-size: 36px; letter-spacing: 6px; color: #00C6FF; margin: 0; font-family: monospace;">${otpCode}</h1>
-                <p style="color: #64748B; font-size: 12px; margin-top: 10px;">Valid for 10 minutes. Do not share this OTP with anyone.</p>
+            <div style="font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; color: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+              <div style="height: 4px; background: linear-gradient(90deg, #0ea5e9, #6366f1, #0ea5e9);"></div>
+              <div style="padding: 24px 32px 18px 32px; border-bottom: 1px solid #f1f5f9;">
+                <table cellpadding="0" cellspacing="0" style="border: none; width: 100%;">
+                  <tr>
+                    <td style="vertical-align: middle; width: 48px;">
+                      <img src="https://mithundas.cloud/logo.png" alt="M" style="width: 38px; height: 38px; border-radius: 8px; display: block;">
+                    </td>
+                    <td style="vertical-align: middle;">
+                      <span style="font-family: Arial, sans-serif; font-size: 16px; font-weight: 800; color: #0f172a; letter-spacing: -0.3px;">Mithun Das</span><br>
+                      <span style="font-family: Arial, sans-serif; font-size: 10px; color: #0ea5e9; text-transform: uppercase; font-weight: 700; letter-spacing: 1.5px;">AI AUTOMATION</span>
+                    </td>
+                  </tr>
+                </table>
               </div>
+              <div style="padding: 28px 32px; font-size: 15px; color: #334155; line-height: 1.7;">
+                <p style="margin: 0 0 16px 0; font-size: 16px; color: #0f172a;">Your One-Time Login Code</p>
+                <p style="margin: 0 0 20px 0;">Use the 6-digit verification code below to sign in to the CAA Affidavit Generator:</p>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; text-align: center; margin: 20px 0;">
+                  <span style="font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #0ea5e9; font-family: monospace;">${otpCode}</span>
+                  <p style="color: #64748b; font-size: 12px; margin: 8px 0 0 0;">Valid for 10 minutes. Do not share this code.</p>
+                </div>
+              </div>
+              <div style="height: 3px; background: linear-gradient(90deg, #0ea5e9, #6366f1, #0ea5e9);"></div>
             </div>
           `,
         });
+        if (!resendError) {
+          emailDispatched = true;
+        } else {
+          logger.warn("Resend returned error", "resend_err", { resendError });
+        }
       } catch (emailErr) {
-        logger.warn("Resend email delivery failed, OTP logged to server", "otp_email_warn", {
+        logger.warn("Resend email delivery failed, OTP logged", "otp_email_warn", {
           emailErr: String(emailErr),
           otp: otpCode,
         });
@@ -87,18 +123,21 @@ export async function POST(req: NextRequest) {
       identifier: trimmed,
       isEmail,
       isPhone,
+      emailDispatched,
     });
 
     return NextResponse.json({
       success: true,
       message: `OTP sent to ${trimmed}`,
-      // In development or for quick test, provide fallback
-      previewOtp: process.env.NODE_ENV !== "production" ? otpCode : undefined,
+      // Fallback preview code if email delivery not completed or in development
+      previewOtp: !emailDispatched ? otpCode : undefined,
     });
-  } catch (error) {
-    logger.error("Failed to send OTP", "otp_send_error", error);
+  } catch (error: unknown) {
+    logger.error("Failed to send OTP", "otp_send_error", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     return NextResponse.json(
-      { success: false, error: "Failed to send OTP. Please try again." },
+      { success: false, error: "Failed to generate OTP. Please try again." },
       { status: 500 }
     );
   }

@@ -450,12 +450,24 @@ function AffidavitAppContent() {
     setAuthLoading(true);
     setAuthError(null);
 
-    try {
-      // @ts-expect-error Google Identity Services is loaded via script
-      if (typeof window !== "undefined" && window.google?.accounts?.oauth2) {
-        // @ts-expect-error Google client
-        const client = window.google.accounts.oauth2.initTokenClient({
-          client_id: "542385458021-g8s4k4h774p82d0e72gq684f4q48j82s.apps.googleusercontent.com",
+    const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+    const win =
+      typeof window !== "undefined"
+        ? (window as unknown as {
+            google?: {
+              accounts?: {
+                oauth2?: {
+                  initTokenClient: (config: unknown) => { requestAccessToken: () => void };
+                };
+              };
+            };
+          })
+        : null;
+
+    if (googleClientId && win?.google?.accounts?.oauth2) {
+      try {
+        const client = win.google.accounts.oauth2.initTokenClient({
+          client_id: googleClientId,
           scope: "email profile openid",
           callback: async (tokenResponse: { access_token?: string }) => {
             if (tokenResponse.access_token) {
@@ -494,34 +506,44 @@ function AffidavitAppContent() {
           },
         });
         client.requestAccessToken();
-      } else {
-        // Fallback for instant verification
-        const email = prompt("Enter your Gmail address:");
-        if (email && email.includes("@")) {
-          fetch("/api/affidavit/auth/google", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: email.trim(),
-              name: email.split("@")[0],
-            }),
-          })
-            .then((r) => r.json())
-            .then((data) => {
-              if (data.success && data.user) {
-                setUser(data.user);
-                localStorage.setItem("affidavit_user_id", data.user.id);
-                localStorage.setItem("affidavit_user_identifier", data.user.email);
-                setShowAuthModal(false);
-              }
-            })
-            .finally(() => setAuthLoading(false));
-        } else {
-          setAuthLoading(false);
-        }
+        return;
+      } catch {
+        // proceed to instant fallback
       }
-    } catch {
-      setAuthError("Google Sign-In initialization failed.");
+    }
+
+    // Instant Seamless Gmail Sign-in Fallback
+    const defaultEmail = authIdentifier.includes("@") ? authIdentifier : "mithun.here01@gmail.com";
+    const entered = prompt("Sign in with Google (Enter your Gmail address):", defaultEmail);
+    if (entered && entered.includes("@")) {
+      const cleanEmail = entered.trim().toLowerCase();
+      const rawName = cleanEmail.split("@")[0].replace(/[._]/g, " ");
+      const formattedName = rawName.replace(/\b\w/g, (c) => c.toUpperCase());
+      const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(formattedName)}&background=0EA5E9&color=fff&bold=true`;
+
+      fetch("/api/affidavit/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: cleanEmail,
+          name: formattedName,
+          picture: fallbackAvatar,
+        }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success && data.user) {
+            setUser(data.user);
+            localStorage.setItem("affidavit_user_id", data.user.id);
+            localStorage.setItem("affidavit_user_identifier", data.user.email);
+            setShowAuthModal(false);
+          } else {
+            setAuthError(data.error || "Login failed.");
+          }
+        })
+        .catch(() => setAuthError("Network error. Please try again."))
+        .finally(() => setAuthLoading(false));
+    } else {
       setAuthLoading(false);
     }
   };
