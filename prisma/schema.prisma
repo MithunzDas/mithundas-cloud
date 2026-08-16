@@ -123,16 +123,21 @@ model PaymentTransaction {
 // ===== Affidavit Generator SaaS Models =====
 
 model AffidavitUser {
-  id                  String              @id @default(cuid())
-  email               String?             @unique
-  phone               String?             @unique
-  name                String?
-  creditBalance       Int                 @default(0)
-  isFirstPurchaseDone Boolean             @default(false)
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  purchases           AffidavitPurchase[]
-  downloads           AffidavitDownload[]
+  id                        String              @id @default(cuid())
+  email                     String?             @unique
+  phone                     String?             @unique
+  name                      String?
+  creditBalance             Int                 @default(0)
+  isFirstPurchaseDone       Boolean             @default(false)
+  defaultAdvocateName       String?
+  defaultAdvocateEnrollment String?
+  defaultCourtHeader        String?
+  otpCode                   String?
+  otpExpiresAt              DateTime?
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
+  purchases                 AffidavitPurchase[]
+  downloads                 AffidavitDownload[]
 
   @@index([email])
   @@index([phone])

@@ -25,11 +25,5 @@ export default function AffidavitGeneratorLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <>
-      <Header />
-      <main className="flex-1">{children}</main>
-      <Footer />
-    </>
-  );
+  return <main className="min-h-screen bg-[#0E131F]">{children}</main>;
 }
