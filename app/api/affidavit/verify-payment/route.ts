@@ -125,6 +125,11 @@ export async function POST(req: NextRequest) {
           timestamp: new Date().toISOString(),
           productUrl: "https://mithundas.cloud/products/affidavit-generator",
         }),
+      }).catch(() => {});
+    } catch {
+      // ignore
+    }
+
     // Asynchronously trigger n8n User Sync Webhook for real-time Google Sheets update
     const n8nUserSyncWebhook = "https://n8n.srv1594654.hstgr.cloud/webhook/affidavit-user-sync";
     try {
