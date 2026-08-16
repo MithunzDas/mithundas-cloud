@@ -98,10 +98,10 @@ export async function POST(req: NextRequest) {
       isNewUser,
     });
 
-    // Asynchronously call n8n webhook to append/update user in Google Sheets upon Google Login
+    // Guaranteed synchronous call to n8n webhook to append/update user in Google Sheets upon Google Login
     const n8nUserSyncWebhook = "https://n8n.srv1594654.hstgr.cloud/webhook/affidavit-user-sync";
     try {
-      fetch(n8nUserSyncWebhook, {
+      await fetch(n8nUserSyncWebhook, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -127,11 +127,10 @@ export async function POST(req: NextRequest) {
           timestamp: new Date().toISOString(),
           provider: "google",
         }),
-      }).catch((err) => {
-        logger.warn("n8n user sync failed", "n8n_sync_warn", { err: String(err) });
+        signal: AbortSignal.timeout(5000),
       });
-    } catch {
-      // ignore
+    } catch (err) {
+      logger.warn("n8n user sync failed or timed out", "n8n_sync_warn", { err: String(err) });
     }
 
     return NextResponse.json({

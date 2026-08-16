@@ -72,30 +72,63 @@ export async function POST(req: NextRequest) {
       downloadId: downloadRecord.id,
     });
 
-    // Asynchronously trigger n8n User Sync Webhook for Google Sheet log
+    // Guaranteed synchronous call to n8n User Sync Webhook for Google Sheet log
     const n8nUserSyncWebhook = "https://n8n.srv1594654.hstgr.cloud/webhook/affidavit-user-sync";
     try {
-      fetch(n8nUserSyncWebhook, {
+      await fetch(n8nUserSyncWebhook, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          eventType: "affidavit.generated",
+          eventType: "affidavit.form_submitted",
           userId: updatedUser.id,
-          name: updatedUser.name || "N/A",
-          email: updatedUser.email || "N/A",
-          phone: updatedUser.phone || "N/A",
+          userEmail: updatedUser.email || "N/A",
+          userPhone: updatedUser.phone || "N/A",
+          userName: updatedUser.name || "N/A",
           creditBalance: updatedUser.creditBalance,
           affidavitType,
-          applicantName: formData?.applicant_name || "N/A",
           pageCount,
           date: new Date().toLocaleDateString("en-IN", {
             day: "2-digit",
             month: "short",
             year: "numeric",
           }),
+          time: new Date().toLocaleTimeString("en-IN", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
           timestamp: new Date().toISOString(),
+          // Complete Filled Client Form Data
+          applicant_name: formData?.applicant_name || "",
+          guardian_type: formData?.guardian_type || "",
+          father_name: formData?.father_name || "",
+          india_village: formData?.india_village || "",
+          india_po: formData?.india_po || "",
+          india_ps: formData?.india_ps || "",
+          india_district: formData?.india_district || "",
+          india_pin: formData?.india_pin || "",
+          india_state: formData?.india_state || "West Bengal",
+          bd_village: formData?.bd_village || "",
+          bd_po: formData?.bd_po || "",
+          bd_ps: formData?.bd_ps || "",
+          bd_district: formData?.bd_district || "",
+          entry_date: formData?.entry_date || "",
+          verification_date: formData?.verification_date || "",
+          witness_name: formData?.witness_name || "",
+          witness_guardian_type: formData?.witness_guardian_type || "",
+          witness_father: formData?.witness_father || "",
+          witness_age: formData?.witness_age || "",
+          witness_occupation: formData?.witness_occupation || "",
+          witness_village: formData?.witness_village || "",
+          witness_po: formData?.witness_po || "",
+          witness_ps: formData?.witness_ps || "",
+          witness_district: formData?.witness_district || "",
+          witness_pin: formData?.witness_pin || "",
+          witness_state: formData?.witness_state || "West Bengal",
+          advocate: formData?.advocate || "",
+          custom_court: formData?.custom_court || "",
         }),
-      }).catch(() => {});
+        signal: AbortSignal.timeout(5000),
+      });
     } catch {
       // ignore
     }
