@@ -114,6 +114,11 @@ function AffidavitAppContent() {
   const [showBuyModal, setShowBuyModal] = useState<boolean>(false);
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
   const [showCaaIneligibleModal, setShowCaaIneligibleModal] = useState<boolean>(false);
+  const [showOnboardingModal, setShowOnboardingModal] = useState<boolean>(false);
+
+  // Default Profile Toggle (in-form)
+  const [saveAsDefaultAdvocate, setSaveAsDefaultAdvocate] = useState<boolean>(true);
+  const [isCustomCourtEditing, setIsCustomCourtEditing] = useState<boolean>(false);
 
   // Auth Flow State
   const [authIdentifier, setAuthIdentifier] = useState<string>("");
@@ -598,6 +603,25 @@ function AffidavitAppContent() {
         // Update balance locally
         setUser((prev) => (prev ? { ...prev, creditBalance: prev.creditBalance - 3 } : null));
 
+        // 3. Auto-save default profile in Supabase if checkbox is checked
+        if (user && saveAsDefaultAdvocate && formData.advocate.trim()) {
+          const advParts = formData.advocate.split(",");
+          const advName = advParts[0]?.trim() || formData.advocate;
+          const advEnroll = advParts.slice(1).join(",").trim() || "";
+          const courtToSave = formData.custom_court || effectiveCourtHeader;
+
+          fetch("/api/affidavit/user/settings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: user.id,
+              defaultAdvocateName: advName,
+              defaultAdvocateEnrollment: advEnroll,
+              defaultCourtHeader: courtToSave,
+            }),
+          }).catch(() => {});
+        }
+
         setGeneratedApplicantName(formData.applicant_name);
         setGeneratedDocxUrl(result.docx || "#");
         setGeneratedPdfUrl(result.pdf || "#");
@@ -838,7 +862,11 @@ function AffidavitAppContent() {
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setCurrentView("form");
+                  if (user && !user.defaultAdvocateName && !user.defaultCourtHeader) {
+                    setShowOnboardingModal(true);
+                  } else {
+                    setCurrentView("form");
+                  }
                 }}
                 className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-sky-500 hover:bg-sky-400 group-hover:bg-sky-400 text-slate-950 font-bold py-3 text-[15px] transition-all duration-200 shadow-[0_0_20px_rgba(56,189,248,0.3)] group-hover:shadow-[0_0_30px_rgba(56,189,248,0.5)] active:scale-95"
               >
@@ -860,9 +888,61 @@ function AffidavitAppContent() {
                 <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" /> Dashboard
               </button>
               <h1 className="text-[26px] font-bold text-white">New Citizenship Affidavit</h1>
-              <p className="text-slate-400 text-[13px] mt-1 font-mono">
-                SCHEDULE-1C • {effectiveCourtHeader}
-              </p>
+
+              {/* Interactive Court Jurisdiction Selector Badge */}
+              <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                <span className="text-slate-400 font-mono text-[12px]">SCHEDULE-1C •</span>
+
+                {!isCustomCourtEditing ? (
+                  <div className="flex items-center gap-1.5 bg-slate-900/90 border border-slate-700/80 rounded-lg px-3 py-1 text-[13px] text-sky-300 shadow-sm">
+                    <Building className="h-3.5 w-3.5 text-sky-400 shrink-0" />
+                    <select
+                      value={formData.custom_court || effectiveCourtHeader}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "CUSTOM_COURT") {
+                          setIsCustomCourtEditing(true);
+                        } else {
+                          setFormData((prev) => ({ ...prev, custom_court: val }));
+                        }
+                      }}
+                      className="bg-transparent border-none text-sky-300 focus:outline-none text-[13px] cursor-pointer pr-1"
+                    >
+                      {COURT_PRESETS.map((c) => (
+                        <option key={c} value={c} className="bg-slate-900 text-white">
+                          {c}
+                        </option>
+                      ))}
+                      <option
+                        value="CUSTOM_COURT"
+                        className="bg-slate-900 text-sky-400 font-semibold"
+                      >
+                        ✏️ + Type Custom Court Jurisdiction...
+                      </option>
+                    </select>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={formData.custom_court}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, custom_court: e.target.value }))
+                      }
+                      placeholder="e.g. Before the Notary Public at Diamond Harbour"
+                      className="rounded-lg border border-sky-400 bg-slate-900 px-3 py-1 text-[13px] text-white focus:outline-none w-[320px]"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setIsCustomCourtEditing(false)}
+                      className="text-[12px] bg-sky-500 text-slate-950 px-2.5 py-1 rounded-md font-bold hover:bg-sky-400 transition-colors"
+                    >
+                      Done
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Main Form */}
@@ -1632,7 +1712,7 @@ function AffidavitAppContent() {
                           onClick={() => setShowSettingsModal(true)}
                           className="text-[12px] text-sky-400 hover:underline flex items-center gap-1"
                         >
-                          <Settings className="h-3 w-3" /> Set Default Advocate
+                          <Settings className="h-3 w-3" /> Edit Saved Defaults
                         </button>
                       )}
                     </div>
@@ -1641,13 +1721,44 @@ function AffidavitAppContent() {
                       name="advocate"
                       value={formData.advocate}
                       onChange={handleInputChange}
-                      placeholder="Debabrata Sarkar, Adv, F/1675/856/2020"
+                      placeholder="e.g. Debabrata Sarkar, Adv, F/1675/856/2020"
                       className="w-full rounded-lg border px-3.5 py-2.5 text-[14px] text-white focus:border-sky-400 focus:outline-none"
                       style={{
                         backgroundColor: "hsl(225, 20%, 10%)",
                         borderColor: formErrors.advocate ? "#F43F5E" : "hsl(225, 15%, 20%)",
                       }}
                     />
+
+                    {/* Quick Presets / Suggestions */}
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <span className="text-[11px] text-slate-500 font-mono">Quick Presets:</span>
+                      {ADVOCATE_PRESETS.map((adv) => (
+                        <button
+                          key={adv}
+                          type="button"
+                          onClick={() => setFormData((prev) => ({ ...prev, advocate: adv }))}
+                          className="rounded-md border border-slate-700 bg-slate-900/80 px-2 py-0.5 text-[11px] text-slate-300 hover:border-sky-400 hover:text-sky-300 transition-colors"
+                        >
+                          {adv.split(",")[0]}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* 1-Click Save as Default Profile Checkbox */}
+                    {user && (
+                      <label className="flex items-center gap-2.5 cursor-pointer text-[12px] text-slate-300 hover:text-white transition-colors mt-3.5 p-2 rounded-lg bg-slate-900/40 border border-slate-800">
+                        <input
+                          type="checkbox"
+                          checked={saveAsDefaultAdvocate}
+                          onChange={(e) => setSaveAsDefaultAdvocate(e.target.checked)}
+                          className="rounded border-slate-700 bg-slate-900 text-sky-500 focus:ring-0 h-4 w-4 shrink-0"
+                        />
+                        <span className="text-slate-300 leading-tight">
+                          ⭐ <strong className="text-white">Save as My Default Profile</strong> — Auto-fill this Advocate & Court on all my future affidavits.
+                        </span>
+                      </label>
+                    )}
+
                     {formErrors.advocate && (
                       <p className="text-rose-400 text-[12px] mt-1">{formErrors.advocate}</p>
                     )}
@@ -2241,6 +2352,134 @@ function AffidavitAppContent() {
                   Change Date of Entry
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ──────── 6. FIRST-TIME QUICK ONBOARDING MODAL ──────── */}
+        {showOnboardingModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
+            <div
+              className="w-full max-w-[480px] rounded-2xl border p-6 shadow-2xl"
+              style={{
+                backgroundColor: "hsl(225, 18%, 14%)",
+                borderColor: "hsl(225, 15%, 20%)",
+              }}
+            >
+              <div className="flex items-center justify-between border-b pb-4 border-slate-700/60">
+                <h3 className="text-[17px] font-bold text-white flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-sky-400" /> Welcome! Set Default Court & Advocate
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowOnboardingModal(false);
+                    setCurrentView("form");
+                  }}
+                  className="text-slate-400 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <p className="text-slate-400 text-[13px] mt-3 leading-relaxed">
+                Save your court and advocate information once to auto-fill every affidavit in 1 click. You can change this anytime.
+              </p>
+
+              <form onSubmit={handleSaveSettings} className="mt-5 space-y-4">
+                <div>
+                  <label className="block text-[12px] font-mono text-slate-300 uppercase mb-1">
+                    Advocate Name
+                  </label>
+                  <input
+                    type="text"
+                    value={settingsAdvocateName}
+                    onChange={(e) => setSettingsAdvocateName(e.target.value)}
+                    placeholder="e.g. Debabrata Sarkar, Adv"
+                    className="w-full rounded-lg border px-3.5 py-2 text-[14px] text-white focus:border-sky-400 focus:outline-none"
+                    style={{
+                      backgroundColor: "hsl(225, 20%, 10%)",
+                      borderColor: "hsl(225, 15%, 20%)",
+                    }}
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[12px] font-mono text-slate-300 uppercase mb-1">
+                    Bar Council Registration No.
+                  </label>
+                  <input
+                    type="text"
+                    value={settingsAdvocateEnrollment}
+                    onChange={(e) => setSettingsAdvocateEnrollment(e.target.value)}
+                    placeholder="e.g. WB/1675/856/2020"
+                    className="w-full rounded-lg border px-3.5 py-2 text-[14px] text-white focus:border-sky-400 focus:outline-none"
+                    style={{
+                      backgroundColor: "hsl(225, 20%, 10%)",
+                      borderColor: "hsl(225, 15%, 20%)",
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[12px] font-mono text-slate-300 uppercase mb-1">
+                    Default Court Jurisdiction
+                  </label>
+                  <select
+                    value={settingsCourtHeader}
+                    onChange={(e) => setSettingsCourtHeader(e.target.value)}
+                    className="w-full rounded-lg border px-3.5 py-2 text-[14px] text-white focus:border-sky-400 focus:outline-none"
+                    style={{
+                      backgroundColor: "hsl(225, 20%, 10%)",
+                      borderColor: "hsl(225, 15%, 20%)",
+                    }}
+                  >
+                    {COURT_PRESETS.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                    <option value="Custom Court Header">Custom Court Jurisdiction...</option>
+                  </select>
+                </div>
+
+                {settingsCourtHeader === "Custom Court Header" && (
+                  <div>
+                    <input
+                      type="text"
+                      value={settingsCustomCourt}
+                      onChange={(e) => setSettingsCustomCourt(e.target.value)}
+                      placeholder="e.g. Before the Notary Public at Bongaon"
+                      className="w-full rounded-lg border px-3.5 py-2 text-[14px] text-white focus:border-sky-400 focus:outline-none"
+                      style={{
+                        backgroundColor: "hsl(225, 20%, 10%)",
+                        borderColor: "hsl(225, 15%, 20%)",
+                      }}
+                    />
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-700/60">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowOnboardingModal(false);
+                      setCurrentView("form");
+                    }}
+                    className="text-[12px] text-slate-400 hover:text-white underline"
+                  >
+                    Skip for now
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={settingsSaving}
+                    className="rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-6 py-2 text-[14px] transition-all shadow-[0_0_20px_rgba(56,189,248,0.3)]"
+                  >
+                    {settingsSaving ? "Saving..." : "Save & Continue"}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
