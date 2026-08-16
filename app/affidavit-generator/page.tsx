@@ -450,7 +450,9 @@ function AffidavitAppContent() {
     setAuthLoading(true);
     setAuthError(null);
 
-    const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+    const googleClientId =
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+      "1081676413092-m2bl2lsl3n8qshk8jc2fqdktamn9qk18.apps.googleusercontent.com";
     const win =
       typeof window !== "undefined"
         ? (window as unknown as {
