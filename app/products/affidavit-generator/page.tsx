@@ -845,11 +845,6 @@ function AffidavitAppContent() {
                 <Plus className="h-5 w-5 stroke-[2.5]" /> Create
               </button>
             </div>
-
-            {/* Footer */}
-            <footer className="mt-16 text-center text-slate-500 text-[13px]">
-              <p>&copy; 2026 Made with ❤️ by Mithun Das, Habra</p>
-            </footer>
           </div>
         )}
 
@@ -1744,6 +1739,146 @@ function AffidavitAppContent() {
             </div>
           </div>
         )}
+
+        {/* ──────── 4-COLUMN FOOTER SECTION (Dedicated to Affidavit Generator) ──────── */}
+        <footer
+          className="mt-20 border-t pt-14 pb-10 text-slate-400 text-[13px]"
+          style={{
+            backgroundColor: "hsl(225, 28%, 6%)",
+            borderColor: "hsl(225, 15%, 16%)",
+          }}
+        >
+          <div className="mx-auto max-w-[1140px] px-6">
+            <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4 pb-12 border-b border-slate-800/80">
+              {/* Column 1: Brand & System Overview */}
+              <div className="space-y-4">
+                <Link href="/" className="flex items-center gap-2.5 group">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-md overflow-hidden bg-slate-900 border border-slate-700 transition-transform group-hover:scale-105">
+                    <img src="/logo.png" alt="Mithun Das AI Logo" className="h-full w-full object-cover" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-[15px] leading-tight text-white group-hover:text-sky-300 transition-colors">
+                      Mithun Das
+                    </span>
+                    <span className="font-mono text-[10px] tracking-wider text-sky-400 uppercase font-semibold">
+                      AI Automation
+                    </span>
+                  </div>
+                </Link>
+                <p className="text-slate-400 text-[13px] leading-relaxed">
+                  Dedicated court document automation suite engineered for Advocates, Bar Associations, and Cyber Cafes across India.
+                </p>
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 font-mono text-[11px] text-emerald-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Systems Operational • n8n Live
+                </div>
+              </div>
+
+              {/* Column 2: Legal Standards & CAA Compliance */}
+              <div>
+                <h4 className="font-mono text-[11px] uppercase tracking-wider text-slate-200 font-bold mb-4">
+                  Legal Compliance
+                </h4>
+                <ul className="space-y-2.5 text-[13px]">
+                  <li className="flex items-center gap-2 text-slate-400 hover:text-slate-200 transition-colors">
+                    <span className="text-sky-400">✓</span> SCHEDULE-1C Format
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-400 hover:text-slate-200 transition-colors">
+                    <span className="text-sky-400">✓</span> Cut-off Date: ≤ 31/12/2014
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-400 hover:text-slate-200 transition-colors">
+                    <span className="text-sky-400">✓</span> Section 6B Naturalization Oath
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-400 hover:text-slate-200 transition-colors">
+                    <span className="text-sky-400">✓</span> Indian Witness Clause Included
+                  </li>
+                  <li className="flex items-center gap-2 text-slate-400 hover:text-slate-200 transition-colors">
+                    <span className="text-sky-400">✓</span> Notary Public Formatted
+                  </li>
+                </ul>
+              </div>
+
+              {/* Column 3: Pricing & Credits */}
+              <div>
+                <h4 className="font-mono text-[11px] uppercase tracking-wider text-slate-200 font-bold mb-4">
+                  Credit Wallet Plans
+                </h4>
+                <ul className="space-y-2.5 text-[13px]">
+                  <li>
+                    <button
+                      onClick={() => setShowBuyModal(true)}
+                      className="text-left text-slate-400 hover:text-sky-400 transition-colors"
+                    >
+                      Starter: <span className="text-white font-medium">₹9</span> for 9 Credits (3 Affidavits)
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => setShowBuyModal(true)}
+                      className="text-left text-slate-400 hover:text-sky-400 transition-colors"
+                    >
+                      Basic: <span className="text-white font-medium">₹49</span> for 49 Credits
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => setShowBuyModal(true)}
+                      className="text-left text-slate-400 hover:text-sky-400 transition-colors"
+                    >
+                      Professional: <span className="text-white font-medium">₹99</span> for 99 Credits
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => setShowBuyModal(true)}
+                      className="text-left text-slate-400 hover:text-sky-400 transition-colors"
+                    >
+                      Bulk: <span className="text-white font-medium">₹499</span> for 599 Credits
+                    </button>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Column 4: Advocate Support & Quick Links */}
+              <div>
+                <h4 className="font-mono text-[11px] uppercase tracking-wider text-slate-200 font-bold mb-4">
+                  Practitioner Support
+                </h4>
+                <div className="space-y-3 text-[13px]">
+                  <p className="text-slate-400">
+                    Need custom court templates or bulk law firm automation?
+                  </p>
+                  <a
+                    href="mailto:mithun@mithundas.cloud"
+                    className="inline-flex items-center gap-1.5 text-sky-400 hover:text-sky-300 transition-colors font-mono text-[12px]"
+                  >
+                    mithun@mithundas.cloud
+                  </a>
+                  <div className="pt-2">
+                    <Link
+                      href="/"
+                      className="text-[12px] text-slate-400 hover:text-white underline underline-offset-4 transition-colors"
+                    >
+                      ← Back to Main Platform
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Sub-Footer Bar */}
+            <div className="pt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between text-[12px] text-slate-500">
+              <p>
+                © 2026 Mithun Das AI Automation. Built for fast & legally compliant court document compilation.
+              </p>
+              <div className="flex items-center gap-6 font-mono text-[11px] text-slate-400">
+                <span>Habra • North 24 Parganas</span>
+                <span>•</span>
+                <span>Razorpay 256-bit Encrypted</span>
+              </div>
+            </div>
+          </div>
+        </footer>
 
         {/* ──────── AUTH MODAL (Email / Phone OTP) ──────── */}
         {showAuthModal && (
