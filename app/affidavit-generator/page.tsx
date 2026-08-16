@@ -24,6 +24,7 @@ import {
   ShieldCheck,
   Sparkles,
   Calendar,
+  AlertTriangle,
 } from "lucide-react";
 
 /* ─── n8n Webhook Backend URL ─── */
@@ -112,6 +113,7 @@ function AffidavitAppContent() {
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [showBuyModal, setShowBuyModal] = useState<boolean>(false);
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
+  const [showCaaIneligibleModal, setShowCaaIneligibleModal] = useState<boolean>(false);
 
   // Auth Flow State
   const [authIdentifier, setAuthIdentifier] = useState<string>("");
@@ -260,6 +262,26 @@ function AffidavitAppContent() {
       formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`;
     }
     setFormData((prev) => ({ ...prev, [name]: formatted }));
+
+    // Real-time CAA Cut-off validation for Entry Date (must be on or before 31/12/2014)
+    if (name === "entry_date") {
+      if (formatted.length === 10) {
+        const [d, m, y] = formatted.split("/").map(Number);
+        const entryDateObj = new Date(y, m - 1, d);
+        const cutoffDateObj = new Date(2014, 11, 31, 23, 59, 59); // 31 Dec 2014
+        if (entryDateObj > cutoffDateObj || y > 2014) {
+          setShowCaaIneligibleModal(true);
+          setFormErrors((prev) => ({
+            ...prev,
+            entry_date: "Entry date must be on or before 31/12/2014 (Statutory CAA Cut-off Date)",
+          }));
+        } else {
+          setFormErrors((prev) => ({ ...prev, entry_date: "" }));
+        }
+      }
+    } else if (name === "verification_date" && formErrors.verification_date) {
+      setFormErrors((prev) => ({ ...prev, verification_date: "" }));
+    }
   };
 
   const handleInputChange = (
@@ -1478,8 +1500,11 @@ function AffidavitAppContent() {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="block text-[13px] font-medium text-slate-300 mb-1.5">
-                      Date of Entry into India <span className="text-rose-400">*</span>
+                    <label className="block text-[13px] font-medium text-slate-300 mb-1.5 flex items-center justify-between">
+                      <span>
+                        Date of Entry into India <span className="text-rose-400">*</span>
+                      </span>
+                      <span className="text-[11px] font-mono text-amber-400">≤ 31/12/2014</span>
                     </label>
                     <div className="relative">
                       <input
@@ -1497,15 +1522,24 @@ function AffidavitAppContent() {
                       />
                       <label
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center h-7 w-7 rounded-md bg-slate-800 hover:bg-sky-500/20 text-slate-400 hover:text-sky-400 cursor-pointer transition-colors"
-                        title="Pick entry date from calendar"
+                        title="Pick entry date (Must be on or before 31/12/2014)"
                       >
-                        <Calendar className="h-4 w-4" />
+                        <Calendar className="h-4 w-4 text-amber-400" />
                         <input
                           type="date"
-                          max={getTodayIso()}
+                          max="2014-12-31"
                           value={ddmmyyyyToIso(formData.entry_date)}
                           onChange={(e) => {
                             if (e.target.value) {
+                              if (e.target.value > "2014-12-31") {
+                                setShowCaaIneligibleModal(true);
+                                setFormErrors((prev) => ({
+                                  ...prev,
+                                  entry_date:
+                                    "Entry date must be on or before 31/12/2014 (CAA Cut-off Date)",
+                                }));
+                                return;
+                              }
                               const formatted = isoToDdmmyyyy(e.target.value);
                               setFormData((prev) => ({ ...prev, entry_date: formatted }));
                               if (formErrors.entry_date) {
@@ -1524,7 +1558,7 @@ function AffidavitAppContent() {
                       </label>
                     </div>
                     <span className="text-slate-400 text-[11px] block mt-1">
-                      Format: DD/MM/YYYY (Past arrival date)
+                      Format: DD/MM/YYYY — must be on or before 31/12/2014
                     </span>
                     {formErrors.entry_date && (
                       <p className="text-rose-400 text-[12px] mt-1">{formErrors.entry_date}</p>
@@ -2027,6 +2061,51 @@ function AffidavitAppContent() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* ──────── 5. CAA INELIGIBILITY WARNING MODAL (Entry Date > 31/12/2014) ──────── */}
+        {showCaaIneligibleModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
+            <div
+              className="w-full max-w-[460px] rounded-2xl border p-6 shadow-2xl text-center"
+              style={{
+                backgroundColor: "hsl(225, 18%, 14%)",
+                borderColor: "#F43F5E",
+              }}
+            >
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/30">
+                <AlertTriangle className="h-8 w-8" />
+              </div>
+
+              <h3 className="text-[20px] font-bold text-white mb-2">
+                Not Allowed to Apply for CAA
+              </h3>
+
+              <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 text-left text-[13px] text-slate-300 space-y-2 mb-6 leading-relaxed">
+                <p>
+                  <strong className="text-rose-300">Statutory CAA Cut-off Date:</strong> Under the{" "}
+                  <strong>Citizenship (Amendment) Act, 2019</strong> (Section 6B), only persons who
+                  entered India on or before <strong className="text-white">31st December 2014 (31/12/2014)</strong> are eligible to apply for Indian citizenship.
+                </p>
+                <p className="text-slate-400 text-[12px]">
+                  Persons who entered India on or after 1st January 2015 cannot generate or submit a CAA Schedule 1-C court affidavit.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData((prev) => ({ ...prev, entry_date: "" }));
+                    setShowCaaIneligibleModal(false);
+                  }}
+                  className="w-full rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-2.5 text-[14px] transition-all active:scale-95 shadow-[0_0_20px_rgba(56,189,248,0.3)]"
+                >
+                  Change Date of Entry
+                </button>
+              </div>
             </div>
           </div>
         )}
