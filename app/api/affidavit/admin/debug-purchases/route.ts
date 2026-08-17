@@ -13,7 +13,7 @@ if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const adminKey = searchParams.get("key");
-  if (adminKey !== process.env.ADMIN_SECRET && adminKey !== "debug_temp_2026") {
+  if (!process.env.ADMIN_SECRET || adminKey !== process.env.ADMIN_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

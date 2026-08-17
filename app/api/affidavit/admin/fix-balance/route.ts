@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { key, email } = body;
 
-    if (key !== "debug_temp_2026") {
+    if (!process.env.ADMIN_SECRET || key !== process.env.ADMIN_SECRET) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
