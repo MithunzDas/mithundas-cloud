@@ -86,24 +86,32 @@ export async function POST(req: NextRequest) {
         customerEmail = payment.email;
       }
 
-      // Update purchase & user credit balance in a transaction
-      const [updatedPurchase, updatedUser] = await prisma.$transaction([
-        prisma.affidavitPurchase.update({
-          where: { id: purchase.id },
-          data: {
-            razorpayPaymentId: paymentId || purchase.razorpayPaymentId,
-            status: "completed",
-          },
-        }),
-        prisma.affidavitUser.update({
-          where: { id: user.id },
-          data: {
-            creditBalance: { increment: purchase.creditsAdded },
-            isFirstPurchaseDone: true,
-            phone: customerPhone || user.phone,
-          },
-        }),
-      ]);
+      // Atomically claim the purchase from "pending" to "completed"
+      // If verify-payment already processed it, claimResult.count will be 0 and we exit safely!
+      const claimResult = await prisma.affidavitPurchase.updateMany({
+        where: {
+          id: purchase.id,
+          status: "pending",
+        },
+        data: {
+          status: "completed",
+          razorpayPaymentId: paymentId || "N/A",
+        },
+      });
+
+      if (claimResult.count === 0) {
+        return NextResponse.json({ received: true, status: "already_claimed_or_processed" });
+      }
+
+      // Safely increment user balance and update first purchase flag (ONLY ONCE)
+      const updatedUser = await prisma.affidavitUser.update({
+        where: { id: user.id },
+        data: {
+          creditBalance: { increment: purchase.creditsAdded },
+          isFirstPurchaseDone: true,
+          phone: customerPhone || user.phone,
+        },
+      });
 
       const istDate = new Date().toLocaleDateString("en-IN", {
         timeZone: "Asia/Kolkata",
@@ -131,15 +139,15 @@ export async function POST(req: NextRequest) {
       });
 
       const planDisplay =
-        updatedPurchase.planName === "starter"
+        purchase.planName === "starter"
           ? "Starter Plan (9 Credits)"
-          : updatedPurchase.planName === "basic"
+          : purchase.planName === "basic"
           ? "Basic Plan (49 Credits)"
-          : updatedPurchase.planName === "pro"
-          ? "Pro Plan (99 Credits)"
-          : updatedPurchase.planName === "bulk"
-          ? "Bulk Plan (550 Credits)"
-          : `${updatedPurchase.planName.toUpperCase()} (${updatedPurchase.creditsAdded} Credits)`;
+          : purchase.planName === "pro"
+          ? "Professional Plan (99 Credits)"
+          : purchase.planName === "bulk"
+          ? "Bulk Plan (599 Credits)"
+          : `${purchase.planName.toUpperCase()} (${purchase.creditsAdded} Credits)`;
 
       // Trigger n8n Automated Email Receipt Webhook
       const n8nReceiptWebhook =
@@ -161,19 +169,39 @@ export async function POST(req: NextRequest) {
             customerName: updatedUser.name || "Valued Legal Practitioner",
             userName: updatedUser.name || "Valued Legal Practitioner",
             name: updatedUser.name || "Valued Legal Practitioner",
-            amount: updatedPurchase.amount,
-            amountFormatted: `₹${updatedPurchase.amount}`,
+            amount: purchase.amount,
+            amountFormatted: `₹${purchase.amount}`,
+            amountPaid: `₹${purchase.amount} INR`,
             currency: "INR",
             plan: planDisplay,
             planName: planDisplay,
-            creditsAdded: updatedPurchase.creditsAdded,
+            plan_name: planDisplay,
+            planTitle: planDisplay,
+            package: planDisplay,
+            packageName: planDisplay,
+            creditsAdded: purchase.creditsAdded,
+            credits_added: purchase.creditsAdded,
+            credits: purchase.creditsAdded,
             newTotalCredits: updatedUser.creditBalance,
+            totalBalance: updatedUser.creditBalance,
+            totalCredits: updatedUser.creditBalance,
             paymentId: paymentId || "N/A",
+            payment_id: paymentId || "N/A",
             orderId: orderId,
+            order_id: orderId,
             date: istDate,
             paymentDate: istDate,
+            payment_date: istDate,
+            transactionDate: istDate,
+            transaction_date: istDate,
+            formattedDate: istDate,
+            createdAt: istDate,
+            created_at: istDate,
             time: istTime,
+            paymentTime: istTime,
             timestamp: istTimestamp,
+            dateTime: `${istDate} at ${istTime}`,
+            date_time: `${istDate} at ${istTime}`,
             productUrl: "https://mithundas.cloud/products/affidavit-generator",
             source: "razorpay_server_webhook",
           }),
@@ -201,10 +229,10 @@ export async function POST(req: NextRequest) {
             isFirstPurchaseDone: updatedUser.isFirstPurchaseDone,
             defaultAdvocateName: updatedUser.defaultAdvocateName || "N/A",
             defaultCourtHeader: updatedUser.defaultCourtHeader || "N/A",
-            lastPaymentAmount: `₹${updatedPurchase.amount}`,
+            lastPaymentAmount: `₹${purchase.amount}`,
             lastPlanName: planDisplay,
             plan: planDisplay,
-            creditsAdded: updatedPurchase.creditsAdded,
+            creditsAdded: purchase.creditsAdded,
             paymentId: paymentId || "N/A",
             date: istDate,
             time: istTime,
