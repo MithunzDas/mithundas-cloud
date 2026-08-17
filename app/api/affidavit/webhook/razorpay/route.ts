@@ -48,17 +48,19 @@ export async function POST(req: NextRequest) {
       const orderId = payment?.order_id;
       const paymentId = payment?.id;
 
-      if (!orderId) {
-        return NextResponse.json({ received: true });
+      // Ignore payments from other services, consultation links, or custom video call invoices
+      if (payment.notes && payment.notes.type && payment.notes.type !== "affidavit_credits") {
+        return NextResponse.json({ received: true, ignored: "non_affidavit_service" });
       }
 
-      // Check if purchase exists
+      // Check if purchase exists in Affidavit database
       const purchase = await prisma.affidavitPurchase.findFirst({
         where: { razorpayOrderId: orderId },
       });
 
       if (!purchase) {
-        return NextResponse.json({ received: true });
+        // Non-affidavit payment (e.g. consultation, video call, custom invoice) -> safely ignore
+        return NextResponse.json({ received: true, ignored: "non_affidavit_order" });
       }
 
       if (purchase.status === "completed") {
