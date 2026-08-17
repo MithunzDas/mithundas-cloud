@@ -138,6 +138,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (!customerEmail && updatedUser.email) {
+      customerEmail = updatedUser.email;
+    }
+
     const istDate = new Date().toLocaleDateString("en-IN", {
       timeZone: "Asia/Kolkata",
       day: "2-digit",
@@ -183,9 +187,16 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           eventType: "affidavit.payment.verified",
           userId: updatedUser.id,
-          customerEmail: customerEmail || "N/A",
+          email: customerEmail || updatedUser.email || "N/A",
+          customerEmail: customerEmail || updatedUser.email || "N/A",
+          userEmail: customerEmail || updatedUser.email || "N/A",
+          to: customerEmail || updatedUser.email || "N/A",
+          recipientEmail: customerEmail || updatedUser.email || "N/A",
           customerPhone: customerPhone || "N/A",
+          phone: customerPhone || "N/A",
           customerName: updatedUser.name || "Valued Legal Practitioner",
+          userName: updatedUser.name || "Valued Legal Practitioner",
+          name: updatedUser.name || "Valued Legal Practitioner",
           amount: updatedPurchase.amount,
           amountFormatted: `₹${updatedPurchase.amount}`,
           currency: "INR",
