@@ -151,6 +151,7 @@ function AffidavitAppContent() {
   const [isPaying, setIsPaying] = useState<boolean>(false);
   const [paymentSuccessMsg, setPaymentSuccessMsg] = useState<string | null>(null);
   const [generalError, setGeneralError] = useState<string | null>(null);
+  const [pendingActionAfterAuth, setPendingActionAfterAuth] = useState<"generate" | "buy" | null>(null);
 
   // Settings State
   const [settingsAdvocateName, setSettingsAdvocateName] = useState<string>("");
@@ -497,6 +498,14 @@ function AffidavitAppContent() {
                     localStorage.setItem("affidavit_user_id", data.user.id);
                     localStorage.setItem("affidavit_user_identifier", data.user.email);
                     setShowAuthModal(false);
+
+                    if (pendingActionAfterAuth === "buy" || data.user.creditBalance < 3) {
+                      setShowBuyModal(true);
+                      setGeneralError(
+                        `Welcome, ${data.user.name || "Advocate"}! You currently have ${data.user.creditBalance} credits. Top up from ₹9 to generate your affidavit.`
+                      );
+                    }
+                    setPendingActionAfterAuth(null);
                   } else {
                     setAuthError(data.error || "Google login failed.");
                   }
@@ -541,6 +550,14 @@ function AffidavitAppContent() {
             localStorage.setItem("affidavit_user_id", data.user.id);
             localStorage.setItem("affidavit_user_identifier", data.user.email);
             setShowAuthModal(false);
+
+            if (pendingActionAfterAuth === "buy" || data.user.creditBalance < 3) {
+              setShowBuyModal(true);
+              setGeneralError(
+                `Welcome, ${data.user.name || "Advocate"}! You currently have ${data.user.creditBalance} credits. Top up from ₹9 to generate your affidavit.`
+              );
+            }
+            setPendingActionAfterAuth(null);
           } else {
             setAuthError(data.error || "Login failed.");
           }
@@ -590,9 +607,20 @@ function AffidavitAppContent() {
 
   // Buy Credits Flow (Razorpay)
   const handlePurchaseCredits = async (planId: string) => {
-    const emailToUse = user?.email || user?.phone || authIdentifier.trim();
+    if (!user) {
+      setShowBuyModal(false);
+      setPendingActionAfterAuth("buy");
+      setShowAuthModal(true);
+      setAuthMsg("👉 Please sign in with Google (1-Click) to continue with credit purchase.");
+      return;
+    }
+
+    const emailToUse = user.email || user.phone;
     if (!emailToUse) {
-      setGeneralError("Please enter your mobile number or email address below to proceed.");
+      setShowBuyModal(false);
+      setPendingActionAfterAuth("buy");
+      setShowAuthModal(true);
+      setAuthMsg("👉 Please sign in with Google (1-Click) to continue with credit purchase.");
       return;
     }
 
@@ -756,13 +784,19 @@ function AffidavitAppContent() {
       return;
     }
 
-    // Check Credits (Requires 3 Credits)
-    if (!user || user.creditBalance < 3) {
+    // 1. Check if user is signed in
+    if (!user) {
+      setPendingActionAfterAuth("generate");
+      setShowAuthModal(true);
+      setAuthMsg("👉 Please sign in with Google (1-Click) before generating your court affidavit.");
+      return;
+    }
+
+    // 2. Check Credits (Requires 3 Credits)
+    if (user.creditBalance < 3) {
       setShowBuyModal(true);
       setGeneralError(
-        user
-          ? `You have ${user.creditBalance} credits. You need 3 credits to generate this 3-page affidavit.`
-          : "Please sign in and top up your credits (starting at ₹9) to generate court affidavits."
+        `You have ${user.creditBalance} credits. You need 3 credits to generate this 3-page affidavit.`
       );
       return;
     }
@@ -2327,7 +2361,7 @@ function AffidavitAppContent() {
                 </button>
               </div>
 
-              {/* User Account Bar or Guest Input */}
+              {/* User Account Bar or Google Sign-in Prompt */}
               {user ? (
                 <div className="mt-4 p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
@@ -2356,30 +2390,34 @@ function AffidavitAppContent() {
                   </span>
                 </div>
               ) : (
-                <div className="mt-4 p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+                <div className="mt-4 p-3.5 rounded-xl bg-sky-500/10 border border-sky-500/30 space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <label className="block text-[12px] font-mono text-slate-300 uppercase">
-                      Your Email / Mobile (For Invoice & Credits)
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleGoogleSignIn}
-                      className="text-[11px] text-sky-400 hover:underline flex items-center gap-1 font-medium"
-                    >
-                      Sign In with Google
-                    </button>
+                    <span className="text-[12px] font-semibold text-sky-300">
+                      Account Authentication Required
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-400">1-Click Instant</span>
                   </div>
-                  <input
-                    type="text"
-                    value={authIdentifier}
-                    onChange={(e) => setAuthIdentifier(e.target.value)}
-                    placeholder="e.g. advocate@gmail.com or 9876543210"
-                    className="w-full rounded-lg border px-3.5 py-2 text-[14px] text-white focus:border-sky-400 focus:outline-none"
-                    style={{
-                      backgroundColor: "hsl(225, 20%, 10%)",
-                      borderColor: "hsl(225, 15%, 20%)",
+                  <p className="text-[12px] text-slate-300 leading-snug">
+                    Please sign in with Google to automatically attach credits and instant GST invoice to your account.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowBuyModal(false);
+                      setPendingActionAfterAuth("buy");
+                      setShowAuthModal(true);
+                      setAuthMsg("👉 Please sign in with Google (1-Click) to continue with credit purchase.");
                     }}
-                  />
+                    className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-sky-400/40 bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 text-[13px] transition-all hover:border-sky-400 shadow-sm"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24">
+                      <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/>
+                      <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.7-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"/>
+                      <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15s.7 5.3 1.9 7.7l3.7-2.9z"/>
+                      <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16c1.8 3.7 5.6 7 10.1 7z"/>
+                    </svg>
+                    Continue with Google (1-Click)
+                  </button>
                 </div>
               )}
 
@@ -2418,11 +2456,20 @@ function AffidavitAppContent() {
                   <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Razorpay 256-bit Secure
                 </span>
                 <button
-                  onClick={() => handlePurchaseCredits(selectedPlan)}
+                  onClick={() => {
+                    if (!user) {
+                      setShowBuyModal(false);
+                      setPendingActionAfterAuth("buy");
+                      setShowAuthModal(true);
+                      setAuthMsg("👉 Please sign in with Google (1-Click) to proceed with payment.");
+                      return;
+                    }
+                    handlePurchaseCredits(selectedPlan);
+                  }}
                   disabled={isPaying}
                   className="rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-6 py-2.5 text-[14px] transition-all shadow-[0_0_20px_rgba(56,189,248,0.3)] active:scale-95"
                 >
-                  {isPaying ? "Processing..." : "Pay with Razorpay"}
+                  {isPaying ? "Processing..." : !user ? "Sign In & Pay" : "Pay with Razorpay"}
                 </button>
               </div>
             </div>
