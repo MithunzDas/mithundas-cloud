@@ -102,11 +102,12 @@ export async function POST(req: NextRequest) {
     let customerPhone = updatedUser.phone || null;
     let customerEmail = updatedUser.email || null;
 
-    if (env.RAZORPAY_KEY_ID && env.RAZORPAY_KEY_SECRET) {
+    const rzpKeyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+    const rzpKeySecret = process.env.RAZORPAY_KEY_SECRET;
+
+    if (rzpKeyId && rzpKeySecret) {
       try {
-        const basicAuth = Buffer.from(
-          `${env.RAZORPAY_KEY_ID}:${env.RAZORPAY_KEY_SECRET}`
-        ).toString("base64");
+        const basicAuth = Buffer.from(`${rzpKeyId}:${rzpKeySecret}`).toString("base64");
         const rzpRes = await fetch(
           `https://api.razorpay.com/v1/payments/${razorpay_payment_id}`,
           {
