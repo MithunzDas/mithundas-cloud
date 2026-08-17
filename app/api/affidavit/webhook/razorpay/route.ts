@@ -63,11 +63,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true, ignored: "non_affidavit_order" });
       }
 
-      if (purchase.status === "completed") {
-        return NextResponse.json({ received: true, status: "already_completed" });
-      }
-
-      // Extract details
+      // Extract user details FIRST (needed for both recovery and normal processing)
       const user = await prisma.affidavitUser.findUnique({
         where: { id: purchase.userId },
       });
@@ -86,32 +82,72 @@ export async function POST(req: NextRequest) {
         customerEmail = payment.email;
       }
 
-      // Atomically claim the purchase from "pending" to "completed"
-      // If verify-payment already processed it, claimResult.count will be 0 and we exit safely!
-      const claimResult = await prisma.affidavitPurchase.updateMany({
-        where: {
-          id: purchase.id,
-          status: "pending",
-        },
-        data: {
-          status: "completed",
-          razorpayPaymentId: paymentId || "N/A",
-        },
-      });
+      // ── RECOVERY CHECK ──
+      // If purchase is already "completed" but user balance is suspiciously low,
+      // the previous claim succeeded but credit increment must have failed.
+      // Auto-recover by adding the missing credits now.
+      let updatedUser;
 
-      if (claimResult.count === 0) {
-        return NextResponse.json({ received: true, status: "already_claimed_or_processed" });
+      if (purchase.status === "completed") {
+        const expectedMinBalance = purchase.creditsAdded;
+        if (user.creditBalance < expectedMinBalance || !user.isFirstPurchaseDone) {
+          // Credits were NOT applied — recover now
+          updatedUser = await prisma.affidavitUser.update({
+            where: { id: user.id },
+            data: {
+              creditBalance: { increment: purchase.creditsAdded },
+              isFirstPurchaseDone: true,
+              phone: customerPhone || user.phone,
+            },
+          });
+          logger.info("Webhook recovery: applied missing credits for completed purchase", "rzp_webhook_recovery", {
+            userId: user.id,
+            purchaseId: purchase.id,
+            creditsAdded: purchase.creditsAdded,
+            newBalance: updatedUser.creditBalance,
+          });
+          // Continue to send email (it may also have been missed)
+        } else {
+          return NextResponse.json({ received: true, status: "already_completed" });
+        }
+      } else {
+        // ── ATOMIC TRANSACTION: Claim purchase + Increment credits ──
+        // Both operations succeed or both fail. This prevents the scenario where
+        // the purchase is marked "completed" but credits are never incremented.
+        const txResult = await prisma.$transaction(async (tx) => {
+          const claimResult = await tx.affidavitPurchase.updateMany({
+            where: {
+              id: purchase.id,
+              status: "pending",
+            },
+            data: {
+              status: "completed",
+              razorpayPaymentId: paymentId || "N/A",
+            },
+          });
+
+          if (claimResult.count === 0) {
+            return { claimed: false, user: null };
+          }
+
+          const txUser = await tx.affidavitUser.update({
+            where: { id: user.id },
+            data: {
+              creditBalance: { increment: purchase.creditsAdded },
+              isFirstPurchaseDone: true,
+              phone: customerPhone || user.phone,
+            },
+          });
+
+          return { claimed: true, user: txUser };
+        });
+
+        if (!txResult.claimed) {
+          return NextResponse.json({ received: true, status: "already_claimed_or_processed" });
+        }
+
+        updatedUser = txResult.user!;
       }
-
-      // Safely increment user balance and update first purchase flag (ONLY ONCE)
-      const updatedUser = await prisma.affidavitUser.update({
-        where: { id: user.id },
-        data: {
-          creditBalance: { increment: purchase.creditsAdded },
-          isFirstPurchaseDone: true,
-          phone: customerPhone || user.phone,
-        },
-      });
 
       const istDate = new Date().toLocaleDateString("en-IN", {
         timeZone: "Asia/Kolkata",

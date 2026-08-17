@@ -72,38 +72,101 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Atomically claim the purchase from "pending" to "completed"
-    // This strictly prevents duplicate credit increments if the webhook already processed it
-    const claimResult = await prisma.affidavitPurchase.updateMany({
-      where: {
-        id: purchase.id,
-        status: "pending",
-      },
-      data: {
-        status: "completed",
-        razorpayPaymentId: razorpay_payment_id,
-      },
-    });
+    // ── RECOVERY CHECK ──
+    // If purchase is already "completed" but user balance doesn't reflect it,
+    // the webhook claimed it but credit increment failed. Auto-recover here.
+    let updatedUser;
 
-    if (claimResult.count === 0) {
-      // Already claimed and processed by webhook or previous request!
+    if (purchase.status === "completed") {
       const currentUser = await prisma.affidavitUser.findUnique({ where: { id: userId } });
-      return NextResponse.json({
-        success: true,
-        creditsAdded: 0,
-        newBalance: currentUser?.creditBalance || 0,
-        alreadyProcessed: true,
-      });
-    }
+      if (!currentUser) {
+        return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
+      }
+      if (currentUser.creditBalance < purchase.creditsAdded || !currentUser.isFirstPurchaseDone) {
+        // Credits were NOT applied — recover now
+        updatedUser = await prisma.affidavitUser.update({
+          where: { id: userId },
+          data: {
+            creditBalance: { increment: purchase.creditsAdded },
+            isFirstPurchaseDone: true,
+          },
+        });
+        logger.info("Verify-payment recovery: applied missing credits", "verify_payment_recovery", {
+          userId,
+          purchaseId: purchase.id,
+          creditsAdded: purchase.creditsAdded,
+          newBalance: updatedUser.creditBalance,
+        });
+      } else {
+        // Already fully processed — return current balance
+        return NextResponse.json({
+          success: true,
+          creditsAdded: 0,
+          newBalance: currentUser.creditBalance,
+          alreadyProcessed: true,
+        });
+      }
+    } else {
+      // ── ATOMIC TRANSACTION: Claim purchase + Increment credits ──
+      // Both operations succeed or both fail. This prevents the scenario where
+      // the purchase is marked "completed" but credits are never incremented.
+      const txResult = await prisma.$transaction(async (tx) => {
+        const claimResult = await tx.affidavitPurchase.updateMany({
+          where: {
+            id: purchase.id,
+            status: "pending",
+          },
+          data: {
+            status: "completed",
+            razorpayPaymentId: razorpay_payment_id,
+          },
+        });
 
-    // Safely increment user balance and update first purchase flag (ONLY ONCE)
-    const updatedUser = await prisma.affidavitUser.update({
-      where: { id: userId },
-      data: {
-        creditBalance: { increment: purchase.creditsAdded },
-        isFirstPurchaseDone: true,
-      },
-    });
+        if (claimResult.count === 0) {
+          return { claimed: false, user: null };
+        }
+
+        const txUser = await tx.affidavitUser.update({
+          where: { id: userId },
+          data: {
+            creditBalance: { increment: purchase.creditsAdded },
+            isFirstPurchaseDone: true,
+          },
+        });
+
+        return { claimed: true, user: txUser };
+      });
+
+      if (!txResult.claimed) {
+        // Race: webhook already processed it — but check if credits were applied
+        const currentUser = await prisma.affidavitUser.findUnique({ where: { id: userId } });
+        if (currentUser && (currentUser.creditBalance < purchase.creditsAdded || !currentUser.isFirstPurchaseDone)) {
+          // Webhook claimed but credits failed — recover
+          updatedUser = await prisma.affidavitUser.update({
+            where: { id: userId },
+            data: {
+              creditBalance: { increment: purchase.creditsAdded },
+              isFirstPurchaseDone: true,
+            },
+          });
+          logger.info("Verify-payment recovery after failed webhook credit", "verify_payment_recovery_post_claim", {
+            userId,
+            purchaseId: purchase.id,
+            creditsAdded: purchase.creditsAdded,
+            newBalance: updatedUser.creditBalance,
+          });
+        } else {
+          return NextResponse.json({
+            success: true,
+            creditsAdded: 0,
+            newBalance: currentUser?.creditBalance || 0,
+            alreadyProcessed: true,
+          });
+        }
+      } else {
+        updatedUser = txResult.user!;
+      }
+    }
 
     logger.info("Affidavit credits purchased successfully", "affidavit_purchase_success", {
       userId,
