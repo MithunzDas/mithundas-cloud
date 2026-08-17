@@ -254,13 +254,16 @@ function AffidavitAppContent() {
       if (user.defaultCourtHeader) {
         setFormData((prev) => ({ ...prev, custom_court: user.defaultCourtHeader! }));
       }
+      if (user.isFirstPurchaseDone && selectedPlan === "starter") {
+        setSelectedPlan("basic");
+      }
       if (user.defaultAdvocateName) setSettingsAdvocateName(user.defaultAdvocateName);
       if (user.defaultAdvocateEnrollment)
         setSettingsAdvocateEnrollment(user.defaultAdvocateEnrollment);
       if (user.phone) setSettingsPhone(user.phone);
       if (user.defaultCourtHeader) setSettingsCourtHeader(user.defaultCourtHeader);
     }
-  }, [user]);
+  }, [user, selectedPlan]);
 
   const refreshUserData = async (identifier?: string, userId?: string) => {
     try {
@@ -501,8 +504,9 @@ function AffidavitAppContent() {
 
                     if (pendingActionAfterAuth === "buy" || data.user.creditBalance < 3) {
                       setShowBuyModal(true);
+                      const minPrice = data.user.isFirstPurchaseDone ? "₹49" : "₹9";
                       setGeneralError(
-                        `Welcome, ${data.user.name || "Advocate"}! You currently have ${data.user.creditBalance} credits. Top up from ₹9 to generate your affidavit.`
+                        `Welcome, ${data.user.name || "Advocate"}! You currently have ${data.user.creditBalance} credits. Top up from ${minPrice} to generate your affidavit.`
                       );
                     }
                     setPendingActionAfterAuth(null);
@@ -553,8 +557,9 @@ function AffidavitAppContent() {
 
             if (pendingActionAfterAuth === "buy" || data.user.creditBalance < 3) {
               setShowBuyModal(true);
+              const minPrice = data.user.isFirstPurchaseDone ? "₹49" : "₹9";
               setGeneralError(
-                `Welcome, ${data.user.name || "Advocate"}! You currently have ${data.user.creditBalance} credits. Top up from ₹9 to generate your affidavit.`
+                `Welcome, ${data.user.name || "Advocate"}! You currently have ${data.user.creditBalance} credits. Top up from ${minPrice} to generate your affidavit.`
               );
             }
             setPendingActionAfterAuth(null);
@@ -615,6 +620,7 @@ function AffidavitAppContent() {
       return;
     }
 
+    const targetPlanId = user.isFirstPurchaseDone && planId === "starter" ? "basic" : planId;
     const emailToUse = user.email || user.phone;
     if (!emailToUse) {
       setShowBuyModal(false);
@@ -632,7 +638,7 @@ function AffidavitAppContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          planId,
+          planId: targetPlanId,
           email: emailToUse,
           name: user?.name || undefined,
         }),
@@ -795,8 +801,9 @@ function AffidavitAppContent() {
     // 2. Check Credits (Requires 3 Credits)
     if (user.creditBalance < 3) {
       setShowBuyModal(true);
+      const minPrice = user.isFirstPurchaseDone ? "₹49" : "₹9";
       setGeneralError(
-        `You have ${user.creditBalance} credits. You need 3 credits to generate this 3-page affidavit.`
+        `You have ${user.creditBalance} credits. Top up from ${minPrice} (3 credits needed) to generate this affidavit.`
       );
       return;
     }
@@ -1105,20 +1112,32 @@ function AffidavitAppContent() {
                 Generate SCHEDULE-1C affidavit with character witness and naturalization oath
               </p>
 
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (user && !user.defaultAdvocateName && !user.defaultCourtHeader) {
-                    setShowOnboardingModal(true);
-                  } else {
-                    setCurrentView("form");
-                  }
-                }}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-sky-500 hover:bg-sky-400 group-hover:bg-sky-400 text-slate-950 font-bold py-3 text-[15px] transition-all duration-200 shadow-[0_0_20px_rgba(56,189,248,0.3)] group-hover:shadow-[0_0_30px_rgba(56,189,248,0.5)] active:scale-95"
-              >
-                <Plus className="h-5 w-5 stroke-[2.5]" /> Create
-              </button>
+              <div className="space-y-2.5">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (user && !user.defaultAdvocateName && !user.defaultCourtHeader) {
+                      setShowOnboardingModal(true);
+                    } else {
+                      setCurrentView("form");
+                    }
+                  }}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-sky-500 hover:bg-sky-400 group-hover:bg-sky-400 text-slate-950 font-bold py-3 text-[15px] transition-all duration-200 shadow-[0_0_20px_rgba(56,189,248,0.3)] group-hover:shadow-[0_0_30px_rgba(56,189,248,0.5)] active:scale-95"
+                >
+                  <Plus className="h-5 w-5 stroke-[2.5]" /> Create Affidavit
+                </button>
+
+                <a
+                  href="/sample-caa-affidavit.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700/80 bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white font-medium py-2.5 text-[13px] transition-all"
+                >
+                  <FileText className="h-4 w-4 text-sky-400" /> Preview Sample Court PDF ↗
+                </a>
+              </div>
             </div>
           </div>
         )}
@@ -2155,6 +2174,17 @@ function AffidavitAppContent() {
                   <li className="flex items-center gap-2 text-slate-400 hover:text-slate-200 transition-colors">
                     <span className="text-sky-400">✓</span> Notary Public Formatted
                   </li>
+                  <li className="pt-2">
+                    <a
+                      href="/sample-caa-affidavit.pdf"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500/10 border border-sky-500/30 px-3 py-1.5 text-[12px] font-semibold text-sky-300 hover:bg-sky-500/20 hover:text-white transition-all shadow-sm group"
+                    >
+                      <FileText className="h-3.5 w-3.5 text-sky-400 group-hover:scale-110 transition-transform" />
+                      View Sample Affidavit (PDF) ↗
+                    </a>
+                  </li>
                 </ul>
               </div>
 
@@ -2164,14 +2194,16 @@ function AffidavitAppContent() {
                   Credit Wallet Plans
                 </h4>
                 <ul className="space-y-2.5 text-[13px]">
-                  <li>
-                    <button
-                      onClick={() => setShowBuyModal(true)}
-                      className="text-left text-slate-400 hover:text-sky-400 transition-colors"
-                    >
-                      Starter: <span className="text-white font-medium">₹9</span> for 9 Credits (3 Affidavits)
-                    </button>
-                  </li>
+                  {(!user || !user.isFirstPurchaseDone) && (
+                    <li>
+                      <button
+                        onClick={() => setShowBuyModal(true)}
+                        className="text-left text-slate-400 hover:text-sky-400 transition-colors"
+                      >
+                        Starter (1st Time): <span className="text-white font-medium">₹9</span> for 9 Credits
+                      </button>
+                    </li>
+                  )}
                   <li>
                     <button
                       onClick={() => setShowBuyModal(true)}
