@@ -2254,7 +2254,7 @@ function AffidavitAppContent() {
                   <div>
                     <h3 className="text-[17px] font-bold text-white">Sign In / Register</h3>
                     <p className="text-[11px] font-mono text-slate-400">
-                      Instant OTP • No password needed
+                      Google 1-Click • No password needed
                     </p>
                   </div>
                 </div>
