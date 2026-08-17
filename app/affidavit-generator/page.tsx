@@ -921,57 +921,60 @@ function AffidavitAppContent() {
       >
         {/* ──────── HEADER / TOP NAVIGATION ──────── */}
         <header
-          className="sticky top-0 z-40 border-b flex items-center justify-between px-6 py-3.5 backdrop-blur-md"
+          className="sticky top-0 z-40 border-b flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3.5 backdrop-blur-md"
           style={{
             borderColor: "hsl(225, 15%, 20%)",
-            backgroundColor: "hsla(225, 25%, 8%, 0.85)",
+            backgroundColor: "hsla(225, 25%, 8%, 0.90)",
           }}
         >
           {/* Logo on Left: "Mithun Das AI Automation" */}
-          <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-85 group">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md overflow-hidden bg-slate-900 border border-slate-700 transition-transform group-hover:scale-105">
+          <Link href="/" className="flex items-center gap-2 sm:gap-2.5 transition-opacity hover:opacity-85 group shrink-0">
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-md overflow-hidden bg-slate-900 border border-slate-700 transition-transform group-hover:scale-105">
               <img src="/logo.png" alt="Mithun Das AI Logo" className="h-full w-full object-cover" />
             </div>
             <div className="flex flex-col">
-              <span className="font-semibold text-[15px] leading-tight text-white group-hover:text-sky-300 transition-colors">
+              <span className="font-semibold text-[13px] sm:text-[15px] leading-tight text-white group-hover:text-sky-300 transition-colors">
                 Mithun Das
               </span>
-              <span className="font-mono text-[10px] tracking-wider text-sky-400 uppercase font-semibold">
+              <span className="hidden sm:block font-mono text-[9px] sm:text-[10px] tracking-wider text-sky-400 uppercase font-semibold">
                 AI Automation
               </span>
             </div>
           </Link>
 
           {/* User Account / Credits Area on Right */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             {user ? (
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-1.5 sm:gap-2.5">
                 {/* Credit Balance Badge */}
                 <div
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-mono text-[13px] border transition-all hover:border-sky-400/40"
+                  className="flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-3 py-1 sm:py-1.5 font-mono text-[12px] sm:text-[13px] border transition-all hover:border-sky-400/40 shrink-0"
                   style={{
                     backgroundColor: "hsl(225, 20%, 12%)",
                     borderColor: "hsl(225, 15%, 24%)",
                   }}
+                  title={`Available Balance: ${user.creditBalance} Credits`}
                 >
-                  <Zap className="h-3.5 w-3.5 text-amber-400" />
+                  <Zap className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-amber-400" />
                   <span className="font-bold text-sky-400">{user.creditBalance}</span>
-                  <span className="text-slate-400 text-[11px]">Credits</span>
+                  <span className="hidden sm:inline text-slate-400 text-[11px]">Credits</span>
                 </div>
 
                 {/* Buy Credits Button */}
                 <button
                   onClick={() => setShowBuyModal(true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold px-3 py-1.5 text-[13px] transition-all hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] active:scale-95"
+                  className="inline-flex items-center gap-1 sm:gap-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold px-2.5 sm:px-3 py-1 sm:py-1.5 text-[12px] sm:text-[13px] transition-all hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] active:scale-95 shrink-0"
                 >
-                  <CreditCard className="h-3.5 w-3.5" /> Buy Credits
+                  <CreditCard className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Buy Credits</span>
+                  <span className="sm:hidden">Buy</span>
                 </button>
 
-                {/* Default Settings & User Name */}
+                {/* Default Settings & User Profile */}
                 <button
                   onClick={() => setShowSettingsModal(true)}
                   title="My Default Advocate & Court Settings"
-                  className="flex items-center gap-2 rounded-lg border px-2.5 py-1 text-[13px] text-slate-300 hover:text-white transition-all hover:border-slate-600"
+                  className="flex items-center gap-1.5 sm:gap-2 rounded-lg border p-1 sm:px-2.5 sm:py-1 text-[12px] sm:text-[13px] text-slate-300 hover:text-white transition-all hover:border-slate-600 shrink-0"
                   style={{
                     backgroundColor: "hsl(225, 20%, 12%)",
                     borderColor: "hsl(225, 15%, 24%)",
@@ -981,24 +984,26 @@ function AffidavitAppContent() {
                     <img
                       src={user.avatarUrl}
                       alt={user.name || "User"}
-                      className="h-6 w-6 rounded-full object-cover border border-sky-400/60 shrink-0"
+                      className="h-6 w-6 sm:h-6 sm:w-6 rounded-full object-cover border border-sky-400/60 shrink-0"
                     />
                   ) : (
-                    <User className="h-3.5 w-3.5 text-slate-400" />
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-500/20 text-sky-400 font-bold text-[11px]">
+                      {user.name?.[0] || <User className="h-3.5 w-3.5 text-slate-400" />}
+                    </div>
                   )}
-                  <span className="max-w-[120px] truncate font-medium">
-                    {user.name || user.email?.split("@")[0] || user.phone || "My Account"}
+                  <span className="hidden md:inline max-w-[110px] truncate font-medium">
+                    {user.name || user.email?.split("@")[0] || user.phone || "Account"}
                   </span>
-                  <Settings className="h-3.5 w-3.5 text-slate-400 ml-0.5" />
+                  <Settings className="h-3.5 w-3.5 text-slate-400 hidden sm:inline ml-0.5" />
                 </button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowAuthModal(true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold px-4 py-1.5 text-[13px] transition-all hover:shadow-[0_0_20px_rgba(56,189,248,0.35)] active:scale-95"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] transition-all hover:shadow-[0_0_20px_rgba(56,189,248,0.35)] active:scale-95"
                 >
-                  Sign In / Register
+                  Sign In
                 </button>
               </div>
             )}
