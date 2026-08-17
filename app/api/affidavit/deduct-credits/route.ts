@@ -99,7 +99,16 @@ export async function POST(req: NextRequest) {
             minute: "2-digit",
             hour12: true,
           }),
-          timestamp: new Date().toISOString(),
+          timestamp: new Date().toLocaleString("en-IN", {
+            timeZone: "Asia/Kolkata",
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: true,
+          }),
           // Complete Filled Client Form Data
           applicant_name: formData?.applicant_name || "",
           guardian_type: formData?.guardian_type || "",
