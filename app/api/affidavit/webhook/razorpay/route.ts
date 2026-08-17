@@ -18,6 +18,10 @@ if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
+    if (!rawBody || rawBody.trim() === "") {
+      return NextResponse.json({ received: true });
+    }
+
     const signature = req.headers.get("x-razorpay-signature");
 
     const webhookSecret =
