@@ -167,6 +167,7 @@ function AffidavitAppContent() {
   const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string>("#");
   const [generatedApplicantName, setGeneratedApplicantName] = useState<string>("");
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [printAdvocateOnPdf, setPrintAdvocateOnPdf] = useState<boolean>(false); // Default OFF for cybercafes / physical stamp seals
 
   // Auto-formatted today's date
   const getTodayDate = () => {
@@ -776,7 +777,9 @@ function AffidavitAppContent() {
         errors.verification_date = "Verification date must be today or a future date";
       }
     }
-    if (!formData.advocate.trim()) errors.advocate = "Advocate selection is required";
+    if (printAdvocateOnPdf && !formData.advocate.trim()) {
+      errors.advocate = "Advocate name & enrollment is required when Print on Document is ON";
+    }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -811,12 +814,20 @@ function AffidavitAppContent() {
     setFormSubmitting(true);
     setGeneralError(null);
 
+    // Prepare payload (if OFF, advocate is blank string so backend leaves empty space for rubber seal)
+    const payloadToSend = {
+      ...formData,
+      advocate: printAdvocateOnPdf ? formData.advocate.trim() : "",
+      include_advocate: printAdvocateOnPdf,
+      print_advocate: printAdvocateOnPdf,
+    };
+
     try {
       // 1. Call n8n webhook backend
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payloadToSend),
       });
 
       if (!res.ok) {
@@ -833,7 +844,7 @@ function AffidavitAppContent() {
             userId: user.id,
             affidavitType: "caa",
             pageCount: 3,
-            formData,
+            formData: payloadToSend,
           }),
         });
 
@@ -1968,29 +1979,88 @@ function AffidavitAppContent() {
                   </div>
 
                   <div className="sm:col-span-2">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-[13px] font-medium text-slate-300">
-                        Identified By (Advocate) <span className="text-rose-400">*</span>
-                      </label>
-                      {user && (
-                        <button
-                          type="button"
-                          onClick={() => setShowSettingsModal(true)}
-                          className="text-[12px] text-sky-400 hover:underline flex items-center gap-1"
-                        >
-                          <Settings className="h-3 w-3" /> Edit Saved Defaults
-                        </button>
-                      )}
+                    {/* Header with Title, On/Off Toggle Button, and Edit Defaults */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <label className="block text-[13px] font-medium text-slate-200">
+                          Identified By (Advocate)
+                          {printAdvocateOnPdf && <span className="text-rose-400 ml-1">*</span>}
+                        </label>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        {/* ON / OFF Toggle Button (Default: OFF) */}
+                        <div className="flex items-center gap-2 bg-slate-900/90 border border-slate-700/80 rounded-xl p-1 shadow-inner">
+                          <span className="text-[11px] font-medium text-slate-400 pl-1.5 hidden xs:inline">
+                            Print on Affidavit:
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setPrintAdvocateOnPdf(!printAdvocateOnPdf)}
+                            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[12px] font-bold transition-all duration-200 ${
+                              printAdvocateOnPdf
+                                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+                                : "bg-slate-800 text-slate-400 border border-slate-700 hover:text-slate-200"
+                            }`}
+                            title={
+                              printAdvocateOnPdf
+                                ? "Advocate Name & Enrollment WILL be printed below 'Identified by me' on the final PDF."
+                                : "OFF (Default): Leaves blank space below 'Identified by me' for physical rubber seal & pen signature."
+                            }
+                          >
+                            <span
+                              className={`h-2 w-2 rounded-full transition-colors ${
+                                printAdvocateOnPdf ? "bg-emerald-400 animate-pulse" : "bg-slate-500"
+                              }`}
+                            />
+                            {printAdvocateOnPdf ? "ON (Print Name)" : "OFF (Leave Blank)"}
+                          </button>
+                        </div>
+
+                        {user && (
+                          <button
+                            type="button"
+                            onClick={() => setShowSettingsModal(true)}
+                            className="text-[12px] text-sky-400 hover:underline flex items-center gap-1"
+                          >
+                            <Settings className="h-3 w-3" /> Edit Defaults
+                          </button>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Status helper banner */}
+                    {!printAdvocateOnPdf ? (
+                      <div className="mb-2.5 flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-[12px] text-amber-300/90">
+                        <span className="text-amber-400 mt-0.5">ℹ️</span>
+                        <span>
+                          <strong className="text-amber-200">OFF (Default for Cybercafes & Notaries):</strong> The affidavit will print &ldquo;<strong>Identified by me</strong>&rdquo; with <strong>clean blank space below</strong> so any advocate can stamp their physical rubber seal and sign.
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="mb-2.5 flex items-start gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-[12px] text-emerald-300">
+                        <span className="text-emerald-400 mt-0.5">✓</span>
+                        <span>
+                          <strong className="text-emerald-200">ON:</strong> The advocate name & enrollment number below will be printed under &ldquo;<strong>Identified by me</strong>&rdquo; in the final document.
+                        </span>
+                      </div>
+                    )}
+
                     <input
                       type="text"
                       name="advocate"
                       value={formData.advocate}
                       onChange={handleInputChange}
-                      placeholder="e.g., Debabrata Sarkar, Adv, F/1675/856/2020"
-                      className="w-full rounded-lg border px-3.5 py-2.5 text-[14px] text-white focus:border-sky-400 focus:outline-none"
+                      placeholder={
+                        printAdvocateOnPdf
+                          ? "e.g., Debabrata Sarkar, Adv, F/1675/856/2020"
+                          : "Optional / Saved preset (will not print while OFF)"
+                      }
+                      className={`w-full rounded-lg border px-3.5 py-2.5 text-[14px] text-white focus:border-sky-400 focus:outline-none transition-opacity ${
+                        !printAdvocateOnPdf ? "opacity-75 bg-slate-950/60" : ""
+                      }`}
                       style={{
-                        backgroundColor: "hsl(225, 20%, 10%)",
+                        backgroundColor: !printAdvocateOnPdf ? "hsl(225, 20%, 7%)" : "hsl(225, 20%, 10%)",
                         borderColor: formErrors.advocate ? "#F43F5E" : "hsl(225, 15%, 20%)",
                       }}
                     />
@@ -2000,12 +2070,13 @@ function AffidavitAppContent() {
                       <span className="text-[11px] text-slate-500 font-mono">Example:</span>
                       <button
                         type="button"
-                        onClick={() =>
+                        onClick={() => {
                           setFormData((prev) => ({
                             ...prev,
                             advocate: "Debabrata Sarkar, Adv, F/1675/856/2020",
-                          }))
-                        }
+                          }));
+                          setPrintAdvocateOnPdf(true);
+                        }}
                         className="rounded-md border border-slate-700 bg-slate-900/80 px-2 py-0.5 text-[11px] text-slate-400 hover:border-sky-400 hover:text-sky-300 transition-colors"
                       >
                         Debabrata Sarkar, Adv

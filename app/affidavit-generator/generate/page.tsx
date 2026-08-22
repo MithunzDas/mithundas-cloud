@@ -104,6 +104,7 @@ function AffidavitGenerateContent() {
   const [paymentSuccessMsg, setPaymentSuccessMsg] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [printAdvocateOnPdf, setPrintAdvocateOnPdf] = useState<boolean>(false); // Default OFF for cybercafes
 
   // Today's auto-generated verification date (DD/MM/YYYY)
   const today = new Date();
@@ -600,17 +601,59 @@ function AffidavitGenerateContent() {
                         </div>
                       )}
 
+                      {/* ON / OFF Toggle for Advocate Details */}
+                      <div className="md:col-span-2 rounded-xl border border-border-subtle bg-background-elevated/40 p-4 space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <span className="font-sans text-small font-bold text-text-primary">
+                              Print Advocate Name & Seal on Final Document
+                            </span>
+                            <p className="font-sans text-[12px] text-text-tertiary">
+                              Choose whether to print advocate details or leave blank space for a physical rubber stamp.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setPrintAdvocateOnPdf(!printAdvocateOnPdf)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all ${
+                              printAdvocateOnPdf
+                                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+                                : "bg-slate-800 text-slate-400 border border-slate-700 hover:text-slate-200"
+                            }`}
+                          >
+                            <span
+                              className={`h-2 w-2 rounded-full transition-colors ${
+                                printAdvocateOnPdf ? "bg-emerald-400 animate-pulse" : "bg-slate-500"
+                              }`}
+                            />
+                            {printAdvocateOnPdf ? "ON (Print Details)" : "OFF (Leave Blank Space)"}
+                          </button>
+                        </div>
+
+                        {!printAdvocateOnPdf ? (
+                          <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-[12px] text-amber-300">
+                            ℹ️ <strong>OFF (Default for Cybercafes):</strong> The final affidavit will print &ldquo;<strong>Identified by me</strong>&rdquo; with <strong>blank space below</strong> so any available advocate can stamp their physical rubber seal and sign.
+                          </div>
+                        ) : (
+                          <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-[12px] text-emerald-300">
+                            ✓ <strong>ON:</strong> The advocate name & enrollment below will be printed under &ldquo;<strong>Identified by me</strong>&rdquo;.
+                          </div>
+                        )}
+                      </div>
+
                       <div>
                         <label className="block font-mono text-[12px] uppercase text-text-secondary mb-1.5">
-                          Advocate Name
+                          Advocate Name {printAdvocateOnPdf && <span className="text-accent-rose">*</span>}
                         </label>
                         <input
                           type="text"
                           name="advocateName"
                           value={formData.advocateName}
                           onChange={handleInputChange}
-                          placeholder="Advocate Full Name"
-                          className="w-full rounded-lg border border-border-subtle bg-background-app px-3.5 py-2.5 font-sans text-small text-text-primary focus:border-accent-cyan focus:outline-none"
+                          placeholder={printAdvocateOnPdf ? "Advocate Full Name" : "Optional / Saved preset"}
+                          className={`w-full rounded-lg border border-border-subtle bg-background-app px-3.5 py-2.5 font-sans text-small text-text-primary focus:border-accent-cyan focus:outline-none ${
+                            !printAdvocateOnPdf ? "opacity-75" : ""
+                          }`}
                         />
                       </div>
 
@@ -1202,10 +1245,18 @@ function AffidavitGenerateContent() {
                 <div className="pt-10 flex justify-between items-end">
                   <div>
                     <p className="font-semibold">Identified by me:</p>
-                    <p className="mt-8 font-bold">{formData.advocateName || "Advocate"}</p>
-                    <p className="text-[9.5pt] text-gray-700">
-                      Advocate, {formData.advocateEnrollment || "Bar Council"}
-                    </p>
+                    {printAdvocateOnPdf ? (
+                      <>
+                        <p className="mt-8 font-bold">{formData.advocateName || "Advocate"}</p>
+                        <p className="text-[9.5pt] text-gray-700">
+                          Advocate, {formData.advocateEnrollment || "Bar Council"}
+                        </p>
+                      </>
+                    ) : (
+                      <div className="mt-12 text-[9pt] text-gray-400 font-mono italic print:text-transparent select-none">
+                        [ Space for Advocate Seal & Signature ]
+                      </div>
+                    )}
                   </div>
                   <div className="text-right">
                     <div className="inline-block border-t border-black pt-1 px-8 text-center font-bold">
@@ -1296,10 +1347,18 @@ function AffidavitGenerateContent() {
                 <div className="pt-10 flex justify-between items-end">
                   <div>
                     <p className="font-semibold">Identified by me:</p>
-                    <p className="mt-8 font-bold">{formData.advocateName || "Advocate"}</p>
-                    <p className="text-[9.5pt] text-gray-700">
-                      Advocate, {formData.advocateEnrollment || "Bar Council"}
-                    </p>
+                    {printAdvocateOnPdf ? (
+                      <>
+                        <p className="mt-8 font-bold">{formData.advocateName || "Advocate"}</p>
+                        <p className="text-[9.5pt] text-gray-700">
+                          Advocate, {formData.advocateEnrollment || "Bar Council"}
+                        </p>
+                      </>
+                    ) : (
+                      <div className="mt-12 text-[9pt] text-gray-400 font-mono italic print:text-transparent select-none">
+                        [ Space for Advocate Seal & Signature ]
+                      </div>
+                    )}
                   </div>
                   <div className="text-right">
                     <div className="inline-block border-t border-black pt-1 px-8 text-center font-bold">
@@ -1386,10 +1445,18 @@ function AffidavitGenerateContent() {
                 <div className="pt-10 flex justify-between items-end">
                   <div>
                     <p className="font-semibold">Identified by me:</p>
-                    <p className="mt-8 font-bold">{formData.advocateName || "Advocate"}</p>
-                    <p className="text-[9.5pt] text-gray-700">
-                      Advocate, {formData.advocateEnrollment || "Bar Council"}
-                    </p>
+                    {printAdvocateOnPdf ? (
+                      <>
+                        <p className="mt-8 font-bold">{formData.advocateName || "Advocate"}</p>
+                        <p className="text-[9.5pt] text-gray-700">
+                          Advocate, {formData.advocateEnrollment || "Bar Council"}
+                        </p>
+                      </>
+                    ) : (
+                      <div className="mt-12 text-[9pt] text-gray-400 font-mono italic print:text-transparent select-none">
+                        [ Space for Advocate Seal & Signature ]
+                      </div>
+                    )}
                   </div>
                   <div className="text-right">
                     <div className="inline-block border-t border-black pt-1 px-8 text-center font-bold">
