@@ -641,49 +641,51 @@ function AffidavitGenerateContent() {
                         )}
                       </div>
 
-                      <div>
-                        <label className="block font-mono text-[12px] uppercase text-text-secondary mb-1.5">
-                          Advocate Name {printAdvocateOnPdf && <span className="text-accent-rose">*</span>}
-                        </label>
-                        <input
-                          type="text"
-                          name="advocateName"
-                          value={formData.advocateName}
-                          onChange={handleInputChange}
-                          placeholder={printAdvocateOnPdf ? "Advocate Full Name" : "Optional / Saved preset"}
-                          className={`w-full rounded-lg border border-border-subtle bg-background-app px-3.5 py-2.5 font-sans text-small text-text-primary focus:border-accent-cyan focus:outline-none ${
-                            !printAdvocateOnPdf ? "opacity-75" : ""
-                          }`}
-                        />
-                      </div>
+                      {printAdvocateOnPdf ? (
+                        <>
+                          <div>
+                            <label className="block font-mono text-[12px] uppercase text-text-secondary mb-1.5">
+                              Advocate Name <span className="text-accent-rose">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              name="advocateName"
+                              value={formData.advocateName}
+                              onChange={handleInputChange}
+                              placeholder="Advocate Full Name"
+                              className="w-full rounded-lg border border-border-subtle bg-background-app px-3.5 py-2.5 font-sans text-small text-text-primary focus:border-accent-cyan focus:outline-none"
+                            />
+                          </div>
 
-                      <div>
-                        <label className="block font-mono text-[12px] uppercase text-text-secondary mb-1.5">
-                          Bar Council Enrollment No.
-                        </label>
-                        <input
-                          type="text"
-                          name="advocateEnrollment"
-                          value={formData.advocateEnrollment}
-                          onChange={handleInputChange}
-                          placeholder="e.g., WB/1675/856/2020"
-                          className="w-full rounded-lg border border-border-subtle bg-background-app px-3.5 py-2.5 font-sans text-small text-text-primary focus:border-accent-cyan focus:outline-none"
-                        />
-                      </div>
+                          <div>
+                            <label className="block font-mono text-[12px] uppercase text-text-secondary mb-1.5">
+                              Bar Council Enrollment No.
+                            </label>
+                            <input
+                              type="text"
+                              name="advocateEnrollment"
+                              value={formData.advocateEnrollment}
+                              onChange={handleInputChange}
+                              placeholder="e.g., WB/1675/856/2020"
+                              className="w-full rounded-lg border border-border-subtle bg-background-app px-3.5 py-2.5 font-sans text-small text-text-primary focus:border-accent-cyan focus:outline-none"
+                            />
+                          </div>
 
-                      <div>
-                        <label className="block font-mono text-[12px] uppercase text-text-secondary mb-1.5">
-                          Advocate Contact No.
-                        </label>
-                        <input
-                          type="text"
-                          name="advocatePhone"
-                          value={formData.advocatePhone}
-                          onChange={handleInputChange}
-                          placeholder="+91 9876543210"
-                          className="w-full rounded-lg border border-border-subtle bg-background-app px-3.5 py-2.5 font-sans text-small text-text-primary focus:border-accent-cyan focus:outline-none"
-                        />
-                      </div>
+                          <div>
+                            <label className="block font-mono text-[12px] uppercase text-text-secondary mb-1.5">
+                              Advocate Contact No.
+                            </label>
+                            <input
+                              type="text"
+                              name="advocatePhone"
+                              value={formData.advocatePhone}
+                              onChange={handleInputChange}
+                              placeholder="+91 9876543210"
+                              className="w-full rounded-lg border border-border-subtle bg-background-app px-3.5 py-2.5 font-sans text-small text-text-primary focus:border-accent-cyan focus:outline-none"
+                            />
+                          </div>
+                        </>
+                      ) : null}
 
                       <div>
                         <label className="block font-mono text-[12px] uppercase text-text-secondary mb-1.5">

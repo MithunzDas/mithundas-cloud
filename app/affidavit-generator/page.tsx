@@ -2046,61 +2046,63 @@ function AffidavitAppContent() {
                       </div>
                     )}
 
-                    <input
-                      type="text"
-                      name="advocate"
-                      value={formData.advocate}
-                      onChange={handleInputChange}
-                      placeholder={
-                        printAdvocateOnPdf
-                          ? "e.g., Debabrata Sarkar, Adv, F/1675/856/2020"
-                          : "Optional / Saved preset (will not print while OFF)"
-                      }
-                      className={`w-full rounded-lg border px-3.5 py-2.5 text-[14px] text-white focus:border-sky-400 focus:outline-none transition-opacity ${
-                        !printAdvocateOnPdf ? "opacity-75 bg-slate-950/60" : ""
-                      }`}
-                      style={{
-                        backgroundColor: !printAdvocateOnPdf ? "hsl(225, 20%, 7%)" : "hsl(225, 20%, 10%)",
-                        borderColor: formErrors.advocate ? "#F43F5E" : "hsl(225, 15%, 20%)",
-                      }}
-                    />
+                    {printAdvocateOnPdf ? (
+                      <div className="space-y-3 mt-3 pt-3 border-t border-slate-800/80 animate-in fade-in duration-200">
+                        <div>
+                          <label className="block text-[12px] font-medium text-slate-300 mb-1">
+                            Advocate Name & Enrollment Number <span className="text-rose-400">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            name="advocate"
+                            value={formData.advocate}
+                            onChange={handleInputChange}
+                            placeholder="e.g., Debabrata Sarkar, Adv, F/1675/856/2020"
+                            className="w-full rounded-lg border px-3.5 py-2.5 text-[14px] text-white focus:border-sky-400 focus:outline-none"
+                            style={{
+                              backgroundColor: "hsl(225, 20%, 10%)",
+                              borderColor: formErrors.advocate ? "#F43F5E" : "hsl(225, 15%, 20%)",
+                            }}
+                          />
+                        </div>
 
-                    {/* Quick Example / Presets */}
-                    <div className="flex flex-wrap items-center gap-2 mt-2">
-                      <span className="text-[11px] text-slate-500 font-mono">Example:</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            advocate: "Debabrata Sarkar, Adv, F/1675/856/2020",
-                          }));
-                          setPrintAdvocateOnPdf(true);
-                        }}
-                        className="rounded-md border border-slate-700 bg-slate-900/80 px-2 py-0.5 text-[11px] text-slate-400 hover:border-sky-400 hover:text-sky-300 transition-colors"
-                      >
-                        Debabrata Sarkar, Adv
-                      </button>
-                    </div>
+                        {/* Quick Example / Presets */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-[11px] text-slate-500 font-mono">Example:</span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                advocate: "Debabrata Sarkar, Adv, F/1675/856/2020",
+                              }))
+                            }
+                            className="rounded-md border border-slate-700 bg-slate-900/80 px-2 py-0.5 text-[11px] text-slate-400 hover:border-sky-400 hover:text-sky-300 transition-colors"
+                          >
+                            Debabrata Sarkar, Adv
+                          </button>
+                        </div>
 
-                    {/* 1-Click Save as Default Profile Checkbox */}
-                    {user && (
-                      <label className="flex items-center gap-2.5 cursor-pointer text-[12px] text-slate-300 hover:text-white transition-colors mt-3.5 p-2 rounded-lg bg-slate-900/40 border border-slate-800">
-                        <input
-                          type="checkbox"
-                          checked={saveAsDefaultAdvocate}
-                          onChange={(e) => setSaveAsDefaultAdvocate(e.target.checked)}
-                          className="rounded border-slate-700 bg-slate-900 text-sky-500 focus:ring-0 h-4 w-4 shrink-0"
-                        />
-                        <span className="text-slate-300 leading-tight">
-                          ⭐ <strong className="text-white">Save as My Default Profile</strong> — Auto-fill this Advocate & Court on all my future affidavits.
-                        </span>
-                      </label>
-                    )}
+                        {/* 1-Click Save as Default Profile Checkbox */}
+                        {user && (
+                          <label className="flex items-center gap-2.5 cursor-pointer text-[12px] text-slate-300 hover:text-white transition-colors mt-2 p-2 rounded-lg bg-slate-900/40 border border-slate-800">
+                            <input
+                              type="checkbox"
+                              checked={saveAsDefaultAdvocate}
+                              onChange={(e) => setSaveAsDefaultAdvocate(e.target.checked)}
+                              className="rounded border-slate-700 bg-slate-900 text-sky-500 focus:ring-0 h-4 w-4 shrink-0"
+                            />
+                            <span className="text-slate-300 leading-tight">
+                              ⭐ <strong className="text-white">Save as My Default Profile</strong> — Auto-fill this Advocate & Court on all my future affidavits.
+                            </span>
+                          </label>
+                        )}
 
-                    {formErrors.advocate && (
-                      <p className="text-rose-400 text-[12px] mt-1">{formErrors.advocate}</p>
-                    )}
+                        {formErrors.advocate && (
+                          <p className="text-rose-400 text-[12px] mt-1">{formErrors.advocate}</p>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </div>
