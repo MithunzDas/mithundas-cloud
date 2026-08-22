@@ -814,10 +814,10 @@ function AffidavitAppContent() {
     setFormSubmitting(true);
     setGeneralError(null);
 
-    // Prepare payload (if OFF, advocate is blank string so backend leaves empty space for rubber seal)
+    // Prepare payload (if OFF, send zero-width space "\u200B" so backend passes validation and leaves clean empty space for rubber seal)
     const payloadToSend = {
       ...formData,
-      advocate: printAdvocateOnPdf ? formData.advocate.trim() : "",
+      advocate: printAdvocateOnPdf ? formData.advocate.trim() : "\u200B",
       include_advocate: printAdvocateOnPdf,
       print_advocate: printAdvocateOnPdf,
     };
