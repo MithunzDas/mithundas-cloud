@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
           name: name || null,
           avatarUrl: picture || null,
           googleId: googleId || null,
-          creditBalance: 0,
+          creditBalance: 3, // 🎁 3 Free Welcome Credits for 1st Time Sign-up (1 Full Affidavit Free)
         },
       });
     }

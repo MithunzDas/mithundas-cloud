@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
             ...(isEmail ? { email: trimmed } : { phone: trimmed }),
             otpCode,
             otpExpiresAt,
-            creditBalance: 0,
+            creditBalance: 3, // 🎁 3 Free Welcome Credits for 1st Time Sign-up
           },
         });
       }

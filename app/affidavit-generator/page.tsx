@@ -1082,6 +1082,28 @@ function AffidavitAppContent() {
               </p>
             </div>
 
+            {/* 🎁 Welcome Gift Banner for New Visitors / Free Credit Users */}
+            {!user ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingActionAfterAuth("generate");
+                  setShowAuthModal(true);
+                  setAuthMsg("🎁 Sign in with Google to claim your 3 Free Welcome Credits!");
+                }}
+                className="mb-6 inline-flex items-center gap-2.5 rounded-full bg-gradient-to-r from-emerald-500/20 via-sky-500/20 to-emerald-500/20 border border-emerald-500/40 px-4 py-1.5 text-[13px] text-emerald-300 hover:border-emerald-400 transition-all hover:scale-105 shadow-md shadow-emerald-500/10 cursor-pointer"
+              >
+                <span>🎁</span>
+                <span className="font-semibold">Sign in with Google to get 3 Free Credits (1 Free Affidavit)</span>
+                <span className="text-sky-400 font-mono text-[11px] underline">Claim →</span>
+              </button>
+            ) : user.creditBalance === 3 && !user.isFirstPurchaseDone ? (
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-4 py-1.5 text-[12.5px] text-emerald-300">
+                <span>🎁</span>
+                <span className="font-semibold">3 Free Welcome Credits Active (1 Full Affidavit Ready to Generate)</span>
+              </div>
+            ) : null}
+
             {/* Dashboard Action Card with Smooth Hover Glow & Lift */}
             <div
               className="group relative w-full max-w-[440px] rounded-2xl border p-8 text-center transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-[0_12px_40px_rgba(0,198,255,0.18)] cursor-pointer"
@@ -2376,9 +2398,24 @@ function AffidavitAppContent() {
                 </button>
               </div>
 
+              {/* 🎁 3 Free Credits Sign-in Bonus Callout Banner */}
+              <div className="mt-4 p-3.5 rounded-xl bg-gradient-to-r from-emerald-500/15 via-sky-500/15 to-emerald-500/15 border border-emerald-500/30 text-[13px] flex items-center gap-3 shadow-lg shadow-emerald-500/5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-300 text-[18px]">
+                  🎁
+                </div>
+                <div>
+                  <strong className="text-emerald-300 block font-semibold text-[13px]">
+                    3 Free Credits Welcome Bonus!
+                  </strong>
+                  <span className="text-slate-300 text-[11.5px] leading-tight block">
+                    Sign in with Google now to get 3 credits (1 Full 3-Page Affidavit) completely free.
+                  </span>
+                </div>
+              </div>
+
               {/* Status Message Banners */}
               {authMsg && (
-                <div className="mt-4 p-3 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-300 text-[12px] flex items-center gap-2 animate-in fade-in">
+                <div className="mt-3 p-3 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-300 text-[12px] flex items-center gap-2 animate-in fade-in">
                   <Sparkles className="h-4 w-4 shrink-0 text-sky-400" />
                   <span>{authMsg}</span>
                 </div>
