@@ -1088,8 +1088,8 @@ function AffidavitAppContent() {
                 type="button"
                 onClick={() => {
                   setPendingActionAfterAuth("generate");
+                  setAuthMsg(null);
                   setShowAuthModal(true);
-                  setAuthMsg("🎁 Sign in with Google to claim your 3 Free Welcome Credits!");
                 }}
                 className="mb-6 inline-flex items-center gap-2.5 rounded-full bg-gradient-to-r from-emerald-500/20 via-sky-500/20 to-emerald-500/20 border border-emerald-500/40 px-4 py-1.5 text-[13px] text-emerald-300 hover:border-emerald-400 transition-all hover:scale-105 shadow-md shadow-emerald-500/10 cursor-pointer"
               >
@@ -2413,8 +2413,8 @@ function AffidavitAppContent() {
                 </div>
               </div>
 
-              {/* Status Message Banners */}
-              {authMsg && (
+              {/* Status Message Banners (Action-specific alerts only) */}
+              {authMsg && !authMsg.includes("Welcome") && !authMsg.includes("Bonus") && (
                 <div className="mt-3 p-3 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-300 text-[12px] flex items-center gap-2 animate-in fade-in">
                   <Sparkles className="h-4 w-4 shrink-0 text-sky-400" />
                   <span>{authMsg}</span>
