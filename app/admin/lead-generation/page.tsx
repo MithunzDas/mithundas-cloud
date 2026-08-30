@@ -5,7 +5,7 @@ import { AdminNav } from "../components/AdminNav";
 import { LeadScraperForm } from "./components/LeadScraperForm";
 import { SearchHistoryList } from "./components/SearchHistoryList";
 import { LeadDataTable } from "./components/LeadDataTable";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Sparkles } from "lucide-react";
 
 export default function LeadGenerationAdminPage() {
   const [batches, setBatches] = useState<any[]>([]);
@@ -45,28 +45,28 @@ export default function LeadGenerationAdminPage() {
   }, [fetchLeads]);
 
   return (
-    <div className="min-h-screen bg-[#070a0f] text-text-primary pb-16">
+    <div className="min-h-screen bg-[#070a0f] text-text-primary pb-20">
       <AdminNav />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      <main className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 space-y-6">
         {/* Page Title & Status Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
           <div>
-            <h1 className="text-2xl font-bold font-sans flex items-center gap-2.5">
-              <span>B2B Lead Generation &amp; Outreach Command Center</span>
+            <h1 className="text-xl sm:text-2xl font-bold font-sans flex items-center gap-2.5 flex-wrap">
+              <span>B2B Lead Generation &amp; WhatsApp Outreach Command Center</span>
               <span className="text-xs px-2.5 py-1 rounded-full bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan font-mono font-bold">
                 DUAL-SYNC ENGINE
               </span>
             </h1>
             <p className="text-xs text-text-secondary font-mono mt-1">
-              Deep Google Maps Extraction ➔ 29-Column Enrichment ➔ Meta WhatsApp Cloud Outreach
+              Continuous Google Maps Deep Extraction ➔ 29-Column Enrichment ➔ Meta WhatsApp Cloud Outreach
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             <button
               onClick={() => { setIsLoading(true); fetchLeads(); }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 border border-border-app hover:border-brand-cyan text-xs font-mono text-text-secondary hover:text-brand-cyan transition-all"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/5 border border-border-app hover:border-brand-cyan text-xs font-mono text-text-secondary hover:text-brand-cyan transition-all shadow-sm"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-brand-cyan" : ""}`} />
               <span>Refresh DB</span>
@@ -74,26 +74,21 @@ export default function LeadGenerationAdminPage() {
           </div>
         </div>
 
-        {/* Top Scraper Form */}
+        {/* 1. Live Lead Extraction Control Panel */}
         <LeadScraperForm onSearchComplete={fetchLeads} />
 
-        {/* Desktop & Tablet Split View */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column: Search History & Quick Stats */}
-          <div className="lg:col-span-4 h-full">
-            <SearchHistoryList
-              batches={batches}
-              selectedBatchId={selectedBatchId}
-              onSelectBatch={(id) => setSelectedBatchId(id)}
-              onRefresh={fetchLeads}
-              metrics={metrics}
-            />
-          </div>
+        {/* 2. Full-Width Metrics Cards & Search Feeds Ribbon */}
+        <SearchHistoryList
+          batches={batches}
+          selectedBatchId={selectedBatchId}
+          onSelectBatch={(id) => setSelectedBatchId(id)}
+          onRefresh={fetchLeads}
+          metrics={metrics}
+        />
 
-          {/* Right Column: 29-Column Interactive Lead Grid */}
-          <div className="lg:col-span-8 h-full">
-            <LeadDataTable leads={leads} onRefresh={fetchLeads} />
-          </div>
+        {/* 3. Full-Width 100% Responsive 29-Column Lead Data Table */}
+        <div className="w-full">
+          <LeadDataTable leads={leads} onRefresh={fetchLeads} />
         </div>
       </main>
     </div>
