@@ -175,3 +175,67 @@ model AffidavitDownload {
   @@index([userId])
   @@index([affidavitType])
 }
+
+
+// ===== Lead Generation & Prospecting Engine Models =====
+
+model ScrapedLeadBatch {
+  id          String        @id @default(cuid())
+  batchId     String        @unique
+  category    String
+  city        String
+  searchQuery String
+  targetCount Int           @default(50)
+  totalFound  Int           @default(0)
+  hotCount    Int           @default(0)
+  createdAt   DateTime      @default(now())
+  leads       ScrapedLead[]
+
+  @@index([category, city])
+  @@index([createdAt])
+}
+
+model ScrapedLead {
+  id               String            @id @default(cuid())
+  leadId           String            @unique
+  batchId          String?
+  batch            ScrapedLeadBatch? @relation(fields: [batchId], references: [batchId], onDelete: SetNull)
+  placeId          String?
+  businessName     String
+  category         String
+  searchQuery      String?
+  city             String?
+  fullAddress      String?           @db.Text
+  phone            String?
+  whatsappNumber   String?
+  whatsappUrl      String?           @db.Text
+  email            String?
+  secondaryEmails  String?
+  website          String?           @db.Text
+  hasWebsite       Boolean           @default(false)
+  cmsTech          String?
+  instagramUrl     String?
+  facebookUrl      String?
+  linkedinUrl      String?
+  twitterUrl       String?
+  youtubeUrl       String?
+  rating           Float?            @default(0)
+  reviewCount      Int?              @default(0)
+  isOpen           Boolean           @default(true)
+  businessHours    String?
+  leadScore        Int?              @default(0)
+  leadTier         String?
+  recommendedPitch String?           @db.Text
+  gmapsUrl         String?           @db.Text
+  outreachStatus   String            @default("NEW") // "NEW", "SENT", "REPLIED", "CONVERTED", "REJECTED"
+  lastReplyMessage String?           @db.Text
+  contactedAt      DateTime?
+  repliedAt        DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([outreachStatus])
+  @@index([leadTier])
+  @@index([city, category])
+  @@index([phone])
+}

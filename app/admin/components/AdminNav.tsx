@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import Link from "next/navigation";
+import LinkNext from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, Calendar, ShieldCheck, Cpu, DollarSign } from "lucide-react";
+import { Users, Calendar, ShieldCheck, Cpu, DollarSign, Sparkles } from "lucide-react";
 
 export function AdminNav() {
   const pathname = usePathname();
@@ -10,6 +11,7 @@ export function AdminNav() {
   const isLeads = pathname?.includes("/admin/leads");
   const isBookings = pathname?.includes("/admin/bookings");
   const isFinance = pathname?.includes("/admin/finance");
+  const isLeadGen = pathname?.includes("/admin/lead-generation") || pathname?.includes("/admin/lead-genaration");
 
   return (
     <header className="sticky top-0 z-30 bg-[#0b0f17]/90 backdrop-blur-md border-b border-border-app px-6 py-3.5 mb-8">
@@ -31,7 +33,7 @@ export function AdminNav() {
 
         {/* Navigation Tabs */}
         <div className="flex items-center gap-2 bg-[#121824] p-1.5 rounded-xl border border-border-app/80">
-          <Link
+          <LinkNext
             href="/admin/bookings"
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               isBookings
@@ -41,9 +43,9 @@ export function AdminNav() {
           >
             <Calendar className="w-4 h-4" />
             <span>Discovery Meetings</span>
-          </Link>
+          </LinkNext>
 
-          <Link
+          <LinkNext
             href="/admin/finance"
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               isFinance
@@ -53,9 +55,9 @@ export function AdminNav() {
           >
             <DollarSign className="w-4 h-4 text-emerald-400" />
             <span>Financial Ledger</span>
-          </Link>
+          </LinkNext>
 
-          <Link
+          <LinkNext
             href="/admin/leads"
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               isLeads
@@ -65,7 +67,19 @@ export function AdminNav() {
           >
             <Users className="w-4 h-4" />
             <span>Leads Intake</span>
-          </Link>
+          </LinkNext>
+
+          <LinkNext
+            href="/admin/lead-generation"
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              isLeadGen
+                ? "bg-gradient-to-r from-brand-cyan/20 to-brand-indigo/20 text-brand-cyan border border-brand-cyan/40 shadow-sm ring-1 ring-brand-cyan/30"
+                : "text-text-secondary hover:text-text-primary hover:bg-white/5"
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-brand-cyan animate-pulse" />
+            <span className="font-semibold text-brand-cyan">Lead Generation</span>
+          </LinkNext>
         </div>
 
         {/* Security Indicator */}
