@@ -5,7 +5,7 @@ import { AdminNav } from "../components/AdminNav";
 import { LeadScraperForm } from "./components/LeadScraperForm";
 import { SearchHistoryList } from "./components/SearchHistoryList";
 import { LeadDataTable } from "./components/LeadDataTable";
-import { Sparkles, RefreshCw, Layers } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 export default function LeadGenerationAdminPage() {
   const [batches, setBatches] = useState<any[]>([]);
@@ -77,19 +77,20 @@ export default function LeadGenerationAdminPage() {
         {/* Top Scraper Form */}
         <LeadScraperForm onSearchComplete={fetchLeads} />
 
-        {/* Desktop & Tablet Split View (Left: Search History | Right: 29-Column Table) */}
+        {/* Desktop & Tablet Split View */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column: Search History & Quick Stats (4 cols on lg) */}
+          {/* Left Column: Search History & Quick Stats */}
           <div className="lg:col-span-4 h-full">
             <SearchHistoryList
               batches={batches}
               selectedBatchId={selectedBatchId}
               onSelectBatch={(id) => setSelectedBatchId(id)}
+              onRefresh={fetchLeads}
               metrics={metrics}
             />
           </div>
 
-          {/* Right Column: 29-Column Interactive Lead Grid (8 cols on lg) */}
+          {/* Right Column: 29-Column Interactive Lead Grid */}
           <div className="lg:col-span-8 h-full">
             <LeadDataTable leads={leads} onRefresh={fetchLeads} />
           </div>

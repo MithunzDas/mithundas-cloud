@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
       take: 500
     });
 
-    // Calculate quick metrics
+    // Calculate metrics
     const totalLeads = await prisma.scrapedLead.count();
     const hotLeads = await prisma.scrapedLead.count({ where: { leadScore: { gte: 70 } } });
     const pitchedLeads = await prisma.scrapedLead.count({ where: { outreachStatus: "SENT" } });
@@ -89,6 +89,40 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ success: true, updatedCount: leadIds.length });
   } catch (error: any) {
     console.error("Error updating lead status:", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const batchId = searchParams.get("batchId");
+    
+    // 1. Batch Deletion (Deletes batch + all associated leads)
+    if (batchId) {
+      await prisma.scrapedLead.deleteMany({
+        where: { batchId }
+      });
+      await prisma.scrapedLeadBatch.deleteMany({
+        where: { batchId }
+      });
+      return NextResponse.json({ success: true, message: `Batch ${batchId} and all associated leads deleted` });
+    }
+
+    // 2. Multiple Leads Deletion
+    const body = await req.json().catch(() => ({}));
+    const { leadIds } = body;
+
+    if (leadIds && Array.isArray(leadIds) && leadIds.length > 0) {
+      const deleted = await prisma.scrapedLead.deleteMany({
+        where: { leadId: { in: leadIds } }
+      });
+      return NextResponse.json({ success: true, deletedCount: deleted.count });
+    }
+
+    return NextResponse.json({ success: false, error: "No batchId or leadIds provided for deletion" }, { status: 400 });
+  } catch (error: any) {
+    console.error("Error deleting leads / batch:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

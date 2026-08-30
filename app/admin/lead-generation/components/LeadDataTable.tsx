@@ -13,10 +13,10 @@ import {
   Square,
   Search,
   MessageCircle,
-  Filter,
+  Trash2,
   CheckCircle,
-  Clock,
-  Sparkles
+  AlertCircle,
+  Zap
 } from "lucide-react";
 
 interface LeadItem {
@@ -56,7 +56,8 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
   const [filterTier, setFilterTier] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [isSendingOutreach, setIsSendingOutreach] = useState(false);
-  const [outreachResult, setOutreachResult] = useState<string>("");
+  const [isDeletingLeads, setIsDeletingLeads] = useState(false);
+  const [actionMessage, setActionMessage] = useState<string>("");
 
   // Filtered Leads
   const filteredLeads = leads.filter((lead) => {
@@ -87,18 +88,72 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
     }
   };
 
+  // Delete Selected Leads
+  const handleDeleteSelected = async () => {
+    if (selectedLeadIds.length === 0) return;
+    if (!confirm(`Are you sure you want to permanently delete ${selectedLeadIds.length} selected lead(s) from the database?`)) {
+      return;
+    }
+
+    setIsDeletingLeads(true);
+    setActionMessage(`Deleting ${selectedLeadIds.length} lead(s) from database...`);
+
+    try {
+      const res = await fetch("/api/admin/lead-generation/leads", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadIds: selectedLeadIds })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setActionMessage(`✅ Successfully deleted ${data.deletedCount} lead(s) from database!`);
+        setSelectedLeadIds([]);
+        setTimeout(() => {
+          onRefresh();
+          setActionMessage("");
+        }, 1500);
+      } else {
+        setActionMessage(`❌ Error deleting: ${data.error}`);
+      }
+    } catch (err: any) {
+      setActionMessage(`❌ Network error: ${err.message}`);
+    } finally {
+      setIsDeletingLeads(false);
+    }
+  };
+
+  // Single Lead Delete
+  const handleDeleteOne = async (leadId: string, name: string) => {
+    if (!confirm(`Delete "${name}" from database?`)) return;
+    try {
+      const res = await fetch("/api/admin/lead-generation/leads", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadIds: [leadId] })
+      });
+      const data = await res.json();
+      if (data.success) {
+        onRefresh();
+      }
+    } catch (err: any) {
+      alert(`Failed to delete: ${err.message}`);
+    }
+  };
+
+  // Launch Meta WhatsApp Outreach
   const handleLaunchOutreach = async () => {
     if (selectedLeadIds.length === 0) {
       alert("Please select at least 1 lead to send WhatsApp message.");
       return;
     }
 
-    if (!confirm(`Are you sure you want to send official WhatsApp outreach to ${selectedLeadIds.length} businesses via Meta Cloud API?`)) {
+    if (!confirm(`Send official Meta WhatsApp outreach to ${selectedLeadIds.length} selected businesses?`)) {
       return;
     }
 
     setIsSendingOutreach(true);
-    setOutreachResult(`Sending Meta WhatsApp template to ${selectedLeadIds.length} leads...`);
+    setActionMessage(`Dispatching Meta WhatsApp templates to ${selectedLeadIds.length} leads...`);
 
     try {
       const res = await fetch("/api/admin/lead-generation/outreach", {
@@ -112,17 +167,17 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
 
       const data = await res.json();
       if (data.success) {
-        setOutreachResult(`✅ Successfully dispatched ${data.sentCount} / ${data.totalProcessed} WhatsApp messages!`);
+        setActionMessage(`✅ Dispatched ${data.sentCount} / ${data.totalProcessed} WhatsApp messages!`);
         setSelectedLeadIds([]);
         setTimeout(() => {
           onRefresh();
-          setOutreachResult("");
+          setActionMessage("");
         }, 2000);
       } else {
-        setOutreachResult(`❌ Error: ${data.error || "Failed to dispatch messages"}`);
+        setActionMessage(`❌ Outreach Error: ${data.error || "Failed to send"}`);
       }
     } catch (err: any) {
-      setOutreachResult(`❌ Error: ${err.message}`);
+      setActionMessage(`❌ Error: ${err.message}`);
     } finally {
       setIsSendingOutreach(false);
     }
@@ -131,21 +186,9 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
   const handleExportCSV = () => {
     if (filteredLeads.length === 0) return;
     const headers = [
-      "Business Name",
-      "Category",
-      "City",
-      "Address",
-      "Phone",
-      "WhatsApp Number",
-      "Email",
-      "Website",
-      "CMS Tech",
-      "Rating",
-      "Review Count",
-      "Lead Score",
-      "Lead Tier",
-      "Outreach Status",
-      "Google Maps URL"
+      "Business Name", "Category", "City", "Address", "Phone",
+      "WhatsApp Number", "Email", "Website", "CMS Tech", "Rating",
+      "Review Count", "Lead Score", "Lead Tier", "Outreach Status", "Google Maps URL"
     ];
 
     const rows = filteredLeads.map((l) => [
@@ -180,14 +223,14 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
     <div className="bg-[#101726]/90 border border-border-app rounded-2xl p-6 backdrop-blur-xl flex flex-col h-full shadow-2xl">
       {/* Table Header & Controls */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5 pb-4 border-b border-border-app">
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 min-w-[240px]">
+        <div className="flex items-center gap-2.5 flex-wrap flex-1">
+          <div className="relative min-w-[220px]">
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search business, phone, city..."
-              className="w-full bg-[#0b0f17] border border-border-app rounded-xl pl-9 pr-4 py-2 text-xs text-text-primary placeholder:text-gray-600 focus:outline-none focus:border-brand-cyan"
+              className="w-full bg-[#0b0f17] border border-border-app rounded-xl pl-9 pr-4 py-2 text-xs text-text-primary placeholder:text-gray-600 focus:outline-none focus:border-brand-cyan transition-colors"
             />
             <Search className="w-3.5 h-3.5 text-gray-500 absolute left-3 top-2.5 pointer-events-none" />
           </div>
@@ -209,13 +252,24 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
           >
             <option value="all">All Statuses</option>
             <option value="NEW">🆕 New</option>
-            <option value="SENT">📤 Pitched (Sent)</option>
+            <option value="SENT">📤 Pitched</option>
             <option value="REPLIED">💬 Replied</option>
           </select>
         </div>
 
         {/* Bulk Action Buttons */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 flex-wrap">
+          {selectedLeadIds.length > 0 && (
+            <button
+              onClick={handleDeleteSelected}
+              disabled={isDeletingLeads}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/15 border border-rose-500/30 text-xs text-rose-400 hover:bg-rose-500/25 transition-all font-mono font-medium shadow-sm"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete ({selectedLeadIds.length})</span>
+            </button>
+          )}
+
           <button
             onClick={handleExportCSV}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 border border-border-app hover:border-gray-500 text-xs text-text-secondary hover:text-text-primary transition-all font-mono"
@@ -239,13 +293,14 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
         </div>
       </div>
 
-      {outreachResult && (
-        <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs font-mono text-emerald-400">
-          {outreachResult}
+      {actionMessage && (
+        <div className="mb-4 p-3 rounded-xl bg-brand-cyan/10 border border-brand-cyan/30 text-xs font-mono text-brand-cyan flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>{actionMessage}</span>
         </div>
       )}
 
-      {/* 29-Column Responsive Data Grid */}
+      {/* 29-Column Responsive Data Grid with Polished Score & Tier Badges */}
       <div className="flex-1 overflow-x-auto overflow-y-auto max-h-[580px] rounded-xl border border-border-app/80 bg-[#0b0f17]/80 scrollbar-thin scrollbar-thumb-gray-800">
         <table className="w-full text-left border-collapse text-xs">
           <thead className="sticky top-0 bg-[#121824] z-20 border-b border-border-app font-mono text-text-secondary text-[11px] uppercase tracking-wider">
@@ -259,22 +314,22 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
                   )}
                 </button>
               </th>
-              <th className="p-3 min-w-[200px]">Business Name</th>
-              <th className="p-3 min-w-[130px]">Score &amp; Tier</th>
-              <th className="p-3 min-w-[130px]">Phone / WhatsApp</th>
-              <th className="p-3 min-w-[160px]">Website &amp; CMS</th>
+              <th className="p-3 min-w-[220px]">Business Name</th>
+              <th className="p-3 min-w-[180px]">Score &amp; Tier</th>
+              <th className="p-3 min-w-[140px]">Phone / WhatsApp</th>
+              <th className="p-3 min-w-[150px]">Website &amp; Tech</th>
               <th className="p-3 min-w-[150px]">Email</th>
-              <th className="p-3 min-w-[120px]">Rating / Reviews</th>
-              <th className="p-3 min-w-[110px]">Outreach Status</th>
-              <th className="p-3 min-w-[160px]">City &amp; Address</th>
-              <th className="p-3 min-w-[80px] text-center">Actions</th>
+              <th className="p-3 min-w-[110px]">Rating</th>
+              <th className="p-3 min-w-[110px]">Status</th>
+              <th className="p-3 min-w-[160px]">Location</th>
+              <th className="p-3 min-w-[80px] text-center">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-app/50 font-sans">
             {filteredLeads.length === 0 ? (
               <tr>
                 <td colSpan={10} className="p-12 text-center text-text-secondary font-mono">
-                  No leads found matching current filter.
+                  No leads found in this view.
                 </td>
               </tr>
             ) : (
@@ -307,28 +362,38 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
 
                     {/* Business Name */}
                     <td className="p-3">
-                      <div className="font-bold text-text-primary flex items-center gap-1.5">
-                        <span className="truncate max-w-[220px]">{lead.businessName}</span>
+                      <div className="font-bold text-text-primary">
+                        <span className="truncate block max-w-[220px]">{lead.businessName}</span>
                       </div>
                       <span className="text-[10px] text-text-secondary font-mono">{lead.category}</span>
                     </td>
 
-                    {/* Score & Tier */}
+                    {/* Score & Tier (Rectified Clean UI: No overlapping badges) */}
                     <td className="p-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-[#121824] border border-border-app flex items-center justify-center font-mono font-bold text-xs text-brand-cyan">
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center font-mono font-bold text-xs shadow-inner ${
+                            isHot
+                              ? "bg-amber-500/15 border border-amber-500/40 text-amber-300"
+                              : "bg-blue-500/15 border border-blue-500/40 text-blue-300"
+                          }`}
+                        >
                           {score}
                         </div>
-                        <div>
+                        <div className="space-y-0.5">
                           <span
-                            className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold ${
+                            className={`inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-0.5 rounded-full font-bold whitespace-nowrap ${
                               isHot
-                                ? "bg-amber-500/15 border border-amber-500/30 text-amber-400"
-                                : "bg-blue-500/15 border border-blue-500/30 text-blue-400"
+                                ? "bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 text-amber-300"
+                                : "bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/40 text-blue-300"
                             }`}
                           >
-                            {lead.leadTier || (isHot ? "🔥 HOT" : "⚡ WARM")}
+                            {isHot ? <Flame className="w-3 h-3 fill-current text-amber-400" /> : <Zap className="w-3 h-3 text-blue-400" />}
+                            <span>{isHot ? "HOT LEAD" : "WARM LEAD"}</span>
                           </span>
+                          <p className="text-[10px] text-text-secondary font-mono truncate max-w-[130px]">
+                            {lead.hasWebsite ? "Optimization" : "Needs Website"}
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -341,7 +406,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
                             href={`https://wa.me/${rawPhone.replace(/\D/g, '')}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-emerald-400 hover:underline flex items-center gap-1"
+                            className="text-emerald-400 hover:underline flex items-center gap-1 font-medium"
                           >
                             <MessageCircle className="w-3 h-3" />
                             <span>+{rawPhone}</span>
@@ -354,7 +419,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
                           </a>
                         </div>
                       ) : (
-                        <span className="text-gray-600">No Phone</span>
+                        <span className="text-gray-600 font-mono">No Phone</span>
                       )}
                     </td>
 
@@ -366,7 +431,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
                             href={lead.website}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-brand-cyan hover:underline flex items-center gap-1 font-mono text-[11px] truncate max-w-[150px]"
+                            className="text-brand-cyan hover:underline flex items-center gap-1 font-mono text-[11px] truncate max-w-[140px]"
                           >
                             <Globe className="w-3 h-3 flex-shrink-0" />
                             <span className="truncate">{lead.website.replace(/^https?:\/\//, '')}</span>
@@ -376,7 +441,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
                           </span>
                         </div>
                       ) : (
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/30 text-rose-400">
+                        <span className="inline-block text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/30 text-rose-400">
                           ❌ No Website
                         </span>
                       )}
@@ -399,7 +464,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
 
                     {/* Rating / Reviews */}
                     <td className="p-3 font-mono text-[11px]">
-                      <div className="flex items-center gap-1 text-amber-400">
+                      <div className="flex items-center gap-1 text-amber-400 font-bold">
                         <span>★ {lead.rating || "4.5"}</span>
                       </div>
                       <span className="text-[10px] text-text-secondary">
@@ -410,21 +475,21 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
                     {/* Outreach Status */}
                     <td className="p-3">
                       {lead.outreachStatus === "REPLIED" ? (
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-mono text-[10px] font-bold flex items-center gap-1">
-                          <CheckCircle className="w-2.5 h-2.5" /> REPLIED
+                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-mono text-[10px] font-bold flex items-center gap-1 w-fit">
+                          <CheckCircle className="w-3 h-3" /> REPLIED
                         </span>
                       ) : lead.outreachStatus === "SENT" ? (
-                        <span className="px-2 py-0.5 rounded-full bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan font-mono text-[10px] font-medium flex items-center gap-1">
-                          <Send className="w-2.5 h-2.5" /> SENT
+                        <span className="px-2.5 py-1 rounded-full bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan font-mono text-[10px] font-medium flex items-center gap-1 w-fit">
+                          <Send className="w-3 h-3" /> PITCHED
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded-full bg-gray-800 border border-gray-700 text-gray-400 font-mono text-[10px]">
+                        <span className="px-2.5 py-1 rounded-full bg-gray-800/80 border border-gray-700 text-gray-400 font-mono text-[10px] w-fit">
                           NEW
                         </span>
                       )}
                     </td>
 
-                    {/* Address & City */}
+                    {/* Location */}
                     <td className="p-3 text-[11px]">
                       <span className="font-semibold text-text-primary block truncate max-w-[150px]">
                         {lead.city || "Local Area"}
@@ -434,19 +499,28 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
                       </span>
                     </td>
 
-                    {/* GMaps Action */}
+                    {/* Actions (GMaps + Single Delete) */}
                     <td className="p-3 text-center">
-                      {lead.gmapsUrl && (
-                        <a
-                          href={lead.gmapsUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="w-7 h-7 rounded-lg bg-white/5 border border-border-app hover:border-brand-cyan flex items-center justify-center text-text-secondary hover:text-brand-cyan transition-colors inline-flex"
-                          title="View on Google Maps"
+                      <div className="flex items-center justify-center gap-1">
+                        {lead.gmapsUrl && (
+                          <a
+                            href={lead.gmapsUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="w-7 h-7 rounded-lg bg-white/5 border border-border-app hover:border-brand-cyan flex items-center justify-center text-text-secondary hover:text-brand-cyan transition-colors"
+                            title="View on Google Maps"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        <button
+                          onClick={() => handleDeleteOne(lead.leadId, lead.businessName)}
+                          className="w-7 h-7 rounded-lg bg-white/5 border border-border-app hover:border-rose-500 flex items-center justify-center text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                          title="Delete Lead"
                         >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      )}
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
