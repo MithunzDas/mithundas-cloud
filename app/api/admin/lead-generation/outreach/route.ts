@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
 const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID || "992910547249865";
-const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || "EAARuEAVZBFfMBSTqZBudLVuCiV0mSt75gw3OQxDBb67Dv3umkTAviKvdW1a8IinRd3NTOxS4NRZC6BZASlhy7vr06sJ7SVoJUxfjcQHf8YsyE1OM4JHwQf47LKxdZBENMAKQbRIrouZCiL7oEKCFu76DTFQ1J52HwVXZBiXPqBeTpbORK4gub7GHRZBqZCIVtLX6DjctAAcgkAfAbzI2ZBZCTHPFTcoYtloukXjNFqnqYcKNRhSsIsEVOpZCbbWF5idLb4AuQ8678MFUKVtZCQeuVRSOpPder";
+const ACCESS_TOKEN = process.env.META_WHATSAPP_TOKEN || "EAARuEAVZBFfMBScJHrvDD3jqcaWjN2l8Q74tW8dpANvwFZASdZCu7txdd3wo5SU7ZAillh975rbj8EdKtKQMWSAI0stPux5mb13GrZA833N3JbzDYssw7eZB2RWnRoR8sBLVByafOPGUZCO15MhRWAWmqJIWp1zCQAJi4DAk1ZBPqlUwN5IOcbZBEbi1cV07cAZC31ZADJ6ZCHhjnfgZBLAILkaGyZAiLTPvDoJZATqUIQConNsjqTcuZAXV5hML0mMUj9m1GNBZCV14i0BVPW28TbnzItusUZCRWQEQZDZD";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { leadIds, templateName = "hello_world" } = body;
+    const { leadIds, templateName = "local_business_starter" } = body;
 
     if (!leadIds || !Array.isArray(leadIds) || leadIds.length === 0) {
       return NextResponse.json({ success: false, error: "No leads selected for outreach" }, { status: 400 });
