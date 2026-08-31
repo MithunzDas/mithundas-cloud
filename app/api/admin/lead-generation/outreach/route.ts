@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
 const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID || "992910547249865";
-const ACCESS_TOKEN = process.env.META_WHATSAPP_TOKEN || "EAARuEAVZBFfMBScJHrvDD3jqcaWjN2l8Q74tW8dpANvwFZASdZCu7txdd3wo5SU7ZAillh975rbj8EdKtKQMWSAI0stPux5mb13GrZA833N3JbzDYssw7eZB2RWnRoR8sBLVByafOPGUZCO15MhRWAWmqJIWp1zCQAJi4DAk1ZBPqlUwN5IOcbZBEbi1cV07cAZC31ZADJ6ZCHhjnfgZBLAILkaGyZAiLTPvDoJZATqUIQConNsjqTcuZAXV5hML0mMUj9m1GNBZCV14i0BVPW28TbnzItusUZCRWQEQZDZD";
+const ACCESS_TOKEN = process.env.META_WHATSAPP_TOKEN || "EAARuEAVZBFfMBSeoGtvEZBbY0szziHu9ZA60JxIfCGciJMZC8X64eXOlQMjd5UtbqMGvyzRZAOrcRgUYTaIIrW5HljsTKzgfeNU2kJnvSwsZCtSNpE62Gr8GLpp8IudVSnGUvqGN7bcrOjfy41Sy8urjvd4BZBS6NxuPycJpB0wpZBABfm8VnpyIPGkdVK7v";
 
 export async function POST(req: NextRequest) {
   try {
