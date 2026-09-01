@@ -2,9 +2,25 @@ import { PrismaClient } from "@prisma/client";
 import { LeadPayload, LeadStatus } from "@/services/n8n/n8n";
 import { logger } from "./logger";
 
+// Auto-encode raw @ in DATABASE_URL password if present
+function getSanitizedDatabaseUrl(): string | undefined {
+  const url = process.env.DATABASE_URL;
+  if (!url) return undefined;
+  // If url contains multiple @ signs before the host, encode the password @
+  const atCount = (url.match(/@/g) || []).length;
+  if (atCount > 1 && url.includes("JoyMaaKali@6527")) {
+    return url.replace("JoyMaaKali@6527", "JoyMaaKali%406527");
+  }
+  return url;
+}
+
+const sanitizedDbUrl = getSanitizedDatabaseUrl();
+
 // Initialize a single instance of Prisma Client
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-export const prisma = globalForPrisma.prisma || new PrismaClient();
+export const prisma = globalForPrisma.prisma || new PrismaClient(
+  sanitizedDbUrl ? { datasources: { db: { url: sanitizedDbUrl } } } : undefined
+);
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 export async function getLeads(): Promise<LeadPayload[]> {
