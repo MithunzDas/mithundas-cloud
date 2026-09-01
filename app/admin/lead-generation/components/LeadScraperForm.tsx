@@ -1,58 +1,50 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Search, Sparkles, MapPin, Layers, Play, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import {
+  Search,
+  Sparkles,
+  MapPin,
+  Layers,
+  Play,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Sliders,
+  Flame,
+  Zap,
+  Radio
+} from "lucide-react";
 
 interface ScraperFormProps {
   onSearchComplete: () => void;
 }
 
 const POPULAR_CATEGORIES = [
-  "Dentists & Dental Clinics",
-  "Restaurants & Fine Dining",
-  "Hotels & Lodgings",
-  "Lawyers & Legal Advocates",
-  "Doctors & Polyclinics",
-  "Gyms & Fitness Centers",
-  "Beauty Parlours & Luxury Spas",
-  "Real Estate & Property Agents",
-  "Cafes & Bakeries",
-  "Schools & Coaching Institutes",
-  "Car Showrooms & Auto Garages",
-  "Jewellery Showrooms"
+  { label: "Dentists & Clinics", query: "Dentists & Dental Clinics", icon: "🦷" },
+  { label: "Restaurants & Cafes", query: "Restaurants & Cafes", icon: "🍽️" },
+  { label: "Hotels & Resorts", query: "Hotels & Resorts", icon: "🏨" },
+  { label: "Dermatologists", query: "Dermatologists & Skin Clinics", icon: "💆" },
+  { label: "Lawyers & Advocates", query: "Lawyers & Advocates", icon: "⚖️" },
+  { label: "Salons & Spas", query: "Beauty Salons & Spas", icon: "💇" }
 ];
 
 const POPULAR_CITIES = [
   "Habra, West Bengal",
   "Barasat, West Bengal",
-  "Kolkata, West Bengal",
-  "Siliguri, West Bengal",
-  "Mumbai, Maharashtra",
-  "Delhi NCR",
-  "Bengaluru, Karnataka",
-  "London, United Kingdom",
-  "Dubai, United Arab Emirates",
-  "Singapore"
+  "Salt Lake, Kolkata",
+  "New Town, Kolkata",
+  "Kolkata, West Bengal"
 ];
 
+const COUNT_PRESETS = [25, 50, 100, 200];
+
 export function LeadScraperForm({ onSearchComplete }: ScraperFormProps) {
-  const [category, setCategory] = useState("");
-  const [city, setCity] = useState("");
+  const [category, setCategory] = useState("Dentists & Dental Clinics");
+  const [city, setCity] = useState("Habra, West Bengal");
   const [targetCount, setTargetCount] = useState(50);
   const [isScraping, setIsScraping] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
-
-  // Category Autocomplete / Fuzzy Filter
-  const filteredCategories = useMemo(() => {
-    if (!category) return POPULAR_CATEGORIES;
-    return POPULAR_CATEGORIES.filter(c => c.toLowerCase().includes(category.toLowerCase()));
-  }, [category]);
-
-  // City Autocomplete Filter
-  const filteredCities = useMemo(() => {
-    if (!city) return POPULAR_CITIES;
-    return POPULAR_CITIES.filter(c => c.toLowerCase().includes(city.toLowerCase()));
-  }, [city]);
 
   const handleStartScrape = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +54,7 @@ export function LeadScraperForm({ onSearchComplete }: ScraperFormProps) {
     }
 
     setIsScraping(true);
-    setStatusMsg(`Initializing continuous deep scan for "${category}" in ${city}...`);
+    setStatusMsg(`🚀 Scanning Google Maps live for "${category}" in ${city}...`);
 
     try {
       const res = await fetch("/api/admin/lead-generation/scrape", {
@@ -77,12 +69,12 @@ export function LeadScraperForm({ onSearchComplete }: ScraperFormProps) {
 
       const data = await res.json();
       if (data.success) {
-        setStatusMsg(`✅ Extraction batch initialized! Database and Google Sheet synced.`);
+        setStatusMsg(`✅ Extraction complete! Synced to VPS Database & Google Sheets.`);
         setTimeout(() => {
           onSearchComplete();
           setIsScraping(false);
           setStatusMsg("");
-        }, 1500);
+        }, 1200);
       } else {
         setStatusMsg(`❌ Error: ${data.error || "Failed to start extraction"}`);
         setIsScraping(false);
@@ -94,88 +86,106 @@ export function LeadScraperForm({ onSearchComplete }: ScraperFormProps) {
   };
 
   return (
-    <div className="bg-[#101726]/90 border border-brand-cyan/20 rounded-2xl p-6 backdrop-blur-xl shadow-2xl relative overflow-hidden">
-      <div className="absolute -top-24 -right-24 w-48 h-48 bg-brand-cyan/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="bg-[#090d16] border border-cyan-500/20 rounded-3xl p-5 sm:p-6 backdrop-blur-2xl shadow-2xl relative overflow-hidden">
+      {/* Ambient background glow */}
+      <div className="absolute top-0 right-1/4 w-72 h-36 bg-gradient-to-r from-cyan-500/10 to-indigo-500/10 blur-3xl pointer-events-none -z-10" />
 
-      <div className="flex items-center justify-between mb-6 pb-4 border-b border-border-app">
+      {/* Header bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-cyan/20 to-brand-indigo/20 border border-brand-cyan/30 flex items-center justify-center text-brand-cyan">
-            <Sparkles className="w-5 h-5 animate-pulse" />
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-black font-bold shadow-lg shadow-cyan-500/20">
+            <Radio className="w-6 h-6 animate-pulse text-black" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-text-primary tracking-wide">
-              Live Lead Extraction Control Panel
+            <h2 className="text-base font-bold text-white tracking-wide flex items-center gap-2">
+              <span>Google Maps Discovery &amp; Live Scraper Engine</span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                v2.4 DUAL-SYNC
+              </span>
             </h2>
-            <p className="text-xs text-text-secondary font-mono">
-              Continuous GMaps Feed + Domain Email &amp; WhatsApp Enrichment
+            <p className="text-xs text-slate-400 font-mono">
+              Real-time Google Maps feed + Playwright enrichment + Instant VPS DB sync
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-medium">
           <CheckCircle2 className="w-3.5 h-3.5" />
-          <span>Dual-Sync: VPS DB + Google Sheet</span>
+          <span>Dual-Sync: PostgreSQL VPS DB + Google Sheet</span>
         </div>
       </div>
 
-      <form onSubmit={handleStartScrape} className="grid grid-cols-1 md:grid-cols-12 gap-5">
-        {/* Category Searchable Combobox */}
-        <div className="md:col-span-5 relative">
-          <label className="block text-xs font-mono text-text-secondary uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5 text-brand-cyan" />
-            <span>Business Category</span>
+      {/* Main Search Controls */}
+      <form onSubmit={handleStartScrape} className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        
+        {/* 1. Category Field */}
+        <div className="lg:col-span-5 space-y-2">
+          <label className="block text-xs font-mono text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Target Business Category</span>
           </label>
           <div className="relative">
             <input
               type="text"
+              required
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              placeholder="e.g. Dentists, Restaurants (Type 're'...)"
-              className="w-full bg-[#0b0f17] border border-border-app rounded-xl px-4 py-2.5 text-sm text-text-primary placeholder:text-gray-600 focus:outline-none focus:border-brand-cyan transition-colors"
+              placeholder="e.g. Dentists & Clinics, Restaurants..."
+              className="w-full bg-[#050811] border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-400 transition-colors"
             />
-            <Search className="w-4 h-4 text-gray-500 absolute right-3.5 top-3 pointer-events-none" />
+            <Search className="w-4 h-4 text-slate-500 absolute right-3.5 top-3.5 pointer-events-none" />
           </div>
 
-          {/* Quick Category Chips */}
-          <div className="flex flex-wrap gap-1.5 mt-2.5">
-            {filteredCategories.slice(0, 4).map((cat) => (
+          {/* Quick Category Pills */}
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {POPULAR_CATEGORIES.map((cat) => (
               <button
                 type="button"
-                key={cat}
-                onClick={() => setCategory(cat.split(" &")[0])}
-                className="text-[11px] px-2.5 py-1 rounded-lg bg-white/5 border border-border-app hover:border-brand-cyan/40 text-text-secondary hover:text-brand-cyan transition-all"
+                key={cat.query}
+                onClick={() => setCategory(cat.query)}
+                className={`text-[11px] font-mono px-2.5 py-1 rounded-xl border transition-all flex items-center gap-1 ${
+                  category === cat.query
+                    ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold"
+                    : "bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-white"
+                }`}
               >
-                {cat.split(" &")[0]}
+                <span>{cat.icon}</span>
+                <span>{cat.label}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* City Input */}
-        <div className="md:col-span-4 relative">
-          <label className="block text-xs font-mono text-text-secondary uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-brand-indigo" />
-            <span>Target City / Area</span>
+        {/* 2. City / Locality Field */}
+        <div className="lg:col-span-4 space-y-2">
+          <label className="block text-xs font-mono text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5 text-indigo-400" />
+            <span>City / Micro-Locality</span>
           </label>
           <div className="relative">
             <input
               type="text"
+              required
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              placeholder="e.g. Habra, London, Dubai..."
-              className="w-full bg-[#0b0f17] border border-border-app rounded-xl px-4 py-2.5 text-sm text-text-primary placeholder:text-gray-600 focus:outline-none focus:border-brand-cyan transition-colors"
+              placeholder="e.g. Habra, Salt Lake, Kolkata..."
+              className="w-full bg-[#050811] border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-400 transition-colors"
             />
-            <MapPin className="w-4 h-4 text-gray-500 absolute right-3.5 top-3 pointer-events-none" />
+            <MapPin className="w-4 h-4 text-slate-500 absolute right-3.5 top-3.5 pointer-events-none" />
           </div>
 
-          {/* Quick City Chips */}
-          <div className="flex flex-wrap gap-1.5 mt-2.5">
-            {filteredCities.slice(0, 3).map((ct) => (
+          {/* Quick City Pills */}
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {POPULAR_CITIES.map((ct) => (
               <button
                 type="button"
                 key={ct}
                 onClick={() => setCity(ct)}
-                className="text-[11px] px-2.5 py-1 rounded-lg bg-white/5 border border-border-app hover:border-brand-indigo/40 text-text-secondary hover:text-brand-indigo transition-all"
+                className={`text-[11px] font-mono px-2.5 py-1 rounded-xl border transition-all ${
+                  city === ct
+                    ? "bg-indigo-500/20 border-indigo-400 text-indigo-300 font-bold"
+                    : "bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-white"
+                }`}
               >
                 {ct.split(",")[0]}
               </button>
@@ -183,46 +193,73 @@ export function LeadScraperForm({ onSearchComplete }: ScraperFormProps) {
           </div>
         </div>
 
-        {/* Target Count & Submit */}
-        <div className="md:col-span-3 flex flex-col justify-between">
+        {/* 3. Target Leads Slider & High-Impact Launch Button */}
+        <div className="lg:col-span-3 space-y-3 bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 flex flex-col justify-between">
           <div>
-            <label className="block text-xs font-mono text-text-secondary uppercase tracking-wider mb-2">
-              Target Leads: <span className="text-brand-cyan font-bold">{targetCount}</span>
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-mono text-slate-300 uppercase tracking-wider flex items-center gap-1">
+                <Sliders className="w-3 h-3 text-cyan-400" />
+                <span>Target Leads:</span>
+              </label>
+              <span className="text-sm font-mono font-bold px-2 py-0.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                {targetCount}
+              </span>
+            </div>
+
             <input
               type="range"
-              min="20"
+              min="10"
               max="200"
               step="10"
               value={targetCount}
               onChange={(e) => setTargetCount(Number(e.target.value))}
-              className="w-full accent-brand-cyan cursor-pointer"
+              className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
             />
+
+            {/* Quick Count Presets */}
+            <div className="flex items-center justify-between gap-1 mt-2">
+              {COUNT_PRESETS.map((cnt) => (
+                <button
+                  type="button"
+                  key={cnt}
+                  onClick={() => setTargetCount(cnt)}
+                  className={`flex-1 py-1 rounded-lg text-[10px] font-mono font-bold border transition-all ${
+                    targetCount === cnt
+                      ? "bg-cyan-500 text-black border-cyan-400"
+                      : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                  }`}
+                >
+                  {cnt}
+                </button>
+              ))}
+            </div>
           </div>
 
+          {/* Premium Glowing Launch Button */}
           <button
             type="submit"
             disabled={isScraping}
-            className="w-full mt-3 bg-gradient-to-r from-brand-cyan to-brand-indigo hover:from-brand-cyan/90 hover:to-brand-indigo/90 text-white font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-brand-cyan/20 transition-all disabled:opacity-50"
+            className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 hover:from-cyan-400 hover:via-teal-400 hover:to-emerald-400 text-black font-extrabold text-xs font-mono tracking-wide shadow-xl shadow-cyan-500/20 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 cursor-pointer"
           >
             {isScraping ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Scanning Feed...</span>
+                <Loader2 className="w-4 h-4 animate-spin text-black" />
+                <span>Scraping Feed...</span>
               </>
             ) : (
               <>
-                <Play className="w-4 h-4 fill-current" />
-                <span>Launch Scraper</span>
+                <Play className="w-4 h-4 fill-black text-black" />
+                <span>Launch Live Scraper</span>
               </>
             )}
           </button>
         </div>
       </form>
 
+      {/* Status Alert Banner */}
       {statusMsg && (
-        <div className="mt-4 p-3 rounded-xl bg-brand-cyan/10 border border-brand-cyan/30 text-xs font-mono text-brand-cyan flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+        <div className="mt-4 p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-xs font-mono text-cyan-300 flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 text-cyan-400" />
           <span>{statusMsg}</span>
         </div>
       )}
