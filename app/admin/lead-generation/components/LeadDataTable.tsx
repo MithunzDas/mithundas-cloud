@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import {
+  FileSpreadsheet,
   Phone,
   Globe,
   Mail,
@@ -141,6 +142,39 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
     }
   };
 
+  
+  // Sync Leads Directly From Master Google Sheet
+  const [isSyncingSheet, setIsSyncingSheet] = useState(false);
+  const handleSyncSheet = async () => {
+    setIsSyncingSheet(true);
+    setActionMessage("Syncing latest leads from Master Google Sheet into VPS Database...");
+
+    try {
+      const res = await fetch("/api/admin/lead-generation/sync-sheet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({})
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setActionMessage(`✅ ${data.message || "Synced successfully from Google Sheet!"}`);
+        setTimeout(() => {
+          onRefresh();
+          setActionMessage("");
+        }, 1500);
+      } else {
+        setActionMessage(`ℹ️ ${data.error || "Sheet sync triggered."}`);
+        onRefresh();
+        setTimeout(() => setActionMessage(""), 3000);
+      }
+    } catch (err: any) {
+      setActionMessage(`❌ Sync Error: ${err.message}`);
+    } finally {
+      setIsSyncingSheet(false);
+    }
+  };
+
   // Launch Meta WhatsApp Outreach
   const handleLaunchOutreach = async () => {
     if (selectedLeadIds.length === 0) {
@@ -269,6 +303,17 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
               <span>Delete ({selectedLeadIds.length})</span>
             </button>
           )}
+
+          
+          <button
+            onClick={handleSyncSheet}
+            disabled={isSyncingSheet}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-400 hover:bg-emerald-500/20 transition-all font-mono font-medium shadow-sm"
+            title="Sync newly scraped rows from Master Google Sheet into VPS Database"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>{isSyncingSheet ? "Syncing Sheet..." : "Sync Google Sheet"}</span>
+          </button>
 
           <button
             onClick={handleExportCSV}
