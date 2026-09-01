@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
+// 1. GET: Fetch Batches, Leads, and Live Metrics
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -11,7 +12,7 @@ export async function GET(req: NextRequest) {
     const leadTier = searchParams.get("leadTier");
     const query = searchParams.get("q");
 
-    // Fetch all batches for sidebar
+    // Fetch all batches for sidebar / top ribbon
     const batches = await prisma.scrapedLeadBatch.findMany({
       orderBy: { createdAt: "desc" },
       include: {
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest) {
         { leadScore: "desc" },
         { createdAt: "desc" }
       ],
-      take: 500
+      take: 1000
     });
 
     // Calculate metrics
@@ -69,6 +70,131 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// 2. POST: Ingest Leads from n8n / Scraper into VPS PostgreSQL DB
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    
+    // Accept either { batchId, category, city, leads: [...] } OR raw array of leads
+    const leadsArray: any[] = Array.isArray(body) ? body : (body.leads || []);
+    const batchId = body.batchId || body.batch_id || (leadsArray[0]?.batch_id) || `batch_${Date.now()}`;
+    const category = body.category || leadsArray[0]?.category || "Local Business";
+    const city = body.city || body.location || leadsArray[0]?.city || "Kolkata";
+    const searchQuery = body.searchQuery || body.search_query || `${category} in ${city}`;
+
+    if (leadsArray.length === 0) {
+      return NextResponse.json({ success: false, error: "No leads provided in payload" }, { status: 400 });
+    }
+
+    // Upsert Batch
+    let batch = await prisma.scrapedLeadBatch.findUnique({
+      where: { batchId }
+    }).catch(() => null);
+
+    if (!batch) {
+      batch = await prisma.scrapedLeadBatch.create({
+        data: {
+          batchId,
+          category,
+          city,
+          searchQuery,
+          targetCount: leadsArray.length,
+          totalFound: leadsArray.length,
+          hotCount: 0
+        }
+      });
+    }
+
+    let hotCount = 0;
+    let insertedCount = 0;
+
+    for (let i = 0; i < leadsArray.length; i++) {
+      const l = leadsArray[i];
+      const score = Number(l.lead_score || l.leadScore || l.score) || 75;
+      if (score >= 70) hotCount++;
+
+      const leadId = l.lead_id || l.leadId || `lead_${batchId}_${i + 1}_${Math.random().toString(36).substring(2, 6)}`;
+      const cleanPhone = (l.whatsapp_number || l.whatsappNumber || l.phone || "").replace(/\D/g, "");
+
+      await prisma.scrapedLead.upsert({
+        where: { leadId },
+        update: {
+          businessName: l.business_name || l.businessName || l.name || "Business",
+          phone: l.phone || "",
+          whatsappNumber: cleanPhone,
+          whatsappUrl: l.whatsapp_url || l.whatsappUrl || (cleanPhone ? `https://wa.me/${cleanPhone}` : ""),
+          email: l.email || "",
+          website: l.website || "",
+          hasWebsite: Boolean(l.has_website || l.hasWebsite || (l.website && l.website !== "No Website" && l.has_website !== "NO")),
+          cmsTech: l.cms_tech || l.cmsTech || (l.website ? "Detected" : "No Website"),
+          rating: Number(l.rating) || 0,
+          reviewCount: Number(l.review_count || l.reviewCount) || 0,
+          leadScore: score,
+          leadTier: l.lead_tier || l.leadTier || (score >= 70 ? "🔥 HOT: Needs New Website" : "⚡ WARM: Optimization"),
+          recommendedPitch: l.recommended_pitch || l.recommendedPitch || "Custom Mobile Website & WhatsApp Booking Engine",
+          gmapsUrl: l.gmaps_url || l.gmapsUrl || ""
+        },
+        create: {
+          leadId,
+          batchId,
+          placeId: l.place_id || l.placeId || l.gmaps_url || l.gmapsUrl || `place_${i + 1}`,
+          businessName: l.business_name || l.businessName || l.name || "Business",
+          category: l.category || category,
+          searchQuery,
+          city: l.city || city,
+          fullAddress: l.full_address || l.fullAddress || l.address || "",
+          phone: l.phone || "",
+          whatsappNumber: cleanPhone,
+          whatsappUrl: l.whatsapp_url || l.whatsappUrl || (cleanPhone ? `https://wa.me/${cleanPhone}` : ""),
+          email: l.email || "",
+          secondaryEmails: l.secondary_emails || l.secondaryEmails || "",
+          website: l.website || "",
+          hasWebsite: Boolean(l.has_website || l.hasWebsite || (l.website && l.website !== "No Website" && l.has_website !== "NO")),
+          cmsTech: l.cms_tech || l.cmsTech || (l.website ? "Detected" : "No Website"),
+          instagramUrl: l.instagram_url || l.instagramUrl || "",
+          facebookUrl: l.facebook_url || l.facebookUrl || "",
+          linkedinUrl: l.linkedin_url || l.linkedinUrl || "",
+          twitterUrl: l.twitter_url || l.twitterUrl || "",
+          youtubeUrl: l.youtube_url || l.youtubeUrl || "",
+          rating: Number(l.rating) || 0,
+          reviewCount: Number(l.review_count || l.reviewCount) || 0,
+          isOpen: l.is_open !== false && l.is_open !== "NO",
+          businessHours: l.business_hours || l.businessHours || "Open",
+          leadScore: score,
+          leadTier: l.lead_tier || l.leadTier || (score >= 70 ? "🔥 HOT: Needs New Website" : "⚡ WARM: Optimization"),
+          recommendedPitch: l.recommended_pitch || l.recommendedPitch || "Custom Mobile Website & WhatsApp Booking Engine",
+          gmapsUrl: l.gmaps_url || l.gmapsUrl || "",
+          outreachStatus: l.outreach_status || l.outreachStatus || "NEW"
+        }
+      });
+      insertedCount++;
+    }
+
+    // Update batch stats
+    if (batch) {
+      await prisma.scrapedLeadBatch.update({
+        where: { id: batch.id },
+        data: {
+          totalFound: insertedCount,
+          hotCount
+        }
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Successfully ingested ${insertedCount} leads into VPS Database`,
+      batchId,
+      insertedCount,
+      hotCount
+    });
+  } catch (error: any) {
+    console.error("Error ingesting leads to DB:", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+// 3. PATCH: Update Outreach Status
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
@@ -93,12 +219,13 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
+// 4. DELETE: Batch or Selected Leads
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const batchId = searchParams.get("batchId");
     
-    // 1. Batch Deletion (Deletes batch + all associated leads)
+    // Batch Deletion
     if (batchId) {
       await prisma.scrapedLead.deleteMany({
         where: { batchId }
@@ -109,7 +236,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: true, message: `Batch ${batchId} and all associated leads deleted` });
     }
 
-    // 2. Multiple Leads Deletion
+    // Multiple Leads Deletion
     const body = await req.json().catch(() => ({}));
     const { leadIds } = body;
 
