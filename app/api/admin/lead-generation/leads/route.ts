@@ -12,8 +12,8 @@ export async function GET(req: NextRequest) {
     const leadTier = searchParams.get("leadTier");
     const query = searchParams.get("q");
 
-    // Fetch all batches
-    const batches = await prisma.scrapedLeadBatch.findMany({
+    // Fetch batches with at least 1 lead or recently created, ordered by newest
+    const rawBatches = await prisma.scrapedLeadBatch.findMany({
       orderBy: { createdAt: "desc" },
       include: {
         _count: {
@@ -21,6 +21,9 @@ export async function GET(req: NextRequest) {
         }
       }
     });
+
+    // Filter out 0-lead orphan batches if they are older than 10 mins
+    const batches = rawBatches.filter(b => b._count.leads > 0 || (Date.now() - new Date(b.createdAt).getTime() < 600000));
 
     // Build filter for leads
     const where: any = {};
@@ -70,12 +73,12 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// 2. POST: Universal Ingestion (Single lead item, array of items, or { leads: [...] })
+// 2. POST: Smart Batch Grouping Ingestion (Groups all leads of the same search into ONE single batch)
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     
-    // Normalize into leadsArray: handles single object, array, or object with leads property
+    // Normalize into leadsArray
     let leadsArray: any[] = [];
     if (Array.isArray(body)) {
       leadsArray = body;
@@ -90,30 +93,51 @@ export async function POST(req: NextRequest) {
     }
 
     const first = leadsArray[0];
-    const batchId = body.batchId || body.batch_id || first.batch_id || first.batchId || `batch_${Date.now()}`;
     const category = body.category || first.category || "Local Business";
     const city = body.city || body.location || first.city || first.location || "West Bengal";
     const searchQuery = body.searchQuery || body.search_query || first.search_query || `${category} in ${city}`;
 
-    // Upsert Batch
-    let batch = await prisma.scrapedLeadBatch.findUnique({
-      where: { batchId }
-    }).catch(() => null);
+    // 1. SMART BATCH RESOLUTION: Find existing batch for this exact search created within the last 30 mins
+    const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000);
+    
+    let targetBatch = null;
 
-    if (!batch) {
-      batch = await prisma.scrapedLeadBatch.create({
+    if (body.batchId || body.batch_id || first.batch_id || first.batchId) {
+      const explicitId = body.batchId || body.batch_id || first.batch_id || first.batchId;
+      targetBatch = await prisma.scrapedLeadBatch.findUnique({
+        where: { batchId: explicitId }
+      }).catch(() => null);
+    }
+
+    if (!targetBatch) {
+      // Find recent batch matching category & city
+      targetBatch = await prisma.scrapedLeadBatch.findFirst({
+        where: {
+          category,
+          city,
+          createdAt: { gte: thirtyMinsAgo }
+        },
+        orderBy: { createdAt: "desc" }
+      }).catch(() => null);
+    }
+
+    // If still no recent batch, create ONE unified batch
+    if (!targetBatch) {
+      const newBatchId = `batch_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      targetBatch = await prisma.scrapedLeadBatch.create({
         data: {
-          batchId,
+          batchId: newBatchId,
           category,
           city,
           searchQuery,
-          targetCount: leadsArray.length,
-          totalFound: leadsArray.length,
+          targetCount: leadsArray.length > 1 ? leadsArray.length : 50,
+          totalFound: 0,
           hotCount: 0
         }
       });
     }
 
+    const finalBatchId = targetBatch.batchId;
     let hotCount = 0;
     let insertedCount = 0;
 
@@ -122,8 +146,10 @@ export async function POST(req: NextRequest) {
       const score = Number(l.lead_score || l.leadScore || l.score) || 75;
       if (score >= 70) hotCount++;
 
-      const leadId = l.lead_id || l.leadId || `lead_${batchId}_${i + 1}_${Math.random().toString(36).substring(2, 6)}`;
+      // Consistent leadId based on place_id or phone so duplicate rows update rather than duplicate
       const cleanPhone = (l.whatsapp_number || l.whatsappNumber || l.phone || "").replace(/\D/g, "");
+      const placeKey = (l.place_id || l.placeId || cleanPhone || l.business_name || `item_${i}`).replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 40);
+      const leadId = `lead_${finalBatchId}_${placeKey}`;
 
       await prisma.scrapedLead.upsert({
         where: { leadId },
@@ -145,7 +171,7 @@ export async function POST(req: NextRequest) {
         },
         create: {
           leadId,
-          batchId,
+          batchId: finalBatchId,
           placeId: l.place_id || l.placeId || l.gmaps_url || l.gmapsUrl || `place_${i + 1}`,
           businessName: l.business_name || l.businessName || l.name || "Business",
           category: l.category || category,
@@ -179,23 +205,24 @@ export async function POST(req: NextRequest) {
       insertedCount++;
     }
 
-    // Update batch stats
-    if (batch) {
-      await prisma.scrapedLeadBatch.update({
-        where: { id: batch.id },
-        data: {
-          totalFound: { increment: insertedCount },
-          hotCount: { increment: hotCount }
-        }
-      });
-    }
+    // Recalculate true lead count for this unified batch
+    const trueCount = await prisma.scrapedLead.count({ where: { batchId: finalBatchId } });
+    const trueHotCount = await prisma.scrapedLead.count({ where: { batchId: finalBatchId, leadScore: { gte: 70 } } });
+
+    await prisma.scrapedLeadBatch.update({
+      where: { id: targetBatch.id },
+      data: {
+        totalFound: trueCount,
+        hotCount: trueHotCount
+      }
+    });
 
     return NextResponse.json({
       success: true,
-      message: `Successfully ingested ${insertedCount} lead(s) into VPS Database`,
-      batchId,
-      insertedCount,
-      hotCount
+      message: `Grouped and saved lead(s) into batch "${targetBatch.category} in ${targetBatch.city}"`,
+      batchId: finalBatchId,
+      batchTotal: trueCount,
+      hotCount: trueHotCount
     });
   } catch (error: any) {
     console.error("Error ingesting leads to DB:", error);
