@@ -16,7 +16,8 @@ import {
   Database,
   FileSpreadsheet,
   Check,
-  X
+  X,
+  RefreshCw
 } from "lucide-react";
 
 interface ScraperFormProps {
@@ -63,7 +64,6 @@ export function LeadScraperForm({ onSearchComplete }: ScraperFormProps) {
   const [extractedCount, setExtractedCount] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
 
-  const activeBatchIdRef = useRef<string | null>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Timer & Step Cycler during Scraping
@@ -78,7 +78,7 @@ export function LeadScraperForm({ onSearchComplete }: ScraperFormProps) {
 
       stepTimer = setInterval(() => {
         setCurrentStepIdx((prev) => (prev + 1) % PROGRESS_STEPS.length);
-      }, 7000);
+      }, 6000);
     }
 
     return () => {
@@ -87,34 +87,41 @@ export function LeadScraperForm({ onSearchComplete }: ScraperFormProps) {
     };
   }, [isScraping, isCompleted]);
 
-  // Background Auto-Polling for Leads
-  const startPollingForLeads = (batchId: string) => {
-    activeBatchIdRef.current = batchId;
+  // Background Auto-Polling for Leads (Checks both specific batch and total leads count)
+  const startPollingForLeads = (batchId: string, initialTotalLeads: number) => {
     let attempts = 0;
+
+    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
 
     pollIntervalRef.current = setInterval(async () => {
       attempts++;
       try {
-        const res = await fetch(`/api/admin/lead-generation/leads?batchId=${batchId}`);
+        const res = await fetch(`/api/admin/lead-generation/leads`);
         const data = await res.json();
 
-        if (data.success && Array.isArray(data.leads) && data.leads.length > 0) {
-          // Success! Found leads in DB
-          clearInterval(pollIntervalRef.current!);
-          setExtractedCount(data.leads.length);
-          setIsCompleted(true);
-          onSearchComplete();
+        if (data.success) {
+          const currentTotal = data.metrics?.totalLeads || 0;
+          const matchingBatch = data.batches?.find((b: any) => b.batchId === batchId);
 
-          setTimeout(() => {
-            setIsScraping(false);
-            setIsCompleted(false);
-            setElapsedSeconds(0);
-          }, 2500);
-        } else if (attempts > 100) {
-          // Timeout after ~5 mins
+          // Success condition 1: Matching batch has leads
+          // Success condition 2: Total leads in DB increased
+          if ((matchingBatch && matchingBatch._count?.leads > 0) || currentTotal > initialTotalLeads) {
+            clearInterval(pollIntervalRef.current!);
+            setExtractedCount(matchingBatch?._count?.leads || (currentTotal - initialTotalLeads) || targetCount);
+            setIsCompleted(true);
+            onSearchComplete();
+
+            setTimeout(() => {
+              setIsScraping(false);
+              setIsCompleted(false);
+              setElapsedSeconds(0);
+            }, 2000);
+          }
+        }
+        
+        // Safety timeout after 4 minutes
+        if (attempts > 80) {
           clearInterval(pollIntervalRef.current!);
-          setIsScraping(false);
-          setStatusMsg("Scrape process completed in background. Refresh table if needed.");
         }
       } catch (err) {
         console.error("Polling check error:", err);
@@ -139,7 +146,15 @@ export function LeadScraperForm({ onSearchComplete }: ScraperFormProps) {
     const batchId = `batch_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 
     try {
-      // 1. Fire scrape trigger API
+      // 1. Get baseline count before starting
+      let initialCount = 0;
+      try {
+        const initRes = await fetch("/api/admin/lead-generation/leads");
+        const initData = await initRes.json();
+        if (initData.success) initialCount = initData.metrics?.totalLeads || 0;
+      } catch {}
+
+      // 2. Fire scrape trigger API
       fetch("/api/admin/lead-generation/scrape", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -150,7 +165,7 @@ export function LeadScraperForm({ onSearchComplete }: ScraperFormProps) {
           batchId
         })
       }).then(async (res) => {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (data.success && data.totalFound > 0) {
           setExtractedCount(data.totalFound);
           setIsCompleted(true);
@@ -161,14 +176,22 @@ export function LeadScraperForm({ onSearchComplete }: ScraperFormProps) {
             setElapsedSeconds(0);
           }, 2000);
         }
-      }).catch((err) => console.log("Background webhook fired..."));
+      }).catch((err) => console.log("Background scraper running..."));
 
-      // 2. Start continuous live polling
-      startPollingForLeads(batchId);
+      // 3. Start live polling
+      startPollingForLeads(batchId, initialCount);
     } catch (err: any) {
       setStatusMsg(`❌ Network Error: ${err.message}`);
       setIsScraping(false);
     }
+  };
+
+  const handleForceClose = () => {
+    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    setIsScraping(false);
+    setIsCompleted(false);
+    setElapsedSeconds(0);
+    onSearchComplete();
   };
 
   const formatTime = (secs: number) => {
@@ -179,7 +202,7 @@ export function LeadScraperForm({ onSearchComplete }: ScraperFormProps) {
 
   return (
     <>
-      {/* 1. Main Scraper Form Card */}
+      {/* Main Scraper Form Card */}
       <div className="bg-[#090d16] border border-cyan-500/20 rounded-3xl p-5 sm:p-6 backdrop-blur-2xl shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-1/4 w-72 h-36 bg-gradient-to-r from-cyan-500/10 to-indigo-500/10 blur-3xl pointer-events-none -z-10" />
 
@@ -348,23 +371,29 @@ export function LeadScraperForm({ onSearchComplete }: ScraperFormProps) {
         )}
       </div>
 
-      {/* 2. 3D VISUAL ROTATING RADAR PROGRESS MODAL OVERLAY */}
+      {/* 3D VISUAL ROTATING RADAR PROGRESS MODAL OVERLAY */}
       {isScraping && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-xl flex items-center justify-center p-4">
           <div className="bg-[#090e18] border border-cyan-500/40 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl shadow-cyan-500/20 text-center relative overflow-hidden">
+            
+            {/* Close Button */}
+            <button
+              onClick={handleForceClose}
+              className="absolute top-4 right-4 p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-all"
+              title="Close and view data"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
             {/* Ambient Background Pulse */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
             {/* Circular Radar Animation */}
             <div className="relative w-32 h-32 mx-auto mb-6 flex items-center justify-center">
-              {/* Outer Pulsing Glow Ring */}
               <div className="absolute inset-0 rounded-full border-2 border-cyan-500/20 animate-ping opacity-30" />
-              
-              {/* Spinning Dual Rotating Gradient Rings */}
               <div className="absolute inset-1 rounded-full border-4 border-transparent border-t-cyan-400 border-r-teal-400 animate-spin" />
               <div className="absolute inset-3 rounded-full border-2 border-transparent border-b-indigo-400 border-l-blue-400 animate-[spin_2s_linear_infinite_reverse]" />
 
-              {/* Center Core Badge */}
               <div className="w-16 h-16 rounded-full bg-slate-950 border border-cyan-500/40 flex flex-col items-center justify-center shadow-inner">
                 {isCompleted ? (
                   <Check className="w-8 h-8 text-emerald-400 animate-bounce" />
@@ -390,7 +419,6 @@ export function LeadScraperForm({ onSearchComplete }: ScraperFormProps) {
                 <span>Scanning: {category} in {city} (Target: {targetCount})</span>
               </div>
 
-              {/* Dynamic Live Step Message */}
               <p className="text-xs text-slate-300 font-mono min-h-[36px] flex items-center justify-center px-4 py-2 rounded-xl bg-slate-950/80 border border-slate-800">
                 {isCompleted
                   ? `✅ Successfully synced ${extractedCount || targetCount} leads to VPS Database & Google Sheet!`
@@ -399,7 +427,7 @@ export function LeadScraperForm({ onSearchComplete }: ScraperFormProps) {
             </div>
 
             {/* Dual Sync Indicators */}
-            <div className="grid grid-cols-2 gap-3 mb-4 text-left">
+            <div className="grid grid-cols-2 gap-3 mb-5 text-left">
               <div className="bg-slate-950/90 border border-slate-800 p-3 rounded-2xl flex items-center gap-2.5">
                 <Database className="w-4 h-4 text-cyan-400 flex-shrink-0" />
                 <div>
@@ -417,10 +445,16 @@ export function LeadScraperForm({ onSearchComplete }: ScraperFormProps) {
               </div>
             </div>
 
-            {/* Background Notice */}
-            <p className="text-[10px] text-slate-500 font-mono">
-              Scraping deep review data &amp; WhatsApp numbers. Typically completes in 1–3 minutes.
-            </p>
+            {/* Action Bar */}
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <button
+                onClick={handleForceClose}
+                className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all"
+              >
+                <RefreshCw className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Check Table / View Leads</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
