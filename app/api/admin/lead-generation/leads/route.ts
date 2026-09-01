@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     const leadTier = searchParams.get("leadTier");
     const query = searchParams.get("q");
 
-    // Fetch all batches for sidebar / top ribbon
+    // Fetch all batches
     const batches = await prisma.scrapedLeadBatch.findMany({
       orderBy: { createdAt: "desc" },
       include: {
@@ -70,21 +70,30 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// 2. POST: Ingest Leads from n8n / Scraper into VPS PostgreSQL DB
+// 2. POST: Universal Ingestion (Single lead item, array of items, or { leads: [...] })
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     
-    // Accept either { batchId, category, city, leads: [...] } OR raw array of leads
-    const leadsArray: any[] = Array.isArray(body) ? body : (body.leads || []);
-    const batchId = body.batchId || body.batch_id || (leadsArray[0]?.batch_id) || `batch_${Date.now()}`;
-    const category = body.category || leadsArray[0]?.category || "Local Business";
-    const city = body.city || body.location || leadsArray[0]?.city || "Kolkata";
-    const searchQuery = body.searchQuery || body.search_query || `${category} in ${city}`;
+    // Normalize into leadsArray: handles single object, array, or object with leads property
+    let leadsArray: any[] = [];
+    if (Array.isArray(body)) {
+      leadsArray = body;
+    } else if (body.leads && Array.isArray(body.leads)) {
+      leadsArray = body.leads;
+    } else if (body && typeof body === "object" && (body.business_name || body.businessName || body.name || body.phone || body.place_id || body.placeId)) {
+      leadsArray = [body];
+    }
 
     if (leadsArray.length === 0) {
-      return NextResponse.json({ success: false, error: "No leads provided in payload" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "No valid lead objects found in payload" }, { status: 400 });
     }
+
+    const first = leadsArray[0];
+    const batchId = body.batchId || body.batch_id || first.batch_id || first.batchId || `batch_${Date.now()}`;
+    const category = body.category || first.category || "Local Business";
+    const city = body.city || body.location || first.city || first.location || "West Bengal";
+    const searchQuery = body.searchQuery || body.search_query || first.search_query || `${category} in ${city}`;
 
     // Upsert Batch
     let batch = await prisma.scrapedLeadBatch.findUnique({
@@ -130,7 +139,7 @@ export async function POST(req: NextRequest) {
           rating: Number(l.rating) || 0,
           reviewCount: Number(l.review_count || l.reviewCount) || 0,
           leadScore: score,
-          leadTier: l.lead_tier || l.leadTier || (score >= 70 ? "🔥 HOT: Needs New Website" : "⚡ WARM: Optimization"),
+          leadTier: l.lead_tier || l.leadTier || (score >= 70 ? "🔥 HOT LEAD" : "⚡ WARM LEAD"),
           recommendedPitch: l.recommended_pitch || l.recommendedPitch || "Custom Mobile Website & WhatsApp Booking Engine",
           gmapsUrl: l.gmaps_url || l.gmapsUrl || ""
         },
@@ -161,7 +170,7 @@ export async function POST(req: NextRequest) {
           isOpen: l.is_open !== false && l.is_open !== "NO",
           businessHours: l.business_hours || l.businessHours || "Open",
           leadScore: score,
-          leadTier: l.lead_tier || l.leadTier || (score >= 70 ? "🔥 HOT: Needs New Website" : "⚡ WARM: Optimization"),
+          leadTier: l.lead_tier || l.leadTier || (score >= 70 ? "🔥 HOT LEAD" : "⚡ WARM LEAD"),
           recommendedPitch: l.recommended_pitch || l.recommendedPitch || "Custom Mobile Website & WhatsApp Booking Engine",
           gmapsUrl: l.gmaps_url || l.gmapsUrl || "",
           outreachStatus: l.outreach_status || l.outreachStatus || "NEW"
@@ -175,15 +184,15 @@ export async function POST(req: NextRequest) {
       await prisma.scrapedLeadBatch.update({
         where: { id: batch.id },
         data: {
-          totalFound: insertedCount,
-          hotCount
+          totalFound: { increment: insertedCount },
+          hotCount: { increment: hotCount }
         }
       });
     }
 
     return NextResponse.json({
       success: true,
-      message: `Successfully ingested ${insertedCount} leads into VPS Database`,
+      message: `Successfully ingested ${insertedCount} lead(s) into VPS Database`,
       batchId,
       insertedCount,
       hotCount
