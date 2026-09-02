@@ -24,7 +24,8 @@ import {
   Eye,
   X,
   Clock,
-  ChevronDown
+  CheckCheck,
+  Sparkles
 } from "lucide-react";
 
 interface LeadItem {
@@ -183,7 +184,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
   const [actionMessage, setActionMessage] = useState("");
   const [copiedLeadId, setCopiedLeadId] = useState<string | null>(null);
 
-  // Phase 2: Preview Modal State
+  // Preview Modal State
   const [previewModalLead, setPreviewModalLead] = useState<LeadItem | null>(null);
   const [copiedModalText, setCopiedModalText] = useState(false);
 
@@ -206,6 +207,9 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
 
     return matchSearch && matchTier && matchStatus;
   });
+
+  // Count unread replies
+  const repliedCount = leads.filter(l => l.outreachStatus === "REPLIED").length;
 
   // Select / Deselect All
   const toggleSelectAll = () => {
@@ -278,7 +282,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
     }
   };
 
-  // Phase 2: Inline Status Quick-Changer
+  // Phase 3: Inline Status Quick-Changer
   const handleUpdateStatus = async (leadId: string, newStatus: string) => {
     try {
       const res = await fetch("/api/admin/lead-generation/leads", {
@@ -403,7 +407,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
       "Business Name", "Category", "City", "Full Address",
       "Phone", "WhatsApp Number", "Email", "Website", "CMS Tech", "Rating",
       "Review Count", "Lead Score", "Lead Tier", "Recommended Pitch",
-      "Dynamic Demo Target", "Google Maps URL", "Outreach Status", "Contacted At"
+      "Dynamic Demo Target", "Google Maps URL", "Outreach Status", "Last Reply Message", "Contacted At", "Replied At"
     ];
 
     const rows = filteredLeads.map((l) => {
@@ -426,7 +430,9 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
         `"${demo.url}"`,
         `"${l.gmapsUrl || ""}"`,
         `"${l.outreachStatus || "NEW"}"`,
-        `"${l.contactedAt || ""}"`
+        `"${(l.lastReplyMessage || "").replace(/"/g, '""')}"`,
+        `"${l.contactedAt || ""}"`,
+        `"${l.repliedAt || ""}"`
       ].join(",");
     });
 
@@ -434,7 +440,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `leads_export_${Date.now()}.csv`);
+    link.setAttribute("download", `leads_crm_export_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -448,7 +454,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
         
         {/* Left: View Mode Pills & Search */}
         <div className="flex items-center gap-2.5 flex-wrap flex-1">
-          {/* Phase 2: View Switcher */}
+          {/* View Switcher */}
           <div className="flex items-center p-1 bg-[#0b0f17] border border-border-app rounded-xl">
             <button
               onClick={() => setViewMode("outreach")}
@@ -482,7 +488,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search business, phone, city..."
+              placeholder="Search business, phone, reply text..."
               className="w-full bg-[#0b0f17] border border-border-app rounded-xl pl-9 pr-4 py-2 text-xs text-text-primary placeholder:text-gray-600 focus:outline-none focus:border-brand-cyan transition-colors"
             />
             <Search className="w-3.5 h-3.5 text-gray-500 absolute left-3 top-2.5 pointer-events-none" />
@@ -499,16 +505,18 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
             <option value="WARM">⚡ WARM Leads</option>
           </select>
 
-          {/* Status Filter */}
+          {/* Phase 3 Status Filter: Complete 2-Way CRM Statuses */}
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
             className="bg-[#0b0f17] border border-border-app rounded-xl px-3 py-2 text-xs text-text-secondary focus:outline-none focus:border-brand-cyan cursor-pointer"
           >
-            <option value="all">All Statuses</option>
-            <option value="NEW">🆕 New</option>
-            <option value="SENT">📤 Pitched</option>
-            <option value="REPLIED">💬 Replied</option>
+            <option value="all">All Statuses ({leads.length})</option>
+            <option value="REPLIED">💬 Replied Inquiries ({repliedCount})</option>
+            <option value="READ">👀 Read by Client</option>
+            <option value="DELIVERED">📬 Delivered to Phone</option>
+            <option value="SENT">📤 Pitched (Sent)</option>
+            <option value="NEW">🆕 New / Uncontacted</option>
           </select>
         </div>
 
@@ -595,7 +603,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                 </>
               )}
 
-              <th className="p-3 min-w-[120px]">Status</th>
+              <th className="p-3 min-w-[160px]">Outreach &amp; CRM Status</th>
               <th className="p-3 min-w-[100px] text-center">Quick Actions</th>
             </tr>
           </thead>
@@ -616,12 +624,20 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                 const demo = getDemoRouting(lead.category, lead.businessName);
                 const waWebUrl = getWhatsAppWebUrl(lead, demo.url);
                 const contactedTime = formatContactDate(lead.contactedAt);
+                const repliedTime = formatContactDate(lead.repliedAt);
+                const isReplied = lead.outreachStatus === "REPLIED";
+                const isRead = lead.outreachStatus === "READ";
+                const isDelivered = lead.outreachStatus === "DELIVERED";
 
                 return (
                   <tr
                     key={lead.id}
                     className={`transition-colors hover:bg-white/[0.03] ${
-                      isSelected ? "bg-brand-cyan/10" : ""
+                      isSelected
+                        ? "bg-brand-cyan/10"
+                        : isReplied
+                        ? "bg-emerald-950/20 border-l-2 border-emerald-500"
+                        : ""
                     }`}
                   >
                     {/* Checkbox */}
@@ -640,10 +656,13 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
 
                     {/* Business Name */}
                     <td className="p-3">
-                      <div className="font-bold text-text-primary">
-                        <span className="truncate block max-w-[200px]" title={lead.businessName}>
+                      <div className="font-bold text-text-primary flex items-center gap-1.5">
+                        <span className="truncate block max-w-[190px]" title={lead.businessName}>
                           {lead.businessName}
                         </span>
+                        {isReplied && (
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping flex-shrink-0" title="Active Client Reply!"></span>
+                        )}
                       </div>
                       <span className="text-[10px] text-text-secondary font-mono">{lead.category}</span>
                       {viewMode === "outreach" && (
@@ -691,7 +710,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                               target="_blank"
                               rel="noreferrer"
                               className="p-1 rounded-md bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 transition-colors"
-                              title="Open 1-on-1 Chat in WhatsApp Web with pre-filled pitch"
+                              title="Open 1-on-1 Chat in WhatsApp Web"
                             >
                               <MessageCircle className="w-3 h-3" />
                             </a>
@@ -801,15 +820,19 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                       </>
                     )}
 
-                    {/* Phase 2: Interactive Outreach Status Selector */}
+                    {/* Phase 3: Complete 2-Way CRM Status & Client Reply Bubble */}
                     <td className="p-3">
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         <select
                           value={lead.outreachStatus || "NEW"}
                           onChange={(e) => handleUpdateStatus(lead.leadId, e.target.value)}
                           className={`text-[10px] font-mono font-bold px-2 py-1 rounded-xl border appearance-none pr-5 bg-no-repeat cursor-pointer focus:outline-none ${
-                            lead.outreachStatus === "REPLIED"
-                              ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300"
+                            isReplied
+                              ? "bg-emerald-500/25 border-emerald-400 text-emerald-300 shadow-md shadow-emerald-500/10"
+                              : isRead
+                              ? "bg-sky-500/20 border-sky-400 text-sky-300"
+                              : isDelivered
+                              ? "bg-indigo-500/20 border-indigo-400 text-indigo-300"
                               : lead.outreachStatus === "SENT"
                               ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300"
                               : "bg-slate-900 border-slate-700 text-slate-400"
@@ -821,42 +844,82 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                           }}
                         >
                           <option value="NEW" className="bg-slate-950 text-slate-300">🆕 NEW</option>
-                          <option value="SENT" className="bg-slate-950 text-cyan-300">📤 PITCHED</option>
-                          <option value="REPLIED" className="bg-slate-950 text-emerald-300">💬 REPLIED</option>
+                          <option value="SENT" className="bg-slate-950 text-cyan-300">📤 PITCHED (Sent)</option>
+                          <option value="DELIVERED" className="bg-slate-950 text-indigo-300">📬 DELIVERED (✓✓)</option>
+                          <option value="READ" className="bg-slate-950 text-sky-300">👀 READ (✓✓)</option>
+                          <option value="REPLIED" className="bg-slate-950 text-emerald-300">💬 REPLIED (Inquiry)</option>
                         </select>
 
-                        {contactedTime && (
+                        {/* If Client Replied: Display Inbound Message Bubble */}
+                        {isReplied && lead.lastReplyMessage && (
+                          <div className="p-2 rounded-xl bg-emerald-950/70 border border-emerald-500/40 text-emerald-200 text-[11px] font-mono leading-tight max-w-[200px] shadow-md">
+                            <span className="font-bold text-emerald-400 block text-[9px] uppercase tracking-wider mb-0.5">
+                              💬 Client Reply:
+                            </span>
+                            <p className="line-clamp-2 italic text-emerald-100">"{lead.lastReplyMessage}"</p>
+                            {repliedTime && (
+                              <span className="block text-[9px] text-emerald-400/80 mt-1">
+                                {repliedTime}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Contacted Timestamp */}
+                        {!isReplied && contactedTime && (
                           <span className="text-[9px] text-slate-400 font-mono flex items-center gap-1">
-                            <Clock className="w-2.5 h-2.5 text-cyan-400" />
+                            {isRead ? (
+                              <CheckCheck className="w-3 h-3 text-sky-400" />
+                            ) : isDelivered ? (
+                              <CheckCheck className="w-3 h-3 text-slate-400" />
+                            ) : (
+                              <Clock className="w-2.5 h-2.5 text-cyan-400" />
+                            )}
                             <span>{contactedTime}</span>
                           </span>
                         )}
                       </div>
                     </td>
 
-                    {/* Phase 2: Quick Actions */}
+                    {/* Phase 3: Quick Actions */}
                     <td className="p-3 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        {/* 1-Click Message Preview Modal Trigger */}
-                        <button
-                          onClick={() => setPreviewModalLead(lead)}
-                          className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500/25 flex items-center justify-center text-cyan-300 transition-colors"
-                          title="Preview WhatsApp Pitch Message"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
-
-                        {/* Direct WhatsApp Web Chat */}
-                        {rawPhone && (
+                        {/* If client replied: Glow green reply button */}
+                        {isReplied ? (
                           <a
                             href={waWebUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/25 flex items-center justify-center text-emerald-400 transition-colors"
-                            title="Open WhatsApp Web Chat"
+                            className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-[10px] font-mono flex items-center gap-1 shadow-md shadow-emerald-500/20 active:scale-95 transition-all"
+                            title="Reply to Client on WhatsApp Web"
                           >
-                            <MessageSquare className="w-3.5 h-3.5" />
+                            <MessageSquare className="w-3 h-3 fill-black" />
+                            <span>Reply</span>
                           </a>
+                        ) : (
+                          <>
+                            {/* Message Preview Modal Trigger */}
+                            <button
+                              onClick={() => setPreviewModalLead(lead)}
+                              className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500/25 flex items-center justify-center text-cyan-300 transition-colors"
+                              title="Preview WhatsApp Pitch Message"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* Direct WhatsApp Web Chat */}
+                            {rawPhone && (
+                              <a
+                                href={waWebUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/25 flex items-center justify-center text-emerald-400 transition-colors"
+                                title="Open WhatsApp Web Chat"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                          </>
                         )}
 
                         {/* GMaps Link */}
@@ -890,7 +953,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
         </table>
       </div>
 
-      {/* 2. PHASE 2: INTERACTIVE WHATSAPP MESSAGE PREVIEW MODAL */}
+      {/* 2. INTERACTIVE WHATSAPP MESSAGE PREVIEW MODAL */}
       {previewModalLead && (() => {
         const modalDemo = getDemoRouting(previewModalLead.category, previewModalLead.businessName);
         const ratingStr = `${previewModalLead.rating ? Number(previewModalLead.rating).toFixed(1) : "4.8"}★ (${previewModalLead.reviewCount || 50}+ reviews)`;

@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
     // Calculate metrics
     const totalLeads = await prisma.scrapedLead.count();
     const hotLeads = await prisma.scrapedLead.count({ where: { leadScore: { gte: 70 } } });
-    const pitchedLeads = await prisma.scrapedLead.count({ where: { outreachStatus: "SENT" } });
+    const pitchedLeads = await prisma.scrapedLead.count({ where: { outreachStatus: { in: ["SENT", "DELIVERED", "READ", "REPLIED"] } } });
     const repliedLeads = await prisma.scrapedLead.count({ where: { outreachStatus: "REPLIED" } });
 
     return NextResponse.json({
@@ -234,18 +234,28 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
-    const { leadIds, outreachStatus } = body;
+    const { leadIds, outreachStatus, lastReplyMessage } = body;
 
     if (!leadIds || !Array.isArray(leadIds) || !outreachStatus) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
     }
 
+    const updateData: any = {
+      outreachStatus
+    };
+
+    if (outreachStatus === "SENT") {
+      updateData.contactedAt = new Date();
+    } else if (outreachStatus === "REPLIED") {
+      updateData.repliedAt = new Date();
+      if (lastReplyMessage) {
+        updateData.lastReplyMessage = lastReplyMessage;
+      }
+    }
+
     await prisma.scrapedLead.updateMany({
       where: { leadId: { in: leadIds } },
-      data: {
-        outreachStatus,
-        contactedAt: outreachStatus === "SENT" ? new Date() : undefined
-      }
+      data: updateData
     });
 
     return NextResponse.json({ success: true, updatedCount: leadIds.length });
