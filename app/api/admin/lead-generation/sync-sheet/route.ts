@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID || "1n5v-jQeJ1d_tXhP_f6MvXyU8-6_QZ8eG";
+const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID || "12JhqOoK4J7GsG7QxISPYlhO9Pnjv1T-T30qIGz4V3AY";
 
 export async function POST(req: NextRequest) {
   try {

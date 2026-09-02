@@ -97,45 +97,36 @@ export async function POST(req: NextRequest) {
     const city = body.city || body.location || first.city || first.location || "West Bengal";
     const searchQuery = body.searchQuery || body.search_query || first.search_query || `${category} in ${city}`;
 
-    // 1. SMART BATCH RESOLUTION: Find existing batch for this exact search created within the last 30 mins
-    const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000);
-    
-    let targetBatch = null;
+    // 1. DETERMINISTIC ATOMIC BATCH RESOLUTION (Never create N duplicate boxes for 1 search!)
+    const cleanSearchQuery = searchQuery.trim();
+    const safeKey = cleanSearchQuery
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "_")
+      .replace(/_+/g, "_")
+      .slice(0, 45);
 
-    if (body.batchId || body.batch_id || first.batch_id || first.batchId) {
-      const explicitId = body.batchId || body.batch_id || first.batch_id || first.batchId;
-      targetBatch = await prisma.scrapedLeadBatch.findUnique({
-        where: { batchId: explicitId }
-      }).catch(() => null);
-    }
+    const deterministicBatchId = body.batchId || body.batch_id || first.batch_id || first.batchId || `batch_${safeKey}`;
 
-    if (!targetBatch) {
-      // Find recent batch matching category & city
-      targetBatch = await prisma.scrapedLeadBatch.findFirst({
-        where: {
-          category,
-          city,
-          createdAt: { gte: thirtyMinsAgo }
-        },
-        orderBy: { createdAt: "desc" }
-      }).catch(() => null);
-    }
-
-    // If still no recent batch, create ONE unified batch
-    if (!targetBatch) {
-      const newBatchId = `batch_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-      targetBatch = await prisma.scrapedLeadBatch.create({
-        data: {
-          batchId: newBatchId,
-          category,
-          city,
-          searchQuery,
-          targetCount: leadsArray.length > 1 ? leadsArray.length : 50,
-          totalFound: 0,
-          hotCount: 0
-        }
-      });
-    }
+    // Atomic upsert: If n8n sends 20 leads concurrently, all 20 will attach to the EXACT SAME batch box!
+    const targetBatch = await prisma.scrapedLeadBatch.upsert({
+      where: { batchId: deterministicBatchId },
+      update: {
+        category,
+        city,
+        searchQuery: cleanSearchQuery,
+        createdAt: new Date() // Update Indian timestamp to latest search event!
+      },
+      create: {
+        batchId: deterministicBatchId,
+        category,
+        city,
+        searchQuery: cleanSearchQuery,
+        targetCount: leadsArray.length > 1 ? leadsArray.length : 50,
+        totalFound: 0,
+        hotCount: 0,
+        createdAt: new Date()
+      }
+    });
 
     const finalBatchId = targetBatch.batchId;
     let hotCount = 0;
