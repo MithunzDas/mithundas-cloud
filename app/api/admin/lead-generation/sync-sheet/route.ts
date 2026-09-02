@@ -48,7 +48,6 @@ function parseCsv(csvText: string) {
   const rows: any[] = [];
 
   for (let i = 1; i < lines.length; i++) {
-    // Simple CSV parser supporting quotes
     const values: string[] = [];
     let current = "";
     let inQuotes = false;
@@ -81,20 +80,38 @@ async function ingestRows(rows: any[], batchId: string, category: string, city: 
   const batchCity = firstRow.city || city;
   const searchQuery = firstRow.search_query || `${batchCat} in ${batchCity}`;
 
-  const batch = await prisma.scrapedLeadBatch.upsert({
-    where: { batchId },
-    update: { totalFound: rows.length },
-    create: {
-      batchId,
-      category: batchCat,
-      city: batchCity,
-      searchQuery,
-      targetCount: rows.length,
-      totalFound: rows.length,
-      hotCount: 0
-    }
+  // Re-use existing batch if same search query exists
+  let batch = await prisma.scrapedLeadBatch.findFirst({
+    where: {
+      OR: [
+        { searchQuery },
+        { AND: [{ category: batchCat }, { city: batchCity }] }
+      ]
+    },
+    orderBy: { createdAt: "desc" }
   });
 
+  if (batch) {
+    await prisma.scrapedLeadBatch.update({
+      where: { id: batch.id },
+      data: { createdAt: new Date() }
+    });
+  } else {
+    batch = await prisma.scrapedLeadBatch.create({
+      data: {
+        batchId,
+        category: batchCat,
+        city: batchCity,
+        searchQuery,
+        targetCount: rows.length,
+        totalFound: rows.length,
+        hotCount: 0,
+        createdAt: new Date()
+      }
+    });
+  }
+
+  const finalBatchId = batch.batchId;
   let hotCount = 0;
   let inserted = 0;
 
@@ -103,39 +120,73 @@ async function ingestRows(rows: any[], batchId: string, category: string, city: 
     const score = Number(l.lead_score || l.leadScore || l.score) || 75;
     if (score >= 70) hotCount++;
 
-    const cleanPhone = (l.whatsapp_number || l.whatsappNumber || l.phone || "").replace(/\D/g, "");
-    const leadId = l.lead_id || l.leadId || `lead_${batchId}_${i + 1}_${Math.random().toString(36).substring(2, 6)}`;
+    let cleanPhone = (l.whatsapp_number || l.whatsappNumber || l.phone || "").replace(/\D/g, "");
+    if (cleanPhone.startsWith("0")) cleanPhone = cleanPhone.slice(1);
+    const phoneSuffix = cleanPhone.slice(-10);
+    const placeId = l.place_id || l.placeId;
 
-    await prisma.scrapedLead.upsert({
-      where: { leadId },
-      update: {
-        businessName: l.business_name || l.businessName || "Business",
-        phone: l.phone || "",
-        whatsappNumber: cleanPhone,
-        whatsappUrl: l.whatsapp_url || (cleanPhone ? `https://wa.me/${cleanPhone}` : ""),
-        email: l.email || "",
-        website: l.website || "",
-        hasWebsite: Boolean(l.has_website || (l.website && l.website !== "No Website")),
-        cmsTech: l.cms_tech || (l.website ? "Detected" : "No Website"),
-        rating: Number(l.rating) || 0,
-        reviewCount: Number(l.review_count) || 0,
-        leadScore: score,
-        leadTier: l.lead_tier || (score >= 70 ? "🔥 HOT LEAD" : "⚡ WARM LEAD"),
-        recommendedPitch: l.recommended_pitch || "Custom Mobile Website & WhatsApp Booking Engine",
-        gmapsUrl: l.gmaps_url || ""
-      },
-      create: {
+    // PROACTIVE GLOBAL DEDUPLICATION CHECK (Phone + Place ID)
+    let existingLead = null;
+    if (phoneSuffix && phoneSuffix.length === 10) {
+      existingLead = await prisma.scrapedLead.findFirst({
+        where: {
+          OR: [
+            { whatsappNumber: { contains: phoneSuffix } },
+            { phone: { contains: phoneSuffix } },
+            ...(placeId ? [{ placeId }] : [])
+          ]
+        }
+      }).catch(() => null);
+    } else if (placeId) {
+      existingLead = await prisma.scrapedLead.findFirst({
+        where: { placeId }
+      }).catch(() => null);
+    }
+
+    if (existingLead) {
+      // Merge & Enrich (Never duplicate, Never downgrade outreach status)
+      const newReviewCount = Number(l.review_count || l.reviewCount) || 0;
+      const bestReviewCount = Math.max(existingLead.reviewCount || 0, newReviewCount);
+      const bestScore = Math.max(existingLead.leadScore || 0, score);
+      const bestEmail = l.email || existingLead.email;
+      const bestWebsite = l.website || existingLead.website;
+
+      await prisma.scrapedLead.update({
+        where: { id: existingLead.id },
+        data: {
+          businessName: l.business_name || l.businessName || existingLead.businessName,
+          reviewCount: bestReviewCount,
+          rating: Number(l.rating) || existingLead.rating,
+          leadScore: bestScore,
+          email: bestEmail,
+          website: bestWebsite,
+          hasWebsite: Boolean(bestWebsite && bestWebsite !== "No Website"),
+          fullAddress: l.full_address || l.address || existingLead.fullAddress,
+          outreachStatus: ["SENT", "READ", "DELIVERED", "REPLIED"].includes(existingLead.outreachStatus)
+            ? existingLead.outreachStatus
+            : (l.outreach_status || l.outreachStatus || "NEW")
+        }
+      });
+      inserted++;
+      continue;
+    }
+
+    // Unique Lead Creation
+    const leadId = l.lead_id || l.leadId || `lead_${finalBatchId}_${phoneSuffix || i + 1}_${Math.random().toString(36).substring(2, 6)}`;
+
+    await prisma.scrapedLead.create({
+      data: {
         leadId,
-        batchId,
-        placeId: l.place_id || `place_${i + 1}`,
+        batchId: finalBatchId,
+        placeId: placeId || `place_${i + 1}`,
         businessName: l.business_name || l.businessName || "Business",
         category: l.category || batchCat,
         searchQuery: l.search_query || searchQuery,
         city: l.city || batchCity,
         fullAddress: l.full_address || l.address || "",
         phone: l.phone || "",
-        whatsappNumber: cleanPhone,
-        whatsappUrl: l.whatsapp_url || (cleanPhone ? `https://wa.me/${cleanPhone}` : ""),
+        whatsappNumber: cleanPhone || phoneSuffix,
+        whatsappUrl: l.whatsapp_url || (phoneSuffix ? `https://wa.me/91${phoneSuffix}` : ""),
         email: l.email || "",
         secondaryEmails: l.secondary_emails || "",
         website: l.website || "",
@@ -160,16 +211,19 @@ async function ingestRows(rows: any[], batchId: string, category: string, city: 
     inserted++;
   }
 
+  const trueTotal = await prisma.scrapedLead.count({ where: { batchId: finalBatchId } });
+  const trueHot = await prisma.scrapedLead.count({ where: { batchId: finalBatchId, leadScore: { gte: 70 } } });
+
   await prisma.scrapedLeadBatch.update({
     where: { id: batch.id },
-    data: { hotCount, totalFound: inserted }
+    data: { hotCount: trueHot, totalFound: trueTotal }
   });
 
   return NextResponse.json({
     success: true,
-    message: `Synced ${inserted} leads from Google Sheets into VPS PostgreSQL DB!`,
-    batchId,
+    message: `Synced ${inserted} leads with active phone deduplication!`,
+    batchId: finalBatchId,
     insertedCount: inserted,
-    hotCount
+    hotCount: trueHot
   });
 }
