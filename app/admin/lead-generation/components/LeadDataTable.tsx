@@ -70,6 +70,29 @@ export function getDemoRouting(category: string = "", businessName: string = "")
 } {
   const text = `${category} ${businessName}`.toLowerCase();
 
+  // 1. Lawyers, Advocates, Legal Chambers & Law Firms
+  if (
+    text.includes("advocate") ||
+    text.includes("lawyer") ||
+    text.includes("legal") ||
+    text.includes("attorney") ||
+    text.includes("solicitor") ||
+    text.includes("counsel") ||
+    text.includes("chamber") ||
+    text.includes("court") ||
+    text.includes("bar council") ||
+    text.includes("notary") ||
+    text.includes("vakil")
+  ) {
+    return {
+      slug: "demo-lawyer",
+      url: "https://mithundas.cloud/demo-lawyer",
+      label: "Lawyer & Advocate",
+      icon: "⚖️"
+    };
+  }
+
+  // 2. Healthcare / Dental / Clinics / Doctors / Salons
   if (
     text.includes("dent") ||
     text.includes("teeth") ||
@@ -83,9 +106,7 @@ export function getDemoRouting(category: string = "", businessName: string = "")
     text.includes("health") ||
     text.includes("care") ||
     text.includes("salon") ||
-    text.includes("spa") ||
-    text.includes("advocate") ||
-    text.includes("lawyer")
+    text.includes("spa")
   ) {
     return {
       slug: "demo-dental-clinic",
@@ -95,6 +116,7 @@ export function getDemoRouting(category: string = "", businessName: string = "")
     };
   }
 
+  // 3. Restaurants / Food / Dining / Biryani / Sweets / Dhaba
   if (
     text.includes("restaurant") ||
     text.includes("dining") ||
@@ -117,6 +139,7 @@ export function getDemoRouting(category: string = "", businessName: string = "")
     };
   }
 
+  // 4. Hotel / Resorts / Lodges / Stays
   if (
     text.includes("hotel") ||
     text.includes("resort") ||
@@ -133,6 +156,7 @@ export function getDemoRouting(category: string = "", businessName: string = "")
     };
   }
 
+  // 5. Cafe / Coffee / Bakery / Tea
   if (
     text.includes("cafe") ||
     text.includes("coffee") ||
