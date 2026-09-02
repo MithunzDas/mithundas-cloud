@@ -420,7 +420,7 @@ export default function DentalClinicDemoPage() {
               <span className="text-cyan-400 font-mono">Mithun Das AI Automation</span>
             </p>
             <p className="text-xs text-slate-400 font-mono mt-1">
-              Want this exact high-speed mobile website + automated WhatsApp booking receptionist starting at ₹2,999/-?
+              Want this kind of customized high-speed mobile website + automated WhatsApp booking receptionist starting at ₹2,999/-?
             </p>
           </div>
 

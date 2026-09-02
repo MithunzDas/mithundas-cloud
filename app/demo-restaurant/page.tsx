@@ -374,7 +374,7 @@ export default function RestaurantDemoPage() {
               <span className="text-amber-400 font-mono">Mithun Das AI Automation</span>
             </p>
             <p className="text-xs text-slate-400 font-mono mt-1">
-              Want this exact high-speed digital menu + 1-click WhatsApp reservation engine starting at ₹2,999/-?
+              Want this kind of customized high-speed digital menu + 1-click WhatsApp reservation engine starting at ₹2,999/-?
             </p>
           </div>
 
