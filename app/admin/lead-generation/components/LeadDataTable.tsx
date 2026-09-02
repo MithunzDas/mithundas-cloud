@@ -13,13 +13,18 @@ import {
   Square,
   Search,
   MessageCircle,
+  MessageSquare,
   Trash2,
   CheckCircle,
   AlertCircle,
   Zap,
   FileSpreadsheet,
   Copy,
-  Check
+  Check,
+  Eye,
+  X,
+  Clock,
+  ChevronDown
 } from "lucide-react";
 
 interface LeadItem {
@@ -54,7 +59,7 @@ interface LeadDataTableProps {
 }
 
 /**
- * Helper to determine tailored dynamic demo showcase URL by category
+ * Category-to-Demo Routing Engine
  */
 export function getDemoRouting(category: string = "", businessName: string = ""): {
   slug: string;
@@ -149,7 +154,26 @@ export function getDemoRouting(category: string = "", businessName: string = "")
   };
 }
 
+// Format relative/readable timestamp
+function formatContactDate(dateString?: string): string {
+  if (!dateString) return "";
+  try {
+    const d = new Date(dateString);
+    return d.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  } catch {
+    return "";
+  }
+}
+
 export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
+  // View Modes: "outreach" (focused 7-col) vs "full" (all 11-col)
+  const [viewMode, setViewMode] = useState<"outreach" | "full">("outreach");
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterTier, setFilterTier] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -158,6 +182,10 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
   const [isSendingOutreach, setIsSendingOutreach] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
   const [copiedLeadId, setCopiedLeadId] = useState<string | null>(null);
+
+  // Phase 2: Preview Modal State
+  const [previewModalLead, setPreviewModalLead] = useState<LeadItem | null>(null);
+  const [copiedModalText, setCopiedModalText] = useState(false);
 
   // Filter Leads
   const filteredLeads = leads.filter((lead) => {
@@ -250,6 +278,27 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
     }
   };
 
+  // Phase 2: Inline Status Quick-Changer
+  const handleUpdateStatus = async (leadId: string, newStatus: string) => {
+    try {
+      const res = await fetch("/api/admin/lead-generation/leads", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          leadIds: [leadId],
+          outreachStatus: newStatus
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        onRefresh();
+      }
+    } catch (err) {
+      console.error("Failed to update status:", err);
+    }
+  };
+
   // Sync Leads Directly From Master Google Sheet
   const [isSyncingSheet, setIsSyncingSheet] = useState(false);
   const handleSyncSheet = async () => {
@@ -282,34 +331,36 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
     }
   };
 
-  // Launch Meta WhatsApp Outreach with Dynamic Category Demo Routing
-  const handleLaunchOutreach = async () => {
-    if (selectedLeadIds.length === 0) {
+  // Launch Meta WhatsApp Outreach
+  const handleLaunchOutreach = async (targetLeadIds?: string[]) => {
+    const ids = targetLeadIds || selectedLeadIds;
+    if (ids.length === 0) {
       alert("Please select at least 1 lead to send WhatsApp message.");
       return;
     }
 
-    if (!confirm(`Send official Meta WhatsApp outreach with personalized category demos (Dental/Restaurant/Hotel) to ${selectedLeadIds.length} selected businesses?`)) {
+    if (!confirm(`Send official Meta WhatsApp outreach with personalized category demos to ${ids.length} selected business(es)?`)) {
       return;
     }
 
     setIsSendingOutreach(true);
-    setActionMessage(`Dispatching Meta WhatsApp templates to ${selectedLeadIds.length} leads with dynamic demo links...`);
+    setActionMessage(`Dispatching Meta WhatsApp templates to ${ids.length} leads with dynamic demo links...`);
 
     try {
       const res = await fetch("/api/admin/lead-generation/outreach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          leadIds: selectedLeadIds,
+          leadIds: ids,
           templateName: "local_business_starter"
         })
       });
 
       const data = await res.json();
       if (data.success) {
-        setActionMessage(`✅ Dispatched ${data.sentCount} / ${data.totalProcessed} WhatsApp messages with dynamic category demo URLs!`);
+        setActionMessage(`✅ Dispatched ${data.sentCount} / ${data.totalProcessed} WhatsApp messages with dynamic demo links!`);
         setSelectedLeadIds([]);
+        if (previewModalLead) setPreviewModalLead(null);
         setTimeout(() => {
           onRefresh();
           setActionMessage("");
@@ -333,6 +384,14 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
     }, 2000);
   };
 
+  // Build WhatsApp Web link with pre-filled pitch
+  const getWhatsAppWebUrl = (lead: LeadItem, demoUrl: string) => {
+    const phone = (lead.whatsappNumber || lead.phone || "").replace(/\D/g, "");
+    const cleanPhone = phone.length === 10 ? `91${phone}` : phone;
+    const text = `Hi ${lead.businessName},\n\nWe noticed your business has a great ${lead.rating ? Number(lead.rating).toFixed(1) : "4.8"}★ reputation in ${lead.city || "West Bengal"}!\n\nWe noticed your business is currently missing an automated 24/7 WhatsApp booking receptionist and modern website.\n\nWe built an interactive live mobile demo for your business: ${demoUrl}\n\nWould you like to see how this captures appointments directly on WhatsApp?`;
+    return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
+  };
+
   // Export CSV
   const handleExportCSV = () => {
     if (filteredLeads.length === 0) {
@@ -344,7 +403,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
       "Business Name", "Category", "City", "Full Address",
       "Phone", "WhatsApp Number", "Email", "Website", "CMS Tech", "Rating",
       "Review Count", "Lead Score", "Lead Tier", "Recommended Pitch",
-      "Dynamic Demo Target", "Google Maps URL", "Outreach Status"
+      "Dynamic Demo Target", "Google Maps URL", "Outreach Status", "Contacted At"
     ];
 
     const rows = filteredLeads.map((l) => {
@@ -366,7 +425,8 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
         `"${(l.recommendedPitch || "").replace(/"/g, '""')}"`,
         `"${demo.url}"`,
         `"${l.gmapsUrl || ""}"`,
-        `"${l.outreachStatus || "NEW"}"`
+        `"${l.outreachStatus || "NEW"}"`,
+        `"${l.contactedAt || ""}"`
       ].join(",");
     });
 
@@ -381,11 +441,43 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
   };
 
   return (
-    <div className="bg-[#101726]/90 border border-border-app rounded-2xl p-4 sm:p-6 backdrop-blur-xl flex flex-col h-full shadow-2xl">
-      {/* Table Header & Controls */}
+    <div className="bg-[#101726]/90 border border-border-app rounded-2xl p-4 sm:p-6 backdrop-blur-xl flex flex-col h-full shadow-2xl relative">
+      
+      {/* 1. TOP VIEW MODE SWITCHER & CONTROLS */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5 pb-4 border-b border-border-app">
+        
+        {/* Left: View Mode Pills & Search */}
         <div className="flex items-center gap-2.5 flex-wrap flex-1">
-          <div className="relative min-w-[220px]">
+          {/* Phase 2: View Switcher */}
+          <div className="flex items-center p-1 bg-[#0b0f17] border border-border-app rounded-xl">
+            <button
+              onClick={() => setViewMode("outreach")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
+                viewMode === "outreach"
+                  ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-black shadow-md shadow-cyan-500/20"
+                  : "text-text-secondary hover:text-text-primary"
+              }`}
+              title="7-Column High-Speed Outreach View (Zero horizontal scroll)"
+            >
+              <span>🎯 Outreach Focus</span>
+              <span className="text-[10px] px-1 py-0.2 rounded bg-black/20 font-normal">7 Cols</span>
+            </button>
+            <button
+              onClick={() => setViewMode("full")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
+                viewMode === "full"
+                  ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-black shadow-md shadow-cyan-500/20"
+                  : "text-text-secondary hover:text-text-primary"
+              }`}
+              title="Full 29-Column Deep Data View"
+            >
+              <span>📊 Full Data</span>
+              <span className="text-[10px] px-1 py-0.2 rounded bg-black/20 font-normal">11 Cols</span>
+            </button>
+          </div>
+
+          {/* Search Input */}
+          <div className="relative min-w-[200px]">
             <input
               type="text"
               value={searchTerm}
@@ -396,6 +488,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
             <Search className="w-3.5 h-3.5 text-gray-500 absolute left-3 top-2.5 pointer-events-none" />
           </div>
 
+          {/* Tier Filter */}
           <select
             value={filterTier}
             onChange={(e) => setFilterTier(e.target.value)}
@@ -406,6 +499,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
             <option value="WARM">⚡ WARM Leads</option>
           </select>
 
+          {/* Status Filter */}
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
@@ -418,7 +512,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
           </select>
         </div>
 
-        {/* Bulk Action Buttons */}
+        {/* Right: Bulk Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
           {selectedLeadIds.length > 0 && (
             <button
@@ -438,7 +532,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
             title="Sync newly scraped rows from Master Google Sheet into VPS Database"
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span>{isSyncingSheet ? "Syncing..." : "Sync Google Sheet"}</span>
+            <span>{isSyncingSheet ? "Syncing..." : "Sync Sheet"}</span>
           </button>
 
           <button
@@ -450,14 +544,14 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
           </button>
 
           <button
-            onClick={handleLaunchOutreach}
+            onClick={() => handleLaunchOutreach()}
             disabled={selectedLeadIds.length === 0 || isSendingOutreach}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-semibold shadow-lg shadow-emerald-500/20 transition-all disabled:opacity-40 cursor-pointer"
           >
             <Send className="w-3.5 h-3.5 fill-current" />
             <span>
               {isSendingOutreach
-                ? "Dispatching Meta Templates..."
+                ? "Dispatching..."
                 : `Launch Meta WhatsApp (${selectedLeadIds.length})`}
             </span>
           </button>
@@ -487,22 +581,30 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                 </button>
               </th>
               <th className="p-3 min-w-[200px]">Business Name</th>
-              <th className="p-3 min-w-[170px]">Score &amp; Tier</th>
-              <th className="p-3 min-w-[130px]">Phone / WhatsApp</th>
-              <th className="p-3 min-w-[180px]">Dynamic Demo Target</th>
-              <th className="p-3 min-w-[150px]">Website &amp; Tech</th>
-              <th className="p-3 min-w-[140px]">Email</th>
-              <th className="p-3 min-w-[100px]">Rating</th>
-              <th className="p-3 min-w-[110px]">Status</th>
-              <th className="p-3 min-w-[150px]">Location</th>
-              <th className="p-3 min-w-[80px] text-center">Action</th>
+              <th className="p-3 min-w-[130px]">Score &amp; Tier</th>
+              <th className="p-3 min-w-[140px]">Phone &amp; WhatsApp</th>
+              <th className="p-3 min-w-[170px]">Dynamic Demo Target</th>
+
+              {/* Extended Columns in Full View */}
+              {viewMode === "full" && (
+                <>
+                  <th className="p-3 min-w-[140px]">Website &amp; Tech</th>
+                  <th className="p-3 min-w-[130px]">Email</th>
+                  <th className="p-3 min-w-[100px]">Rating</th>
+                  <th className="p-3 min-w-[140px]">Location</th>
+                </>
+              )}
+
+              <th className="p-3 min-w-[120px]">Status</th>
+              <th className="p-3 min-w-[100px] text-center">Quick Actions</th>
             </tr>
           </thead>
+
           <tbody className="divide-y divide-border-app/50 font-sans">
             {filteredLeads.length === 0 ? (
               <tr>
-                <td colSpan={11} className="p-12 text-center text-text-secondary font-mono">
-                  No leads found in this view.
+                <td colSpan={viewMode === "full" ? 11 : 7} className="p-12 text-center text-text-secondary font-mono">
+                  No leads found matching current filters.
                 </td>
               </tr>
             ) : (
@@ -512,6 +614,8 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                 const isHot = score >= 70;
                 const rawPhone = lead.whatsappNumber || lead.phone || "";
                 const demo = getDemoRouting(lead.category, lead.businessName);
+                const waWebUrl = getWhatsAppWebUrl(lead, demo.url);
+                const contactedTime = formatContactDate(lead.contactedAt);
 
                 return (
                   <tr
@@ -542,11 +646,16 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                         </span>
                       </div>
                       <span className="text-[10px] text-text-secondary font-mono">{lead.category}</span>
+                      {viewMode === "outreach" && (
+                        <p className="text-[10px] text-slate-500 font-mono truncate max-w-[180px]">
+                          {lead.city || "West Bengal"}
+                        </p>
+                      )}
                     </td>
 
                     {/* Score & Tier */}
                     <td className="p-3">
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2">
                         <div
                           className={`w-8 h-8 rounded-xl flex items-center justify-center font-mono font-bold text-xs shadow-inner ${
                             isHot
@@ -556,37 +665,37 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                         >
                           {score}
                         </div>
-                        <div className="space-y-0.5">
+                        <div>
                           <span
-                            className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full font-bold whitespace-nowrap ${
+                            className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.2 rounded-full font-bold whitespace-nowrap ${
                               isHot
-                                ? "bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 text-amber-300"
-                                : "bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/40 text-blue-300"
+                                ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
                             }`}
                           >
-                            {isHot ? <Flame className="w-3 h-3 fill-current text-amber-400" /> : <Zap className="w-3 h-3 text-blue-400" />}
-                            <span>{isHot ? "HOT LEAD" : "WARM LEAD"}</span>
+                            {isHot ? <Flame className="w-2.5 h-2.5 fill-current text-amber-400" /> : <Zap className="w-2.5 h-2.5 text-blue-400" />}
+                            <span>{isHot ? "HOT" : "WARM"}</span>
                           </span>
-                          <p className="text-[10px] text-text-secondary font-mono truncate max-w-[120px]">
-                            {lead.hasWebsite ? "Optimization" : "Needs Website"}
-                          </p>
                         </div>
                       </div>
                     </td>
 
-                    {/* Phone & WhatsApp */}
+                    {/* Phone & Direct WhatsApp Web Button */}
                     <td className="p-3 font-mono text-[11px]">
                       {rawPhone ? (
                         <div className="space-y-1">
-                          <a
-                            href={`https://wa.me/${rawPhone.replace(/\D/g, '')}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-emerald-400 hover:underline flex items-center gap-1 font-medium"
-                          >
-                            <MessageCircle className="w-3 h-3" />
-                            <span>+{rawPhone}</span>
-                          </a>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-emerald-400 font-medium">+{rawPhone}</span>
+                            <a
+                              href={waWebUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="p-1 rounded-md bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 transition-colors"
+                              title="Open 1-on-1 Chat in WhatsApp Web with pre-filled pitch"
+                            >
+                              <MessageCircle className="w-3 h-3" />
+                            </a>
+                          </div>
                           <a
                             href={`tel:${rawPhone}`}
                             className="text-gray-400 hover:text-white flex items-center gap-1 text-[10px]"
@@ -599,7 +708,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                       )}
                     </td>
 
-                    {/* DYNAMIC DEMO SHOWCASE TARGET (Phase 1) */}
+                    {/* Dynamic Demo Showcase Target */}
                     <td className="p-3">
                       <div className="flex items-center gap-1.5">
                         <a
@@ -628,85 +737,129 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                       </div>
                     </td>
 
-                    {/* Website & Tech */}
-                    <td className="p-3">
-                      {lead.website ? (
-                        <div className="space-y-0.5">
-                          <a
-                            href={lead.website}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-brand-cyan hover:underline flex items-center gap-1 font-mono text-[11px] truncate max-w-[130px]"
-                          >
-                            <Globe className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">{lead.website.replace(/^https?:\/\//, '')}</span>
-                          </a>
-                          <span className="text-[10px] text-gray-400 font-mono px-1.5 py-0.5 rounded bg-white/5 border border-border-app">
-                            {lead.cmsTech || "Detected"}
+                    {/* Extended Columns (Only in Full View) */}
+                    {viewMode === "full" && (
+                      <>
+                        {/* Website & Tech */}
+                        <td className="p-3">
+                          {lead.website ? (
+                            <div className="space-y-0.5">
+                              <a
+                                href={lead.website}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-brand-cyan hover:underline flex items-center gap-1 font-mono text-[11px] truncate max-w-[130px]"
+                              >
+                                <Globe className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">{lead.website.replace(/^https?:\/\//, '')}</span>
+                              </a>
+                              <span className="text-[10px] text-gray-400 font-mono px-1.5 py-0.5 rounded bg-white/5 border border-border-app">
+                                {lead.cmsTech || "Detected"}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="inline-block text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/30 text-rose-400">
+                              ❌ No Website
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Email */}
+                        <td className="p-3 font-mono text-[11px]">
+                          {lead.email ? (
+                            <a
+                              href={`mailto:${lead.email}`}
+                              className="text-text-primary hover:text-brand-cyan flex items-center gap-1 truncate max-w-[130px]"
+                            >
+                              <Mail className="w-3 h-3 text-brand-indigo flex-shrink-0" />
+                              <span className="truncate">{lead.email}</span>
+                            </a>
+                          ) : (
+                            <span className="text-gray-600">—</span>
+                          )}
+                        </td>
+
+                        {/* Rating */}
+                        <td className="p-3 font-mono text-[11px]">
+                          <div className="flex items-center gap-1 text-amber-400 font-bold">
+                            <span>★ {lead.rating || "4.5"}</span>
+                          </div>
+                          <span className="text-[10px] text-text-secondary">
+                            {lead.reviewCount || 0} reviews
                           </span>
-                        </div>
-                      ) : (
-                        <span className="inline-block text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/30 text-rose-400">
-                          ❌ No Website
-                        </span>
-                      )}
-                    </td>
+                        </td>
 
-                    {/* Email */}
-                    <td className="p-3 font-mono text-[11px]">
-                      {lead.email ? (
-                        <a
-                          href={`mailto:${lead.email}`}
-                          className="text-text-primary hover:text-brand-cyan flex items-center gap-1 truncate max-w-[130px]"
-                        >
-                          <Mail className="w-3 h-3 text-brand-indigo flex-shrink-0" />
-                          <span className="truncate">{lead.email}</span>
-                        </a>
-                      ) : (
-                        <span className="text-gray-600">—</span>
-                      )}
-                    </td>
+                        {/* Location */}
+                        <td className="p-3 text-[11px]">
+                          <span className="font-semibold text-text-primary block truncate max-w-[140px]">
+                            {lead.city || "Local Area"}
+                          </span>
+                          <span className="text-[10px] text-text-secondary truncate block max-w-[140px]">
+                            {lead.fullAddress || ""}
+                          </span>
+                        </td>
+                      </>
+                    )}
 
-                    {/* Rating / Reviews */}
-                    <td className="p-3 font-mono text-[11px]">
-                      <div className="flex items-center gap-1 text-amber-400 font-bold">
-                        <span>★ {lead.rating || "4.5"}</span>
-                      </div>
-                      <span className="text-[10px] text-text-secondary">
-                        {lead.reviewCount || 0} reviews
-                      </span>
-                    </td>
-
-                    {/* Outreach Status */}
+                    {/* Phase 2: Interactive Outreach Status Selector */}
                     <td className="p-3">
-                      {lead.outreachStatus === "REPLIED" ? (
-                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-mono text-[10px] font-bold flex items-center gap-1 w-fit">
-                          <CheckCircle className="w-3 h-3" /> REPLIED
-                        </span>
-                      ) : lead.outreachStatus === "SENT" ? (
-                        <span className="px-2.5 py-1 rounded-full bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan font-mono text-[10px] font-medium flex items-center gap-1 w-fit">
-                          <Send className="w-3 h-3" /> PITCHED
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-1 rounded-full bg-gray-800/80 border border-gray-700 text-gray-400 font-mono text-[10px] w-fit">
-                          NEW
-                        </span>
-                      )}
+                      <div className="space-y-1">
+                        <select
+                          value={lead.outreachStatus || "NEW"}
+                          onChange={(e) => handleUpdateStatus(lead.leadId, e.target.value)}
+                          className={`text-[10px] font-mono font-bold px-2 py-1 rounded-xl border appearance-none pr-5 bg-no-repeat cursor-pointer focus:outline-none ${
+                            lead.outreachStatus === "REPLIED"
+                              ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300"
+                              : lead.outreachStatus === "SENT"
+                              ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300"
+                              : "bg-slate-900 border-slate-700 text-slate-400"
+                          }`}
+                          style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                            backgroundPosition: "right 0.35rem center",
+                            backgroundSize: "0.75rem"
+                          }}
+                        >
+                          <option value="NEW" className="bg-slate-950 text-slate-300">🆕 NEW</option>
+                          <option value="SENT" className="bg-slate-950 text-cyan-300">📤 PITCHED</option>
+                          <option value="REPLIED" className="bg-slate-950 text-emerald-300">💬 REPLIED</option>
+                        </select>
+
+                        {contactedTime && (
+                          <span className="text-[9px] text-slate-400 font-mono flex items-center gap-1">
+                            <Clock className="w-2.5 h-2.5 text-cyan-400" />
+                            <span>{contactedTime}</span>
+                          </span>
+                        )}
+                      </div>
                     </td>
 
-                    {/* Location */}
-                    <td className="p-3 text-[11px]">
-                      <span className="font-semibold text-text-primary block truncate max-w-[140px]">
-                        {lead.city || "Local Area"}
-                      </span>
-                      <span className="text-[10px] text-text-secondary truncate block max-w-[140px]">
-                        {lead.fullAddress || ""}
-                      </span>
-                    </td>
-
-                    {/* Actions */}
+                    {/* Phase 2: Quick Actions */}
                     <td className="p-3 text-center">
                       <div className="flex items-center justify-center gap-1">
+                        {/* 1-Click Message Preview Modal Trigger */}
+                        <button
+                          onClick={() => setPreviewModalLead(lead)}
+                          className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500/25 flex items-center justify-center text-cyan-300 transition-colors"
+                          title="Preview WhatsApp Pitch Message"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Direct WhatsApp Web Chat */}
+                        {rawPhone && (
+                          <a
+                            href={waWebUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/25 flex items-center justify-center text-emerald-400 transition-colors"
+                            title="Open WhatsApp Web Chat"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+
+                        {/* GMaps Link */}
                         {lead.gmapsUrl && (
                           <a
                             href={lead.gmapsUrl}
@@ -718,6 +871,8 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                             <ExternalLink className="w-3.5 h-3.5" />
                           </a>
                         )}
+
+                        {/* Delete */}
                         <button
                           onClick={() => handleDeleteOne(lead.leadId, lead.businessName)}
                           className="w-7 h-7 rounded-lg bg-white/5 border border-border-app hover:border-rose-500 flex items-center justify-center text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
@@ -734,6 +889,134 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
           </tbody>
         </table>
       </div>
+
+      {/* 2. PHASE 2: INTERACTIVE WHATSAPP MESSAGE PREVIEW MODAL */}
+      {previewModalLead && (() => {
+        const modalDemo = getDemoRouting(previewModalLead.category, previewModalLead.businessName);
+        const ratingStr = `${previewModalLead.rating ? Number(previewModalLead.rating).toFixed(1) : "4.8"}★ (${previewModalLead.reviewCount || 50}+ reviews)`;
+        const cityStr = previewModalLead.city || "West Bengal";
+        const phone = previewModalLead.whatsappNumber || previewModalLead.phone || "";
+        const cleanPhone = phone.replace(/\D/g, "");
+
+        const previewText =
+          `Hi ${previewModalLead.businessName},\n\n` +
+          `We noticed your business has an exceptional ${ratingStr} reputation in ${cityStr}!\n\n` +
+          `Most customers today prefer booking consultations directly through WhatsApp without waiting on phone calls. We noticed your business does not yet have an automated 24/7 WhatsApp appointment booking system.\n\n` +
+          `We created an interactive live mobile demo to show you how it works:\n\n` +
+          `👉 View Demo: ${modalDemo.url}\n\n` +
+          `Would you like to see how this captures 3x more appointments automatically starting at ₹2,999/-?`;
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+            <div className="bg-[#0b101b] border border-cyan-500/40 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl shadow-cyan-500/10 flex flex-col">
+              
+              {/* Modal WhatsApp Green Header */}
+              <div className="bg-gradient-to-r from-emerald-800 to-teal-900 px-4 py-3 flex items-center justify-between text-white border-b border-emerald-700/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-base font-bold shadow-md">
+                    {modalDemo.icon}
+                  </div>
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-bold truncate max-w-[240px]">
+                      {previewModalLead.businessName}
+                    </h4>
+                    <p className="text-[10px] text-emerald-200 font-mono flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span>+{cleanPhone || "91XXXXXXXXXX"} • {modalDemo.label}</span>
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setPreviewModalLead(null)}
+                  className="p-1.5 rounded-xl bg-black/20 hover:bg-black/40 text-white/80 hover:text-white transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Chat Canvas */}
+              <div className="p-4 sm:p-6 bg-[#060a12] space-y-4 max-h-[60vh] overflow-y-auto">
+                <div className="text-center">
+                  <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-slate-400">
+                    Official Meta WhatsApp Cloud API Template Preview
+                  </span>
+                </div>
+
+                {/* WhatsApp Message Bubble */}
+                <div className="bg-[#121c2c] border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
+                  <p className="text-xs sm:text-sm text-slate-200 whitespace-pre-line leading-relaxed">
+                    <span className="font-bold text-white">Hi {previewModalLead.businessName}</span>,
+                    {"\n\n"}
+                    We noticed your business has an exceptional <span className="text-amber-400 font-bold">{ratingStr}</span> reputation in <span className="text-cyan-300 font-semibold">{cityStr}</span>!
+                    {"\n\n"}
+                    Most customers today prefer booking consultations directly through WhatsApp without waiting on phone calls. We noticed your business does not yet have an automated 24/7 WhatsApp appointment booking system.
+                    {"\n\n"}
+                    We created an interactive live mobile demo to show you how it works:
+                  </p>
+
+                  {/* Dynamic CTA Button inside WhatsApp bubble */}
+                  <a
+                    href={modalDemo.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-extrabold text-xs font-mono tracking-wide shadow-md flex items-center justify-center gap-2 transition-transform hover:scale-[1.02]"
+                  >
+                    <span>{modalDemo.icon}</span>
+                    <span>View Live {modalDemo.label} Showcase</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+
+                  <div className="flex items-center justify-end gap-1 pt-1 text-[10px] text-slate-500 font-mono">
+                    <span>Just now</span>
+                    <span className="text-cyan-400">✓✓</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Actions Footer */}
+              <div className="p-3 sm:p-4 bg-[#090e18] border-t border-slate-800 flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(previewText);
+                      setCopiedModalText(true);
+                      setTimeout(() => setCopiedModalText(false), 2000);
+                    }}
+                    className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-mono text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors"
+                  >
+                    {copiedModalText ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedModalText ? "Copied!" : "Copy Pitch"}</span>
+                  </button>
+
+                  <a
+                    href={getWhatsAppWebUrl(previewModalLead, modalDemo.url)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/40 hover:bg-emerald-500/25 text-xs font-mono text-emerald-400 flex items-center gap-1.5 transition-colors"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Open WA Web</span>
+                  </a>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleLaunchOutreach([previewModalLead.leadId])}
+                    disabled={isSendingOutreach}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-300 hover:to-teal-400 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
+                  >
+                    <Send className="w-3.5 h-3.5 fill-black" />
+                    <span>Send via Meta API</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
+
     </div>
   );
 }
