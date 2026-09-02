@@ -55,10 +55,10 @@ const DENTAL_PROBLEMS = [
 ];
 
 const TIME_SLOTS = [
-  "🌅 10:00 AM – 11:30 AM (Morning)",
-  "☀️ 12:30 PM – 02:00 PM (Afternoon)",
-  "🌇 04:30 PM – 06:00 PM (Evening)",
-  "🌙 07:00 PM – 08:30 PM (Night)"
+  "🌅 10:00 AM – 11:30 AM IST (Morning)",
+  "☀️ 12:30 PM – 02:00 PM IST (Afternoon)",
+  "🌇 04:30 PM – 06:00 PM IST (Evening)",
+  "🌙 07:00 PM – 08:30 PM IST (Night)"
 ];
 
 const SERVICES = [
@@ -159,6 +159,17 @@ const REVIEWS = [
   }
 ];
 
+// Helper: Convert YYYY-MM-DD to DD-MM-YYYY
+function formatToDDMMYYYY(isoDate: string): string {
+  if (!isoDate) return "";
+  const parts = isoDate.split("-");
+  if (parts.length === 3) {
+    const [y, m, d] = parts;
+    return `${d}-${m}-${y}`;
+  }
+  return isoDate;
+}
+
 export default function DentalClinicDemoPage() {
   // Clinical Demographics State
   const [activeTab, setActiveTab] = useState<"form" | "ai">("form");
@@ -167,7 +178,7 @@ export default function DentalClinicDemoPage() {
   const [patientGender, setPatientGender] = useState("Male");
   const [selectedProblem, setSelectedProblem] = useState(DENTAL_PROBLEMS[0]);
   
-  // Calculate today's date for disabling past dates
+  // Calculate today's date for disabling past dates (YYYY-MM-DD for native input)
   const todayStr = new Date().toISOString().split("T")[0];
   const [appointmentDate, setAppointmentDate] = useState(() => {
     const d = new Date();
@@ -177,6 +188,9 @@ export default function DentalClinicDemoPage() {
   const [selectedSlot, setSelectedSlot] = useState(TIME_SLOTS[2]);
 
   const dateInputRef = useRef<HTMLInputElement>(null);
+
+  // Formatted date string in DD-MM-YYYY format
+  const displayDateDDMMYYYY = formatToDDMMYYYY(appointmentDate);
 
   // AI Chat State
   const [messages, setMessages] = useState<Message[]>([
@@ -201,10 +215,11 @@ export default function DentalClinicDemoPage() {
     chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping, activeTab]);
 
-  // Generate Doctor's Clinical WhatsApp Message
+  // Generate Doctor's Clinical WhatsApp Message with DD-MM-YYYY and IST slot
   const buildWhatsAppUrl = (customName?: string, customProblem?: string) => {
     const name = customName || patientName || "Patient";
     const problem = customProblem || selectedProblem;
+    const formattedDate = formatToDDMMYYYY(appointmentDate);
 
     const formattedMsg =
       "🦷 *NEW DENTAL APPOINTMENT BOOKING*\n" +
@@ -212,7 +227,7 @@ export default function DentalClinicDemoPage() {
       "👤 *Patient Name:* " + name + "\n" +
       "🧬 *Demographics:* " + patientGender + ", " + (patientAge ? patientAge + " Yrs" : "Adult") + "\n" +
       "🩺 *Dental Concern:* " + problem + "\n" +
-      "📅 *Preferred Date:* " + appointmentDate + "\n" +
+      "📅 *Preferred Date:* " + formattedDate + " (DD-MM-YYYY)\n" +
       "⏰ *Preferred Slot:* " + selectedSlot + "\n" +
       "🏥 *Clinic:* Apex Dental & Aesthetic Center\n" +
       "━━━━━━━━━━━━━━━━━━━━\n" +
@@ -255,7 +270,7 @@ export default function DentalClinicDemoPage() {
 
       const lower = text.toLowerCase();
       if (lower.includes("book") || lower.includes("appointment") || lower.includes("today")) {
-        botReply = "Great! Dr. Ananya Roy is available for consultation. Fill in your details on the Booking Form tab or click below to WhatsApp immediately!";
+        botReply = "Great! Dr. Ananya Roy is available for consultation. Fill in your name on the Booking Form tab or click below to WhatsApp immediately!";
         replies = ["✅ Open 1-Tap Form", "💬 WhatsApp Doctor Directly"];
       } else if (lower.includes("price") || lower.includes("cost") || lower.includes("offer")) {
         botReply = "Special Clinic Offers:\n• Single-Sitting RCT: ₹2,499 (Save ₹1,000)\n• Laser Teeth Whitening: ₹1,999\n• Full 3D Digital Smile Scan: 100% FREE this week!";
@@ -264,7 +279,7 @@ export default function DentalClinicDemoPage() {
         botReply = "🚨 Emergency Case Flagged! Please rinse with lukewarm salt water. Our emergency duty dentist can attend you in 30 minutes. Click below to call immediately!";
         replies = ["📞 Call Clinic Directly", "📍 Get Instant GPS Route"];
       } else if (lower.includes("location") || lower.includes("timing") || lower.includes("address")) {
-        botReply = "📍 Address: 2nd Floor, Apex Health City, Barasat-Habra Road (Opp. City Mall).\n⏰ Timings: Mon-Sun, 9:00 AM – 9:00 PM (Open all 7 days).";
+        botReply = "📍 Address: 2nd Floor, Apex Health City, Barasat-Habra Road (Opp. City Mall).\n⏰ Timings: Mon-Sun, 9:00 AM – 9:00 PM IST (Open all 7 days).";
         replies = ["📅 Book Visit", "💬 Open in WhatsApp"];
       } else {
         botReply = "Thank you! I have registered your inquiry. Our senior consultant will WhatsApp you shortly with personalized details!";
@@ -515,13 +530,19 @@ export default function DentalClinicDemoPage() {
                     </select>
                   </div>
 
-                  {/* Appointment Date (Past Dates Disabled + Vivid Cyan Picker Icon) & Time Slot */}
+                  {/* Appointment Date (DD-MM-YYYY format + Past Dates Disabled) & IST Time Slot */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[11px] font-mono text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-cyan-400" />
-                        <span>Appointment Date:</span>
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[11px] font-mono text-slate-300 uppercase tracking-wider flex items-center gap-1">
+                          <Calendar className="w-3 h-3 text-cyan-400" />
+                          <span>Appointment Date:</span>
+                        </label>
+                        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-bold">
+                          {displayDateDDMMYYYY}
+                        </span>
+                      </div>
+
                       <div className="relative flex items-center">
                         <input
                           ref={dateInputRef}
@@ -538,17 +559,18 @@ export default function DentalClinicDemoPage() {
                             try { dateInputRef.current?.showPicker(); } catch (e) { dateInputRef.current?.focus(); }
                           }}
                           className="absolute right-3 p-1 rounded text-cyan-400 hover:text-cyan-300 pointer-events-auto"
-                          title="Open Calendar"
+                          title="Click to Open Calendar"
                         >
                           <Calendar className="w-4 h-4" />
                         </button>
                       </div>
+                      <p className="text-[9px] text-slate-500 font-mono mt-0.5">Format: DD-MM-YYYY (Past dates disabled)</p>
                     </div>
 
                     <div>
                       <label className="block text-[11px] font-mono text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1">
                         <Clock className="w-3 h-3 text-amber-400" />
-                        <span>Preferred Time Slot:</span>
+                        <span>Preferred Slot (IST):</span>
                       </label>
                       <select
                         value={selectedSlot}
@@ -561,6 +583,7 @@ export default function DentalClinicDemoPage() {
                           </option>
                         ))}
                       </select>
+                      <p className="text-[9px] text-slate-500 font-mono mt-0.5">All slots in Indian Standard Time (IST)</p>
                     </div>
                   </div>
 
@@ -572,7 +595,7 @@ export default function DentalClinicDemoPage() {
                         <span>Auto-Filled WhatsApp Message Preview:</span>
                       </span>
                       <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-                        Doctor Dispatch
+                        IST Timezone
                       </span>
                     </div>
 
@@ -580,7 +603,8 @@ export default function DentalClinicDemoPage() {
                       {"🦷 *APEX DENTAL CLINIC APPOINTMENT*\n" +
                         "👤 Patient: " + (patientName || "[Patient Name]") + " (" + patientGender + ", " + (patientAge ? patientAge + " Yrs" : "Adult") + ")\n" +
                         "🩺 Concern: " + selectedProblem + "\n" +
-                        "📅 Date: " + appointmentDate + " | Slot: " + selectedSlot.split("(")[0]}
+                        "📅 Date: " + displayDateDDMMYYYY + " (DD-MM-YYYY)\n" +
+                        "⏰ Slot: " + selectedSlot}
                     </div>
                   </div>
 
@@ -606,7 +630,7 @@ export default function DentalClinicDemoPage() {
                       </div>
                       <div>
                         <h4 className="text-xs font-bold text-white">Apex AI Receptionist</h4>
-                        <p className="text-[9px] text-slate-400 font-mono">Answers pricing, slots &amp; emergency care</p>
+                        <p className="text-[9px] text-slate-400 font-mono">Answers pricing, slots &amp; emergency care (IST)</p>
                       </div>
                     </div>
                     <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
