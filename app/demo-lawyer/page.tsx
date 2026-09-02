@@ -132,15 +132,17 @@ const SENIOR_ADVOCATES = [
     court: "Calcutta High Court & Barasat District Court",
     exp: "18+ Yrs Legal Practice • 2,400+ Cases Represented",
     rating: "4.96 (380+ Reviews)",
-    badge: "Trial Specialist"
+    badge: "Trial Specialist",
+    image: "/images/showcase/advocate_male.jpg"
   },
   {
-    name: "Adv. Moumita Sen, B.A. LL.B (Hons)",
+    name: "Adv. Priya Sharma, B.A. LL.B (Hons)",
     title: "Civil, Matrimonial & Property Law Specialist",
-    court: "Barasat & Alipore District Court",
+    court: "Calcutta High Court & Barasat Court",
     exp: "12+ Yrs Experience • Land Dispute Arbitrator",
     rating: "4.92 (290+ Reviews)",
-    badge: "Property Expert"
+    badge: "Property Expert",
+    image: "/images/showcase/advocate_female.jpg"
   }
 ];
 
@@ -792,8 +794,13 @@ export default function LawyerDemoPage() {
               key={idx}
               className="bg-[#090d18] border border-slate-800 rounded-3xl p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 hover:border-amber-500/30 transition-all"
             >
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-600 flex items-center justify-center text-black font-bold text-2xl flex-shrink-0 shadow-lg">
-                👨‍⚖️
+              <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-amber-500/40 shadow-xl flex-shrink-0">
+                <img
+                  src={adv.image}
+                  alt={adv.name}
+                  className="w-full h-full object-cover object-top"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none"></div>
               </div>
               <div className="space-y-1 flex-1">
                 <div className="flex items-center justify-between gap-2">
@@ -812,6 +819,12 @@ export default function LawyerDemoPage() {
               </div>
             </div>
           ))}
+          </div>
+
+        <div className="pt-6 text-center max-w-xl mx-auto">
+          <p className="text-[11px] sm:text-xs font-mono text-amber-300/80 bg-amber-500/10 border border-amber-500/20 py-2 px-3 rounded-2xl">
+            ✨ <span className="font-bold text-white">Client Customization:</span> Your personal photo, Bar Council credentials, court chamber locations, and logo are integrated within 24 hours of onboarding!
+          </p>
         </div>
       </section>
 
