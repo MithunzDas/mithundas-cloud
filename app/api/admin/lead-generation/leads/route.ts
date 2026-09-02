@@ -146,30 +146,58 @@ export async function POST(req: NextRequest) {
       const score = Number(l.lead_score || l.leadScore || l.score) || 75;
       if (score >= 70) hotCount++;
 
-      // Consistent leadId based on place_id or phone so duplicate rows update rather than duplicate
-      const cleanPhone = (l.whatsapp_number || l.whatsappNumber || l.phone || "").replace(/\D/g, "");
-      const placeKey = (l.place_id || l.placeId || cleanPhone || l.business_name || `item_${i}`).replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 40);
+      let cleanPhone = (l.whatsapp_number || l.whatsappNumber || l.phone || "").replace(/\D/g, "");
+      if (cleanPhone.startsWith("0")) cleanPhone = cleanPhone.slice(1);
+      const phoneSuffix = cleanPhone.slice(-10);
+
+      // Phase 4: Proactive Global Phone Deduplication Check
+      let existingLead = null;
+      if (phoneSuffix && phoneSuffix.length === 10) {
+        existingLead = await prisma.scrapedLead.findFirst({
+          where: {
+            OR: [
+              { whatsappNumber: { contains: phoneSuffix } },
+              { phone: { contains: phoneSuffix } }
+            ]
+          }
+        }).catch(() => null);
+      }
+
+      if (existingLead) {
+        // Merge enriched data while strictly preserving outreach lifecycle status
+        const newReviewCount = Number(l.review_count || l.reviewCount) || 0;
+        const bestReviewCount = Math.max(existingLead.reviewCount || 0, newReviewCount);
+        const bestScore = Math.max(existingLead.leadScore || 0, score);
+        const bestEmail = l.email || existingLead.email;
+        const bestWebsite = l.website || existingLead.website;
+
+        await prisma.scrapedLead.update({
+          where: { id: existingLead.id },
+          data: {
+            businessName: l.business_name || l.businessName || existingLead.businessName,
+            reviewCount: bestReviewCount,
+            rating: Number(l.rating) || existingLead.rating,
+            leadScore: bestScore,
+            email: bestEmail,
+            website: bestWebsite,
+            hasWebsite: Boolean(bestWebsite && bestWebsite !== "No Website"),
+            fullAddress: l.full_address || l.fullAddress || existingLead.fullAddress,
+            // Preserve advanced outreach statuses (NEVER downgrade REPLIED, READ, or SENT)
+            outreachStatus: ["SENT", "READ", "DELIVERED", "REPLIED"].includes(existingLead.outreachStatus)
+              ? existingLead.outreachStatus
+              : (l.outreach_status || l.outreachStatus || "NEW")
+          }
+        });
+        insertedCount++;
+        continue;
+      }
+
+      // New unique lead creation
+      const placeKey = (l.place_id || l.placeId || phoneSuffix || l.business_name || `item_${i}`).replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 40);
       const leadId = `lead_${finalBatchId}_${placeKey}`;
 
-      await prisma.scrapedLead.upsert({
-        where: { leadId },
-        update: {
-          businessName: l.business_name || l.businessName || l.name || "Business",
-          phone: l.phone || "",
-          whatsappNumber: cleanPhone,
-          whatsappUrl: l.whatsapp_url || l.whatsappUrl || (cleanPhone ? `https://wa.me/${cleanPhone}` : ""),
-          email: l.email || "",
-          website: l.website || "",
-          hasWebsite: Boolean(l.has_website || l.hasWebsite || (l.website && l.website !== "No Website" && l.has_website !== "NO")),
-          cmsTech: l.cms_tech || l.cmsTech || (l.website ? "Detected" : "No Website"),
-          rating: Number(l.rating) || 0,
-          reviewCount: Number(l.review_count || l.reviewCount) || 0,
-          leadScore: score,
-          leadTier: l.lead_tier || l.leadTier || (score >= 70 ? "🔥 HOT LEAD" : "⚡ WARM LEAD"),
-          recommendedPitch: l.recommended_pitch || l.recommendedPitch || "Custom Mobile Website & WhatsApp Booking Engine",
-          gmapsUrl: l.gmaps_url || l.gmapsUrl || ""
-        },
-        create: {
+      await prisma.scrapedLead.create({
+        data: {
           leadId,
           batchId: finalBatchId,
           placeId: l.place_id || l.placeId || l.gmaps_url || l.gmapsUrl || `place_${i + 1}`,
@@ -179,8 +207,8 @@ export async function POST(req: NextRequest) {
           city: l.city || city,
           fullAddress: l.full_address || l.fullAddress || l.address || "",
           phone: l.phone || "",
-          whatsappNumber: cleanPhone,
-          whatsappUrl: l.whatsapp_url || l.whatsappUrl || (cleanPhone ? `https://wa.me/${cleanPhone}` : ""),
+          whatsappNumber: cleanPhone || phoneSuffix,
+          whatsappUrl: l.whatsapp_url || l.whatsappUrl || (phoneSuffix ? `https://wa.me/91${phoneSuffix}` : ""),
           email: l.email || "",
           secondaryEmails: l.secondary_emails || l.secondaryEmails || "",
           website: l.website || "",
