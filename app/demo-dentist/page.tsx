@@ -159,22 +159,22 @@ const REVIEWS = [
 ];
 
 export default function DentalClinicDemoPage() {
-  // Booking Form State
+  // Booking Form State (Streamlined & Friction-free)
   const [activeTab, setActiveTab] = useState<"form" | "ai">("form");
   const [patientName, setPatientName] = useState("");
-  const [patientPhone, setPatientPhone] = useState("");
+  const [patientCity, setPatientCity] = useState("Habra / Barasat");
   const [selectedProblem, setSelectedProblem] = useState(DENTAL_PROBLEMS[0]);
-  const [appointmentDate, setAppointmentDate] = useState("2026-09-03");
+  
+  // Calculate today's date for disabling past dates
+  const todayStr = new Date().toISOString().split("T")[0];
+  const [appointmentDate, setAppointmentDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split("T")[0];
+  });
   const [selectedSlot, setSelectedSlot] = useState(TIME_SLOTS[2]);
 
-  // Set tomorrow's date on mount
-  useEffect(() => {
-    try {
-      const d = new Date();
-      d.setDate(d.getDate() + 1);
-      setAppointmentDate(d.toISOString().split("T")[0]);
-    } catch (e) {}
-  }, []);
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   // AI Chat State
   const [messages, setMessages] = useState<Message[]>([
@@ -199,16 +199,16 @@ export default function DentalClinicDemoPage() {
     chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping, activeTab]);
 
-  // Generate WhatsApp Message
+  // Generate WhatsApp Message (No phone input needed because patient messages directly from their WhatsApp)
   const buildWhatsAppUrl = (customName?: string, customProblem?: string) => {
-    const name = customName || patientName || "Guest Patient";
-    const phone = patientPhone ? "\n📱 *Contact:* " + patientPhone : "";
+    const name = customName || patientName || "Patient";
     const problem = customProblem || selectedProblem;
 
     const formattedMsg =
       "🦷 *NEW DENTAL APPOINTMENT BOOKING*\n" +
       "━━━━━━━━━━━━━━━━━━━━\n" +
-      "👤 *Patient Name:* " + name + phone + "\n" +
+      "👤 *Patient Name:* " + name + "\n" +
+      "📍 *Locality:* " + patientCity + "\n" +
       "🩺 *Dental Concern:* " + problem + "\n" +
       "📅 *Preferred Date:* " + appointmentDate + "\n" +
       "⏰ *Preferred Slot:* " + selectedSlot + "\n" +
@@ -253,7 +253,7 @@ export default function DentalClinicDemoPage() {
 
       const lower = text.toLowerCase();
       if (lower.includes("book") || lower.includes("appointment") || lower.includes("today")) {
-        botReply = "Great! Dr. Ananya Roy is available for consultation. Fill in your details on the Booking Form tab or click below to WhatsApp immediately!";
+        botReply = "Great! Dr. Ananya Roy is available for consultation. Fill in your name on the Booking Form tab or click below to WhatsApp immediately!";
         replies = ["✅ Open 1-Tap Form", "💬 WhatsApp Doctor Directly"];
       } else if (lower.includes("price") || lower.includes("cost") || lower.includes("offer")) {
         botReply = "Special Clinic Offers:\n• Single-Sitting RCT: ₹2,499 (Save ₹1,000)\n• Laser Teeth Whitening: ₹1,999\n• Full 3D Digital Smile Scan: 100% FREE this week!";
@@ -349,20 +349,17 @@ export default function DentalClinicDemoPage() {
         </div>
       </header>
 
-      {/* HERO SECTION WITH DUAL ENGINE (WHATSAPP FORM + AI RECEPTIONIST) */}
+      {/* HERO SECTION WITH DUAL ENGINE */}
       <section id="booking-engine" className="px-3 sm:px-6 pt-6 sm:pt-10 pb-10 sm:pb-16 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-start">
           
-          {/* Left Column: Clinic Pitch & Quick Highlights */}
+          {/* Left Column: Pitch */}
           <div className="lg:col-span-6 space-y-4 sm:space-y-6 text-center lg:text-left">
-            
-            {/* Pill Badge */}
             <div className="inline-flex items-center gap-2 px-3 py-1 sm:py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-[11px] sm:text-xs font-mono font-medium">
               <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-cyan-400" />
               <span>Advanced Laser &amp; Painless Micro-Dentistry</span>
             </div>
 
-            {/* Main Headline */}
             <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-[1.15]">
               Smile With Confidence.{" "}
               <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-400 bg-clip-text text-transparent">
@@ -370,12 +367,10 @@ export default function DentalClinicDemoPage() {
               </span>
             </h2>
 
-            {/* Subtext */}
             <p className="text-xs sm:text-sm md:text-base text-slate-300 max-w-xl mx-auto lg:mx-0 font-normal leading-relaxed">
-              Experience Kolkata’s premier dental clinic. Instant 1-tap WhatsApp doctor appointment booking, zero waiting time, and 3D digital smile imaging.
+              Experience Kolkata’s premier dental clinic. Instant 1-tap WhatsApp appointment booking, zero waiting time, and 3D digital smile imaging.
             </p>
 
-            {/* Quick Stats Grid */}
             <div className="grid grid-cols-3 gap-2 sm:gap-3.5 pt-1 max-w-lg mx-auto lg:mx-0">
               <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-2.5 sm:p-3 text-center">
                 <p className="text-base sm:text-xl font-black text-cyan-400 font-mono">15,000+</p>
@@ -391,7 +386,6 @@ export default function DentalClinicDemoPage() {
               </div>
             </div>
 
-            {/* Key Advantages Checklist */}
             <div className="space-y-2 pt-2 text-left max-w-md mx-auto lg:mx-0">
               <div className="flex items-center gap-2 text-xs text-slate-300">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
@@ -399,7 +393,7 @@ export default function DentalClinicDemoPage() {
               </div>
               <div className="flex items-center gap-2 text-xs text-slate-300">
                 <CheckCircle2 className="w-4 h-4 text-cyan-400 flex-shrink-0" />
-                <span>Instant automated confirmation directly on your WhatsApp</span>
+                <span>Direct 1-tap WhatsApp redirection (No manual typing)</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-slate-300">
                 <CheckCircle2 className="w-4 h-4 text-indigo-400 flex-shrink-0" />
@@ -408,7 +402,7 @@ export default function DentalClinicDemoPage() {
             </div>
           </div>
 
-          {/* Right Column: INTERACTIVE WHATSAPP BOOKING PORTAL + AI RECEPTIONIST */}
+          {/* Right Column: INTERACTIVE BOOKING ENGINE */}
           <div className="lg:col-span-6">
             <div className="bg-[#0b101e] border border-cyan-500/40 rounded-3xl p-4 sm:p-6 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl relative">
               
@@ -444,7 +438,7 @@ export default function DentalClinicDemoPage() {
               {activeTab === "form" ? (
                 <form onSubmit={handleFormSubmit} className="space-y-3.5 text-left">
                   
-                  {/* Patient Name & Phone Inputs */}
+                  {/* Patient Name & Locality (Clean & Fast) */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[11px] font-mono text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1">
@@ -463,14 +457,14 @@ export default function DentalClinicDemoPage() {
 
                     <div>
                       <label className="block text-[11px] font-mono text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1">
-                        <Phone className="w-3 h-3 text-emerald-400" />
-                        <span>WhatsApp Number:</span>
+                        <MapPin className="w-3 h-3 text-indigo-400" />
+                        <span>Your City / Area:</span>
                       </label>
                       <input
-                        type="tel"
-                        value={patientPhone}
-                        onChange={(e) => setPatientPhone(e.target.value)}
-                        placeholder="e.g. 9876543210"
+                        type="text"
+                        value={patientCity}
+                        onChange={(e) => setPatientCity(e.target.value)}
+                        placeholder="e.g. Barasat, Habra, Kolkata"
                         className="w-full bg-[#050812] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-400 transition-colors"
                       />
                     </div>
@@ -495,20 +489,34 @@ export default function DentalClinicDemoPage() {
                     </select>
                   </div>
 
-                  {/* Appointment Date & Preferred Slot */}
+                  {/* Appointment Date (With Past Date Disabled & Vivid Cyan Calendar Icon) & Slot */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[11px] font-mono text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-indigo-400" />
+                        <Calendar className="w-3 h-3 text-cyan-400" />
                         <span>Appointment Date:</span>
                       </label>
-                      <input
-                        type="date"
-                        required
-                        value={appointmentDate}
-                        onChange={(e) => setAppointmentDate(e.target.value)}
-                        className="w-full bg-[#050812] border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 transition-colors cursor-pointer"
-                      />
+                      <div className="relative flex items-center">
+                        <input
+                          ref={dateInputRef}
+                          type="date"
+                          required
+                          min={todayStr}
+                          value={appointmentDate}
+                          onChange={(e) => setAppointmentDate(e.target.value)}
+                          className="w-full bg-[#050812] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white [color-scheme:dark] focus:outline-none focus:border-cyan-400 transition-colors cursor-pointer"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            try { dateInputRef.current?.showPicker(); } catch (e) { dateInputRef.current?.focus(); }
+                          }}
+                          className="absolute right-3 p-1 rounded text-cyan-400 hover:text-cyan-300 pointer-events-auto"
+                          title="Open Calendar"
+                        >
+                          <Calendar className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
 
                     <div>
@@ -519,7 +527,7 @@ export default function DentalClinicDemoPage() {
                       <select
                         value={selectedSlot}
                         onChange={(e) => setSelectedSlot(e.target.value)}
-                        className="w-full bg-[#050812] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-400 transition-colors cursor-pointer"
+                        className="w-full bg-[#050812] border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-400 transition-colors cursor-pointer"
                       >
                         {TIME_SLOTS.map((slot, idx) => (
                           <option key={idx} value={slot} className="bg-slate-950 text-slate-200">
@@ -538,16 +546,16 @@ export default function DentalClinicDemoPage() {
                         <span>Auto-Filled WhatsApp Message Preview:</span>
                       </span>
                       <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-                        1-Tap Auto Fill
+                        Auto Generated
                       </span>
                     </div>
 
                     <div className="bg-[#040711] border border-slate-800 rounded-xl p-2.5 text-[11px] font-mono text-slate-300 whitespace-pre-line leading-relaxed">
                       {"🦷 *APEX DENTAL CLINIC APPOINTMENT*\n" +
                         "👤 Name: " + (patientName || "[Patient Name]") + "\n" +
+                        "📍 Locality: " + patientCity + "\n" +
                         "🩺 Concern: " + selectedProblem + "\n" +
-                        "📅 Date: " + appointmentDate + " | Slot: " + selectedSlot.split("(")[0] + "\n" +
-                        "📍 Location: Barasat-Habra Road"}
+                        "📅 Date: " + appointmentDate + " | Slot: " + selectedSlot.split("(")[0]}
                     </div>
                   </div>
 
