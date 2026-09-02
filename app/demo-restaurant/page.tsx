@@ -1,415 +1,470 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import {
-  Utensils,
-  MessageCircle,
-  Star,
-  Sparkles,
+  UtensilsCrossed,
+  Clock,
   MapPin,
   Phone,
-  Clock,
-  CheckCircle2,
-  Calendar,
-  Flame,
-  Coffee,
-  Wine,
-  Award,
+  Star,
+  Sparkles,
+  MessageSquare,
   ArrowRight,
-  ShieldCheck,
-  ShoppingBag
+  Flame,
+  Award,
+  ChevronRight,
+  Wine,
+  Coffee,
+  Heart,
+  Calendar,
+  Users,
+  CheckCircle,
+  ExternalLink
 } from "lucide-react";
 
+const MENU_CATEGORIES = [
+  { id: "all", label: "🌟 All Specials" },
+  { id: "starters", label: "🍢 Starters & Tandoor" },
+  { id: "mains", label: "🍛 Signature Mains" },
+  { id: "biryani", label: "🍚 Dum Biryani" },
+  { id: "desserts", label: "🍨 Artisanal Desserts" },
+  { id: "mocktails", label: "🍹 Cocktails & Mocktails" }
+];
+
+const MENU_ITEMS = [
+  {
+    id: 1,
+    category: "starters",
+    name: "Afghani Malai Paneer Tikka",
+    desc: "Fresh cottage cheese marinated in rich cashew paste, cardamom, and roasted in clay oven.",
+    price: "₹349",
+    tag: "Chef's Special",
+    rating: "4.9 ★",
+    isVeg: true
+  },
+  {
+    id: 2,
+    category: "starters",
+    name: "Peshawari Murg Seekh Kebab",
+    desc: "Minced spring chicken with aromatic hill herbs, smoked with cloves & char-grilled.",
+    price: "₹429",
+    tag: "Bestseller",
+    rating: "4.95 ★",
+    isVeg: false
+  },
+  {
+    id: 3,
+    category: "mains",
+    name: "Royal Dal Makhani 24-Hour",
+    desc: "Black lentils slow-cooked overnight on charcoal with churned butter and dairy cream.",
+    price: "₹329",
+    tag: "Legendary",
+    rating: "5.0 ★",
+    isVeg: true
+  },
+  {
+    id: 4,
+    category: "mains",
+    name: "Smoked Butter Chicken Kolkata Style",
+    desc: "Charcoal-grilled chicken chunks simmered in satin tomato makhani with fenugreek aroma.",
+    price: "₹479",
+    tag: "Must Try",
+    rating: "4.9 ★",
+    isVeg: false
+  },
+  {
+    id: 5,
+    category: "biryani",
+    name: "Dum Gosht Awadhi Biryani",
+    desc: "Aged long-grain basmati rice with tender mutton, saffron, and slow sealed dum pot.",
+    price: "₹549",
+    tag: "Signature",
+    rating: "4.98 ★",
+    isVeg: false
+  },
+  {
+    id: 6,
+    category: "desserts",
+    name: "Saffron Shahi Tukda with Rabri",
+    desc: "Crispy bread soaked in saffron syrup, layered with thick condensed milk & pistachios.",
+    price: "₹249",
+    tag: "Royal Treat",
+    rating: "4.8 ★",
+    isVeg: true
+  },
+  {
+    id: 7,
+    category: "mocktails",
+    name: "Kolkata Gondhoraj Gin Fizz",
+    desc: "Infusion of fragrant Gondhoraj lime, mint leaves, sparkling tonic, and floral bitters.",
+    price: "₹229",
+    tag: "Refreshing",
+    rating: "4.9 ★",
+    isVeg: true
+  }
+];
+
 export default function RestaurantDemoPage() {
-  const [guestName, setGuestName] = useState("");
-  const [guestCount, setGuestCount] = useState("2 Guests (Couple Table)");
-  const [bookingDate, setBookingDate] = useState("");
-  const [timeSlot, setTimeSlot] = useState("Dinner (8:00 PM)");
-  const [activeCategory, setActiveCategory] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [guestCount, setGuestCount] = useState("2 Guests");
+  const [bookingTime, setBookingTime] = useState("7:30 PM (Dinner)");
+  const [isBooked, setIsBooked] = useState(false);
 
-  const menuItems = [
-    {
-      name: "Signature Kolkata Mutton Dum Biryani",
-      category: "mains",
-      desc: "Aged long-grain basmati rice slow-cooked in traditional copper handi with tender melt-in-mouth mutton & saffron potato.",
-      price: "₹380",
-      tag: "🔥 CHEF SPECIAL",
-      rating: "4.9★",
-      prepTime: "25 mins"
-    },
-    {
-      name: "Tandoori Whole Bhetki / Pomfret",
-      category: "starters",
-      desc: "Fresh catch marinated in Kasundi mustard & red clay spices, charcoal-grilled to smoky perfection.",
-      price: "₹450",
-      tag: "⚡ BESTSELLER",
-      rating: "4.9★",
-      prepTime: "20 mins"
-    },
-    {
-      name: "Butter Garlic Jumbo Prawns",
-      category: "starters",
-      desc: "Bay of Bengal prawns tossed in herb-infused European butter, garlic chips & white wine reduction glaze.",
-      price: "₹420",
-      tag: "MUST TRY",
-      rating: "4.8★",
-      prepTime: "15 mins"
-    },
-    {
-      name: "Smoked Paneer Tikka Lababdar",
-      category: "mains",
-      desc: "Charcoal-roasted cottage cheese simmered in rich creamy tomato-cashew gravy with crushed kasuri methi.",
-      price: "₹290",
-      tag: "VEG DELIGHT",
-      rating: "4.8★",
-      prepTime: "18 mins"
-    },
-    {
-      name: "Baked Blueberry Cheesecake",
-      category: "desserts",
-      desc: "New York style baked cream cheese on buttery biscuit crust topped with wild blueberry compote.",
-      price: "₹220",
-      tag: "SWEET ENDING",
-      rating: "4.9★",
-      prepTime: "Instant"
-    },
-    {
-      name: "Artisanal Hazelnut Cold Brew",
-      category: "beverages",
-      desc: "18-hour slow-steeped Arabica coffee beans served over crystal ice with hazelnut cream.",
-      price: "₹180",
-      tag: "CAFE FAVORITE",
-      rating: "4.7★",
-      prepTime: "5 mins"
+  const filteredItems =
+    selectedCategory === "all"
+      ? MENU_ITEMS
+      : MENU_ITEMS.filter((item) => item.category === selectedCategory);
+
+  const handleWhatsAppBooking = (customItem?: string) => {
+    let msg = "";
+    if (customItem) {
+      msg = `Hello Grand Saffron! I would like to order / inquire about "${customItem}".`;
+    } else {
+      msg = `Hello Grand Saffron! I would like to reserve a table for ${guestCount} at ${bookingTime}.`;
     }
-  ];
+    window.open(`https://wa.me/918768138086?text=${encodeURIComponent(msg)}`, "_blank");
+  };
 
-  const filteredMenu = activeCategory === "all"
-    ? menuItems
-    : menuItems.filter(item => item.category === activeCategory);
-
-  const handleTableBooking = (e: React.FormEvent) => {
-    e.preventDefault();
-    const name = guestName || "Guest";
-    const text = `Hello Royal Dine Restaurant! I would like to reserve a table.%0A%0A👤 Guest: ${encodeURIComponent(name)}%0A👥 Party Size: ${encodeURIComponent(guestCount)}%0A📅 Date: ${encodeURIComponent(bookingDate || "Tonight")}%0A⏰ Time Slot: ${encodeURIComponent(timeSlot)}%0A%0A(Reserved via mithundas.cloud 1-Click Restaurant Engine)`;
-
-    window.open(`https://wa.me/918768138086?text=${text}`, "_blank");
+  const handleCallDirect = () => {
+    window.location.href = "tel:+918768138086";
   };
 
   return (
-    <div className="min-h-screen bg-[#05070c] text-slate-100 font-sans selection:bg-amber-500 selection:text-black overflow-x-hidden pb-24 md:pb-0">
+    <div className="min-h-screen bg-[#070503] text-amber-50 font-sans selection:bg-amber-500/30 selection:text-amber-200 overflow-x-hidden antialiased">
       
-      {/* 1. TOP CONVERSION BANNER */}
-      <div className="sticky top-0 z-50 bg-gradient-to-r from-amber-950 via-slate-900 to-orange-950 border-b border-amber-500/30 px-3 py-2 shadow-2xl backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-2 text-xs font-mono">
-          <div className="flex items-center gap-2 truncate">
-            <span className="flex-shrink-0 w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-            <span className="bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full text-[10px] font-bold border border-amber-500/30 uppercase">
-              LIVE DEMO SHOWCASE
-            </span>
-            <span className="text-slate-300 truncate hidden sm:inline">
-              Digital QR Menu + 1-Click WhatsApp Table VIP Booking
-            </span>
-          </div>
-          <a
-            href="https://wa.me/918768138086?text=Hi%20Mithun!%20I%20saw%20your%20Restaurant%20Showcase.%20I%20want%20this%20exact%20website%20%2B%20WhatsApp%20menu%20for%20my%20restaurant%20at%20%E2%82%B92999."
-            target="_blank"
-            rel="noreferrer"
-            className="flex-shrink-0 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-black font-bold px-3 py-1.5 rounded-xl transition-all shadow-lg shadow-amber-500/20 flex items-center gap-1.5 text-[11px]"
-          >
-            <MessageCircle className="w-3.5 h-3.5 fill-current" />
-            <span>Claim Website (₹2,999)</span>
-          </a>
+      {/* 🔴 TOP AGENCY DEMO BANNER */}
+      <div className="fixed top-0 inset-x-0 z-50 bg-gradient-to-r from-amber-950/95 via-rose-950/95 to-slate-950/95 backdrop-blur-xl border-b border-amber-500/30 px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between shadow-2xl">
+        <div className="flex items-center gap-2 min-w-0 pr-2">
+          <span className="flex h-2 w-2 relative flex-shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+          </span>
+          <p className="text-[11px] sm:text-xs font-mono text-amber-200 truncate">
+            <span className="font-bold text-white">Live Showcase:</span> Grand Saffron Fine Dine &amp; Digital Menu
+          </p>
         </div>
+        <Link
+          href="https://wa.me/918768138086?text=Hi%20Mithun,%20I%20want%20a%20website%20like%20Grand%20Saffron%20Restaurant%20for%20my%20business!"
+          target="_blank"
+          className="flex-shrink-0 px-2.5 sm:px-3 py-1 rounded-lg bg-gradient-to-r from-amber-400 to-orange-500 text-black font-extrabold text-[10px] sm:text-xs font-mono hover:scale-105 transition-transform flex items-center gap-1 shadow-lg shadow-amber-500/20"
+        >
+          <span>Get Yours ₹2,999/-</span>
+          <ArrowRight className="w-3 h-3" />
+        </Link>
       </div>
 
-      {/* 2. RESTAURANT HERO NAV */}
-      <nav className="border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-2xl sticky top-9 z-40 px-4 py-3.5">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 p-0.5 shadow-lg shadow-amber-500/25">
-              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
-                <Utensils className="w-5 h-5 text-amber-400" />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm sm:text-base font-bold text-white tracking-tight">
-                  The Royal Dine &amp; Gourmet Lounge
-                </h1>
-                <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                  OPEN
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 font-mono flex items-center gap-1">
-                <MapPin className="w-3 h-3 text-amber-400" /> Kolkata • 4.8★ (650+ Foodie Reviews)
-              </p>
-            </div>
+      {/* HEADER NAVIGATION */}
+      <header className="pt-16 sm:pt-20 pb-4 px-3 sm:px-6 max-w-7xl mx-auto flex items-center justify-between border-b border-amber-950/60">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-600 flex items-center justify-center text-black font-black text-base sm:text-lg shadow-lg shadow-amber-500/20">
+            🍽️
           </div>
-
-          <div className="hidden md:flex items-center gap-3">
-            <a
-              href="tel:8768138086"
-              className="px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-slate-300 hover:text-white flex items-center gap-1.5"
-            >
-              <Phone className="w-3.5 h-3.5 text-amber-400" />
-              <span>+91 87681 38086</span>
-            </a>
-            <a
-              href="#reserve-section"
-              className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold text-xs font-mono transition-all shadow-md shadow-amber-500/20"
-            >
-              Reserve Table
-            </a>
+          <div>
+            <h1 className="text-sm sm:text-lg font-black tracking-tight text-white flex items-center gap-1.5">
+              <span>THE GRAND SAFFRON</span>
+              <span className="text-[9px] sm:text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                FINE DINE
+              </span>
+            </h1>
+            <p className="text-[10px] sm:text-xs text-amber-400/70 font-mono flex items-center gap-1">
+              <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400" />
+              <span>Barasat • Salt Lake • Kolkata</span>
+            </p>
           </div>
         </div>
-      </nav>
 
-      {/* 3. 3D GLOW HERO */}
-      <section className="relative pt-8 pb-16 px-4 sm:px-6 max-w-6xl mx-auto">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-gradient-to-tr from-amber-600/15 via-orange-600/10 to-rose-600/15 blur-[120px] rounded-full pointer-events-none -z-10" />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleCallDirect}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-950/60 border border-amber-900/60 text-amber-200 hover:text-white text-xs font-mono transition-colors"
+          >
+            <Phone className="w-3.5 h-3.5 text-amber-400" />
+            <span>+91 87681 38086</span>
+          </button>
+          <button
+            onClick={() => handleWhatsAppBooking()}
+            className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-black font-bold text-xs font-mono tracking-wide shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Reserve Table</span>
+          </button>
+        </div>
+      </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          <div className="lg:col-span-7 space-y-5 text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-xs font-mono text-amber-300">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Authentic Dum Handi • Charcoal Clay Tandoor • Artisanal Cocktails</span>
+      {/* HERO SECTION */}
+      <section className="px-3 sm:px-6 pt-6 sm:pt-12 pb-10 sm:pb-16 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-center">
+          
+          {/* Left Column: Pitch */}
+          <div className="lg:col-span-7 space-y-4 sm:space-y-6 text-center lg:text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1 sm:py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] sm:text-xs font-mono font-medium">
+              <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400" />
+              <span>Authentic Awadhi &amp; Mughlai Gastronomy</span>
             </div>
 
-            <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-[1.12]">
-              Taste The Royal Legacy,{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400">
-                Crafted Fresh Daily.
+            <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.15]">
+              Royal Dining Experience.{" "}
+              <span className="bg-gradient-to-r from-amber-400 via-orange-300 to-rose-400 bg-clip-text text-transparent">
+                Every Single Night.
               </span>
             </h2>
 
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-xl">
-              Immerse yourself in authentic royal recipes passed down through generations. From slow-cooked aromatic Dum Biryani to sizzling clay-oven kebabs, every dish tells a story.
+            <p className="text-xs sm:text-base text-amber-100/70 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed">
+              Immerse yourself in heritage recipes slow-cooked over charcoal woodfires. Live ghazal nights, private dining cabanas &amp; instant 1-click WhatsApp VIP reservations.
             </p>
 
-            <div className="grid grid-cols-3 gap-2.5 pt-2">
-              <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-slate-800 p-3 rounded-2xl shadow-inner text-left">
-                <div className="flex items-center gap-1 text-amber-400 font-bold text-xs">
-                  <Star className="w-3.5 h-3.5 fill-current" />
-                  <span>4.8 / 5.0</span>
-                </div>
-                <p className="text-[10px] text-slate-400 font-mono mt-0.5">650+ Google Reviews</p>
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-1 max-w-lg mx-auto lg:mx-0">
+              <div className="bg-amber-950/30 border border-amber-900/50 rounded-2xl p-2.5 sm:p-4 text-center">
+                <p className="text-base sm:text-2xl font-black text-amber-400 font-mono">100%</p>
+                <p className="text-[10px] sm:text-xs text-amber-300/60 font-mono">Pure Charcoal</p>
               </div>
+              <div className="bg-amber-950/30 border border-amber-900/50 rounded-2xl p-2.5 sm:p-4 text-center">
+                <p className="text-base sm:text-2xl font-black text-emerald-400 font-mono">4.9 ★</p>
+                <p className="text-[10px] sm:text-xs text-amber-300/60 font-mono">2,400+ Reviews</p>
+              </div>
+              <div className="bg-amber-950/30 border border-amber-900/50 rounded-2xl p-2.5 sm:p-4 text-center">
+                <p className="text-base sm:text-2xl font-black text-orange-400 font-mono">20 Sec</p>
+                <p className="text-[10px] sm:text-xs text-amber-300/60 font-mono">Table Booking</p>
+              </div>
+            </div>
 
-              <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-slate-800 p-3 rounded-2xl shadow-inner text-left">
-                <div className="flex items-center gap-1 text-orange-400 font-bold text-xs">
-                  <Flame className="w-3.5 h-3.5" />
-                  <span>Slow-Cooked</span>
-                </div>
-                <p className="text-[10px] text-slate-400 font-mono mt-0.5">Authentic Clay Dum</p>
-              </div>
-
-              <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-slate-800 p-3 rounded-2xl shadow-inner text-left">
-                <div className="flex items-center gap-1 text-emerald-400 font-bold text-xs">
-                  <Award className="w-3.5 h-3.5" />
-                  <span>100% Halal</span>
-                </div>
-                <p className="text-[10px] text-slate-400 font-mono mt-0.5">Farm Fresh Meat</p>
-              </div>
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 justify-center lg:justify-start">
+              <button
+                onClick={() => handleWhatsAppBooking()}
+                className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-extrabold text-xs sm:text-sm font-mono tracking-wide shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              >
+                <MessageSquare className="w-4 h-4 fill-black" />
+                <span>Reserve VIP Table (WhatsApp)</span>
+              </button>
+              <button
+                onClick={handleCallDirect}
+                className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-amber-950/60 hover:bg-amber-900/60 border border-amber-800 text-amber-200 font-mono text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all"
+              >
+                <Phone className="w-4 h-4 text-amber-400" />
+                <span>Call Restaurant: +91 87681 38086</span>
+              </button>
             </div>
           </div>
 
-          {/* Right Column: 1-Click WhatsApp Table VIP Booking Box */}
-          <div id="reserve-section" className="lg:col-span-5">
-            <div className="bg-gradient-to-b from-slate-900/95 via-slate-900/80 to-slate-950/95 border border-amber-500/40 rounded-3xl p-5 sm:p-6 shadow-2xl shadow-amber-500/15 backdrop-blur-2xl relative overflow-hidden text-left">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/15 rounded-full blur-2xl pointer-events-none" />
-
-              <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
-                <div>
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-amber-400" />
-                    <span>Instant Table Booking</span>
-                  </h3>
-                  <p className="text-[11px] text-slate-400 font-mono">1-Tap WhatsApp VIP Seat Reserve</p>
+          {/* Right Column: Interactive Quick Table Reservation Box */}
+          <div className="lg:col-span-5">
+            <div className="bg-[#120b06] border border-amber-500/30 rounded-3xl p-4 sm:p-6 shadow-2xl shadow-amber-500/10 backdrop-blur-xl relative">
+              <div className="flex items-center justify-between pb-3 mb-4 border-b border-amber-900/60">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold">
+                    🍷
+                  </div>
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-bold text-white">Instant Table Reservation</h3>
+                    <p className="text-[10px] text-amber-300/60 font-mono">No Waiting • Confirmed on WhatsApp</p>
+                  </div>
                 </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">
-                  NO COVER CHARGE
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                  SLOTS OPEN
                 </span>
               </div>
 
-              <form onSubmit={handleTableBooking} className="space-y-3">
+              <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-[11px] font-mono text-slate-300 mb-1">Your Full Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={guestName}
-                    onChange={(e) => setGuestName(e.target.value)}
-                    placeholder="e.g. Sourav Mukherjee"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-400 transition-colors"
-                  />
+                  <label className="text-[10px] sm:text-xs font-mono text-amber-300/80 uppercase block mb-1">
+                    Number of Guests:
+                  </label>
+                  <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+                    {["2 Guests", "4 Guests", "6 Guests", "8+ VIP"].map((g) => (
+                      <button
+                        key={g}
+                        onClick={() => setGuestCount(g)}
+                        className={`py-2 rounded-xl text-[10px] sm:text-xs font-mono font-bold border transition-all ${
+                          guestCount === g
+                            ? "bg-amber-400 text-black border-amber-300 shadow-md"
+                            : "bg-amber-950/40 border-amber-900/60 text-amber-300 hover:text-white"
+                        }`}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-mono text-slate-300 mb-1">Guests / Table Size</label>
-                  <select
-                    value={guestCount}
-                    onChange={(e) => setGuestCount(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-400"
-                  >
-                    <option value="2 Guests (Couple Table)">👫 2 Guests (Couple Table)</option>
-                    <option value="4 Guests (Family Table)">👨‍👩‍👧‍👦 4 Guests (Family Table)</option>
-                    <option value="6-10 Guests (Party Table)">🎉 6-10 Guests (Celebration Table)</option>
-                    <option value="12+ Corporate Dinner">💼 12+ Corporate Group</option>
-                  </select>
+                  <label className="text-[10px] sm:text-xs font-mono text-amber-300/80 uppercase block mb-1">
+                    Preferred Time Slot:
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                    {["1:30 PM (Lunch)", "7:30 PM (Dinner)", "9:00 PM (Dinner)"].map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setBookingTime(t)}
+                        className={`py-2 rounded-xl text-[10px] sm:text-xs font-mono font-bold border transition-all ${
+                          bookingTime === t
+                            ? "bg-amber-400 text-black border-amber-300 shadow-md"
+                            : "bg-amber-950/40 border-amber-900/60 text-amber-300 hover:text-white"
+                        }`}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block text-[11px] font-mono text-slate-300 mb-1">Booking Date</label>
-                    <input
-                      type="date"
-                      value={bookingDate}
-                      onChange={(e) => setBookingDate(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-400"
-                    />
+                <div className="p-3 rounded-2xl bg-amber-950/50 border border-amber-900/60 space-y-1">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-amber-300/70">Selected:</span>
+                    <span className="font-bold text-amber-300">{guestCount} • {bookingTime}</span>
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-mono text-slate-300 mb-1">Time Slot</label>
-                    <select
-                      value={timeSlot}
-                      onChange={(e) => setTimeSlot(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-400"
-                    >
-                      <option value="Lunch (1:00 PM - 3:30 PM)">Lunch (1 PM - 3:30 PM)</option>
-                      <option value="Snacks & Coffee (5:30 PM)">Snacks (5:30 PM)</option>
-                      <option value="Dinner (8:00 PM - 10:30 PM)">Dinner (8 PM - 10:30 PM)</option>
-                    </select>
-                  </div>
+                  <p className="text-[10px] text-emerald-400 font-mono">
+                    ✨ Complimentary welcome mocktail included with online reservation!
+                  </p>
                 </div>
 
                 <button
-                  type="submit"
-                  className="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-black font-bold text-xs tracking-wide shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  onClick={() => handleWhatsAppBooking()}
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 hover:from-amber-300 hover:to-orange-300 text-black font-extrabold text-xs sm:text-sm font-mono tracking-wide shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
                 >
-                  <MessageCircle className="w-4 h-4 fill-current" />
-                  <span>Reserve Table via WhatsApp</span>
+                  <MessageSquare className="w-4 h-4 fill-black" />
+                  <span>Confirm Reservation on WhatsApp</span>
                 </button>
-              </form>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 4. INTERACTIVE DIGITAL MENU (With Filter Pills & Direct WhatsApp Ordering) */}
-      <section className="py-16 max-w-6xl mx-auto px-4 sm:px-6 text-left">
-        <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
-          <h3 className="text-2xl sm:text-3xl font-extrabold text-white">
-            Explore Signature Digital Menu
+      {/* INTERACTIVE DIGITAL MENU */}
+      <section className="px-3 sm:px-6 py-10 sm:py-16 max-w-7xl mx-auto border-t border-amber-950">
+        <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-10 space-y-2">
+          <span className="text-amber-400 text-xs font-mono uppercase tracking-widest font-bold">
+            Culinary Highlights
+          </span>
+          <h3 className="text-xl sm:text-3xl font-black text-white tracking-tight">
+            Interactive Digital Menu
           </h3>
-          <p className="text-xs sm:text-sm text-slate-400 font-mono">
-            Handcrafted with authentic spices and farm-fresh ingredients.
+          <p className="text-xs sm:text-sm text-amber-200/60">
+            Tap any dish to order or ask chef customization directly on WhatsApp.
           </p>
-
-          <div className="flex items-center justify-center gap-2 pt-3 flex-wrap">
-            {[
-              { id: "all", label: "🌟 All Dishes" },
-              { id: "starters", label: "🍢 Tandoor Starters" },
-              { id: "mains", label: "🍛 Signature Mains" },
-              { id: "desserts", label: "🍰 Desserts" },
-              { id: "beverages", label: "☕ Cold Brews" }
-            ].map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`px-3 py-1 rounded-xl text-xs font-mono font-medium transition-all ${
-                  activeCategory === cat.id
-                    ? "bg-amber-500 text-black font-bold shadow-md shadow-amber-500/20"
-                    : "bg-slate-900 border border-slate-800 text-slate-300 hover:border-amber-500/40"
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredMenu.map((item, idx) => (
+        {/* Menu Category Pills (Scrollable on small mobile) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 no-scrollbar justify-start sm:justify-center -mx-3 px-3 sm:mx-0 sm:px-0">
+          {MENU_CATEGORIES.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-mono font-bold border transition-all ${
+                selectedCategory === cat.id
+                  ? "bg-amber-400 text-black border-amber-300 shadow-md"
+                  : "bg-amber-950/40 border-amber-900/60 text-amber-300 hover:text-white hover:border-amber-700"
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Menu Items Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-6">
+          {filteredItems.map((item) => (
             <div
-              key={idx}
-              className="bg-gradient-to-b from-slate-900/80 to-slate-950/80 border border-slate-800 hover:border-amber-500/50 p-5 rounded-3xl transition-all hover:scale-[1.02] group shadow-xl flex flex-col justify-between"
+              key={item.id}
+              className="bg-[#120a05] border border-amber-900/50 hover:border-amber-500/40 rounded-3xl p-4 sm:p-5 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-500/10 group flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`w-2 h-2 rounded-full ${item.isVeg ? "bg-emerald-400" : "bg-rose-500"}`}></span>
+                    <span className="text-[10px] font-mono text-amber-300/60 uppercase">
+                      {item.isVeg ? "VEG" : "NON-VEG"}
+                    </span>
+                  </div>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30 font-bold">
                     {item.tag}
                   </span>
-                  <span className="text-xs font-mono font-bold text-emerald-400">{item.price}</span>
                 </div>
-                <h4 className="text-base font-bold text-white mb-1.5 group-hover:text-amber-400 transition-colors">
+
+                <h4 className="text-sm sm:text-base font-bold text-white group-hover:text-amber-300 transition-colors">
                   {item.name}
                 </h4>
-                <p className="text-xs text-slate-400 leading-relaxed mb-3">{item.desc}</p>
+                <p className="text-xs text-amber-200/60 mt-1 leading-relaxed">
+                  {item.desc}
+                </p>
               </div>
 
-              <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between">
-                <span className="text-xs text-amber-400 font-bold">{item.rating}</span>
-                <a
-                  href={`https://wa.me/918768138086?text=Hi!%20I%20want%20to%20order%20${encodeURIComponent(item.name)}%20(${item.price})`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs font-mono text-amber-300 hover:text-white flex items-center gap-1 font-bold"
+              <div className="pt-3.5 mt-3.5 border-t border-amber-950/80 flex items-center justify-between">
+                <div>
+                  <span className="text-sm sm:text-base font-mono font-black text-amber-400">
+                    {item.price}
+                  </span>
+                  <span className="text-[10px] font-mono text-amber-300/50 ml-2">{item.rating}</span>
+                </div>
+
+                <button
+                  onClick={() => handleWhatsAppBooking(item.name)}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-[11px] font-mono font-bold flex items-center gap-1 transition-all"
                 >
-                  <span>Order via WhatsApp</span>
-                  <ArrowRight className="w-3 h-3" />
-                </a>
+                  <MessageSquare className="w-3 h-3" />
+                  <span>Order on WA</span>
+                </button>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* 5. BOTTOM AGENCY FOOTER (The ₹2,999 Offer) */}
-      <footer className="border-t border-slate-800 bg-[#030509] py-10 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
-          <div>
-            <p className="text-sm font-bold text-white flex items-center justify-center md:justify-start gap-2">
-              <span>Crafted by</span>
-              <span className="text-amber-400 font-mono">Mithun Das AI Automation</span>
-            </p>
-            <p className="text-xs text-slate-400 font-mono mt-1">
+      {/* 🟢 AGENCY BOTTOM CONVERSION CARD (CTA) */}
+      <section className="px-3 sm:px-6 py-12 sm:py-16 max-w-5xl mx-auto">
+        <div className="bg-gradient-to-r from-amber-950 via-stone-900 to-orange-950 border-2 border-amber-500/40 rounded-3xl p-5 sm:p-10 text-center shadow-2xl relative overflow-hidden">
+          <div className="space-y-3 sm:space-y-4">
+            <span className="text-[10px] sm:text-xs font-mono font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              ⚡ GROW YOUR RESTAURANT WITH WHATSAPP AUTOMATION
+            </span>
+            <h3 className="text-lg sm:text-2xl md:text-3xl font-black text-white max-w-2xl mx-auto leading-tight">
               Want this kind of customized high-speed digital menu + 1-click WhatsApp reservation engine starting at ₹2,999/-?
+            </h3>
+            <p className="text-xs sm:text-sm text-amber-100/70 max-w-xl mx-auto font-normal">
+              Built and delivered in 24 hours. Includes QR code digital menu generator, 1-click table booking, automated WhatsApp confirmations &amp; Google Maps SEO booster.
             </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <a
-              href="https://wa.me/918768138086?text=Hi%20Mithun!%20I%20want%20to%20order%20this%20Restaurant%20Website%20at%20%E2%82%B92999."
-              target="_blank"
-              rel="noreferrer"
-              className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-black px-5 py-2.5 rounded-xl text-xs font-bold font-mono transition-all shadow-lg shadow-amber-500/20"
-            >
-              Claim Restaurant Website (₹2,999/-)
-            </a>
+            <div className="pt-3">
+              <Link
+                href="https://wa.me/918768138086?text=Hi%20Mithun,%20I%20want%20this%20exact%20customized%20Restaurant/Cafe%20website%20starting%20at%20₹2,999/-!"
+                target="_blank"
+                className="inline-flex items-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 text-black font-extrabold text-xs sm:text-sm font-mono tracking-wide shadow-xl shadow-amber-500/30 hover:scale-105 transition-transform"
+              >
+                <MessageSquare className="w-4 h-4 fill-black" />
+                <span>Claim Your Website on WhatsApp (+91 87681 38086)</span>
+              </Link>
+            </div>
           </div>
         </div>
-      </footer>
+      </section>
 
-      {/* 6. MOBILE STICKY 1-TAP BOTTOM ACTION BAR (Ultra-Responsive) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 border-t border-amber-500/30 p-2.5 backdrop-blur-xl flex items-center gap-2 shadow-2xl">
-        <a
-          href="tel:8768138086"
-          className="flex-1 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95"
+      {/* 📱 STICKY MOBILE 1-TAP BOTTOM ACTION BAR */}
+      <div className="fixed bottom-0 inset-x-0 z-40 bg-[#070503]/95 backdrop-blur-2xl border-t border-amber-500/30 p-2.5 sm:p-3 flex items-center justify-between gap-2 sm:hidden pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-2xl">
+        <button
+          onClick={handleCallDirect}
+          className="flex-1 py-2.5 px-2 rounded-xl bg-amber-950/80 border border-amber-900 text-white font-bold text-xs font-mono flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
         >
           <Phone className="w-3.5 h-3.5 text-amber-400" />
-          <span>Call Dine</span>
-        </a>
-        <a
-          href="https://wa.me/918768138086?text=Hello%20Royal%20Dine!%20I%20want%20to%20reserve%20a%20table."
-          target="_blank"
-          rel="noreferrer"
-          className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-black font-mono text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20 active:scale-95"
+          <span>Call Table</span>
+        </button>
+        <button
+          onClick={() => handleWhatsAppBooking()}
+          className="flex-1 py-2.5 px-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-black font-extrabold text-xs font-mono flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20 active:scale-95 transition-transform"
         >
-          <MessageCircle className="w-3.5 h-3.5 fill-current" />
-          <span>WhatsApp Table</span>
-        </a>
+          <Calendar className="w-3.5 h-3.5" />
+          <span>Reserve Table</span>
+        </button>
       </div>
+
+      {/* FOOTER */}
+      <footer className="pb-24 sm:pb-12 pt-8 text-center text-amber-400/50 text-xs font-mono border-t border-amber-950 px-4">
+        <p>© 2026 The Grand Saffron Fine Dine. All rights reserved.</p>
+        <p className="text-[10px] text-amber-500/40 mt-1">
+          Designed &amp; Powered by Mithun Das Agency Automation Platform
+        </p>
+      </footer>
     </div>
   );
 }
