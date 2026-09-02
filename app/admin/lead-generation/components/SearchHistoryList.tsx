@@ -1,22 +1,33 @@
 "use client";
 
 import React, { useState } from "react";
-import { Clock, Search, Flame, MessageSquareCheck, Trash2, Layers, ChevronRight, CheckCircle2, History } from "lucide-react";
+import {
+  Layers,
+  Flame,
+  CheckCircle2,
+  MessageSquareCheck,
+  History,
+  Search,
+  Trash2,
+  Clock
+} from "lucide-react";
 
 interface BatchItem {
   id: string;
   batchId: string;
   category: string;
   city: string;
-  searchQuery: string;
+  searchQuery?: string;
   targetCount: number;
   totalFound: number;
   hotCount: number;
   createdAt: string;
-  _count?: { leads: number };
+  _count?: {
+    leads: number;
+  };
 }
 
-interface SearchHistoryProps {
+interface SearchHistoryListProps {
   batches: BatchItem[];
   selectedBatchId: string;
   onSelectBatch: (batchId: string) => void;
@@ -29,25 +40,58 @@ interface SearchHistoryProps {
   };
 }
 
+/**
+ * Format Indian Timestamp (IST): DD-MM-YYYY • hh:mm AM/PM IST (Strictly without seconds)
+ */
+export function formatIndianTimestamp(dateInput?: string | Date): string {
+  if (!dateInput) return "";
+  try {
+    const d = new Date(dateInput);
+    const formatter = new Intl.DateTimeFormat("en-IN", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    });
+    const parts = formatter.formatToParts(d);
+    const day = parts.find(p => p.type === "day")?.value || "01";
+    const month = parts.find(p => p.type === "month")?.value || "01";
+    const year = parts.find(p => p.type === "year")?.value || "2026";
+    const hour = parts.find(p => p.type === "hour")?.value || "12";
+    const minute = parts.find(p => p.type === "minute")?.value || "00";
+    const dayPeriod = parts.find(p => p.type === "dayPeriod")?.value?.toUpperCase() || "AM";
+
+    return `${day}-${month}-${year} • ${hour}:${minute} ${dayPeriod} IST`;
+  } catch {
+    return "";
+  }
+}
+
 export function SearchHistoryList({
   batches,
   selectedBatchId,
   onSelectBatch,
   onRefresh,
   metrics
-}: SearchHistoryProps) {
+}: SearchHistoryListProps) {
   const [filterQuery, setFilterQuery] = useState("");
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-  const filteredBatches = batches.filter(b =>
-    b.category.toLowerCase().includes(filterQuery.toLowerCase()) ||
-    b.city.toLowerCase().includes(filterQuery.toLowerCase())
+  // Filter Batches by search query
+  const filteredBatches = batches.filter(
+    (b) =>
+      b.category.toLowerCase().includes(filterQuery.toLowerCase()) ||
+      b.city.toLowerCase().includes(filterQuery.toLowerCase()) ||
+      (b.searchQuery && b.searchQuery.toLowerCase().includes(filterQuery.toLowerCase()))
   );
 
   const handleDeleteBatch = async (e: React.MouseEvent, batch: BatchItem) => {
     e.stopPropagation();
-    const count = batch._count?.leads || batch.totalFound || batch.targetCount;
-    if (!confirm(`Are you sure you want to delete "${batch.category} (${batch.city})" and all ${count} leads from the database?`)) {
+
+    if (!confirm(`Delete search batch "${batch.category} in ${batch.city}" and all its leads?`)) {
       return;
     }
 
@@ -168,7 +212,7 @@ export function SearchHistoryList({
           </div>
         </div>
 
-        {/* Horizontal Chips Feed */}
+        {/* Horizontal Chips Feed - Exactly ONE dedicated box per search query */}
         <div className="flex items-center gap-2.5 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-gray-800">
           {filteredBatches.length === 0 ? (
             <div className="text-xs text-text-secondary font-mono py-1">
@@ -179,28 +223,36 @@ export function SearchHistoryList({
               const isSelected = selectedBatchId === batch.batchId;
               const count = batch._count?.leads || batch.totalFound || batch.targetCount;
               const isThisDeleting = isDeleting === batch.batchId;
+              const istTimestamp = formatIndianTimestamp(batch.createdAt);
 
               return (
                 <div
                   key={batch.batchId}
                   onClick={() => onSelectBatch(batch.batchId)}
-                  className={`flex-shrink-0 flex items-center gap-2.5 px-3.5 py-2 rounded-xl border transition-all cursor-pointer group ${
+                  className={`flex-shrink-0 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all cursor-pointer group ${
                     isSelected
                       ? "bg-gradient-to-r from-brand-cyan/20 to-brand-indigo/20 border-brand-cyan shadow-md ring-1 ring-brand-cyan/40"
                       : "bg-[#0b0f17] border-border-app hover:border-brand-cyan/40 hover:bg-[#121824]"
                   }`}
                 >
-                  <div className="space-y-0.5">
+                  <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-text-primary group-hover:text-brand-cyan transition-colors">
+                      <span className="text-xs font-bold text-text-primary group-hover:text-brand-cyan transition-colors truncate max-w-[200px]">
                         {batch.category}
                       </span>
                       <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white/5 border border-border-app text-brand-cyan font-bold">
                         {count}
                       </span>
                     </div>
-                    <span className="text-[10px] text-text-secondary font-mono block">
-                      {batch.city} • {new Date(batch.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
+
+                    <span className="text-[10px] text-text-secondary font-mono block truncate max-w-[220px]">
+                      {batch.city}
+                    </span>
+
+                    {/* Indian Timestamp: DD-MM-YYYY • hh:mm AM/PM IST (No Seconds) */}
+                    <span className="text-[9px] text-amber-400/90 font-mono flex items-center gap-1 whitespace-nowrap">
+                      <Clock className="w-2.5 h-2.5 text-amber-400 flex-shrink-0" />
+                      <span>{istTimestamp}</span>
                     </span>
                   </div>
 
