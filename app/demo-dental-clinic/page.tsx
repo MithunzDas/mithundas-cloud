@@ -329,39 +329,44 @@ export default function DentalClinicDemoPage() {
       </div>
 
       {/* HEADER NAVIGATION */}
-      <header className="pt-16 sm:pt-20 pb-4 px-3 sm:px-6 max-w-7xl mx-auto flex items-center justify-between border-b border-slate-800/60">
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-black font-black text-base sm:text-lg shadow-lg shadow-cyan-500/30">
+      <header className="pt-14 sm:pt-20 pb-3 sm:pb-4 px-3 sm:px-6 max-w-7xl mx-auto flex items-center justify-between border-b border-slate-800/60 relative z-30">
+        {/* Brand Logo & Details */}
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-cyan-400 to-blue-600 flex items-center justify-center text-black font-black text-base sm:text-xl shadow-lg shadow-cyan-500/20 flex-shrink-0">
             🦷
           </div>
-          <div>
-            <h1 className="text-sm sm:text-lg font-black tracking-tight text-white flex items-center gap-1.5">
-              <span>APEX DENTAL</span>
-              <span className="text-[9px] sm:text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                CLINIC &amp; IMPLANT
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-xs sm:text-base font-black tracking-tight text-white truncate">
+                APEX DENTAL
+              </h1>
+              <span className="hidden xs:inline-flex text-[9px] sm:text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 whitespace-nowrap">
+                IMPLANT &amp; LASER
               </span>
-            </h1>
-            <p className="text-[10px] sm:text-xs text-slate-400 font-mono flex items-center gap-1">
-              <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-cyan-400" />
-              <span>Barasat • Habra • Kolkata</span>
+            </div>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-mono flex items-center gap-1 truncate">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></span>
+              <span className="truncate">Barasat • Habra • Kolkata</span>
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Action Buttons */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
           <button
             onClick={handleCallDirect}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-mono transition-colors"
+            className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white text-xs font-mono transition-colors flex items-center gap-1.5"
+            title="Call Clinic Doctor"
           >
             <Phone className="w-3.5 h-3.5 text-cyan-400" />
-            <span>+91 87681 38086</span>
+            <span className="hidden md:inline">+91 87681 38086</span>
           </button>
           <a
             href="#booking-engine"
-            className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs font-mono tracking-wide shadow-lg shadow-emerald-500/20 flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
+            className="px-3 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-black font-extrabold text-xs font-mono tracking-wide shadow-lg shadow-emerald-500/20 flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
           >
-            <Calendar className="w-3.5 h-3.5" />
-            <span>Book Appointment</span>
+            <Calendar className="w-3.5 h-3.5 fill-black text-black" />
+            <span>Book Visit</span>
           </a>
         </div>
       </header>
