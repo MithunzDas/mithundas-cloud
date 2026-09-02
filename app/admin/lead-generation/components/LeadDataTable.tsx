@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import {
-  FileSpreadsheet,
   Phone,
   Globe,
   Mail,
@@ -17,7 +16,10 @@ import {
   Trash2,
   CheckCircle,
   AlertCircle,
-  Zap
+  Zap,
+  FileSpreadsheet,
+  Copy,
+  Check
 } from "lucide-react";
 
 interface LeadItem {
@@ -46,33 +48,138 @@ interface LeadItem {
   lastReplyMessage?: string;
 }
 
-interface LeadTableProps {
+interface LeadDataTableProps {
   leads: LeadItem[];
   onRefresh: () => void;
 }
 
-export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
-  const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
+/**
+ * Helper to determine tailored dynamic demo showcase URL by category
+ */
+export function getDemoRouting(category: string = "", businessName: string = ""): {
+  slug: string;
+  url: string;
+  label: string;
+  icon: string;
+} {
+  const text = `${category} ${businessName}`.toLowerCase();
+
+  if (
+    text.includes("dent") ||
+    text.includes("teeth") ||
+    text.includes("clinic") ||
+    text.includes("doctor") ||
+    text.includes("hospital") ||
+    text.includes("dermatolog") ||
+    text.includes("skin") ||
+    text.includes("ortho") ||
+    text.includes("physio") ||
+    text.includes("health") ||
+    text.includes("care") ||
+    text.includes("salon") ||
+    text.includes("spa") ||
+    text.includes("advocate") ||
+    text.includes("lawyer")
+  ) {
+    return {
+      slug: "demo-dental-clinic",
+      url: "https://mithundas.cloud/demo-dental-clinic",
+      label: "Dental & Clinic",
+      icon: "🦷"
+    };
+  }
+
+  if (
+    text.includes("restaurant") ||
+    text.includes("dining") ||
+    text.includes("dine") ||
+    text.includes("food") ||
+    text.includes("biryani") ||
+    text.includes("dhaba") ||
+    text.includes("bistro") ||
+    text.includes("pizza") ||
+    text.includes("sweet") ||
+    text.includes("bar") ||
+    text.includes("kitchen") ||
+    text.includes("cater")
+  ) {
+    return {
+      slug: "demo-restaurant",
+      url: "https://mithundas.cloud/demo-restaurant",
+      label: "Restaurant & Food",
+      icon: "🍽️"
+    };
+  }
+
+  if (
+    text.includes("hotel") ||
+    text.includes("resort") ||
+    text.includes("lodge") ||
+    text.includes("stay") ||
+    text.includes("inn") ||
+    text.includes("guest house")
+  ) {
+    return {
+      slug: "demo-hotel",
+      url: "https://mithundas.cloud/demo-hotel",
+      label: "Hotel & Resort",
+      icon: "🏨"
+    };
+  }
+
+  if (
+    text.includes("cafe") ||
+    text.includes("coffee") ||
+    text.includes("tea") ||
+    text.includes("bakery")
+  ) {
+    return {
+      slug: "demo-cafe",
+      url: "https://mithundas.cloud/demo-cafe",
+      label: "Cafe & Bakery",
+      icon: "☕"
+    };
+  }
+
+  return {
+    slug: "demo-dental-clinic",
+    url: "https://mithundas.cloud/demo-dental-clinic",
+    label: "Local Business",
+    icon: "✨"
+  };
+}
+
+export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterTier, setFilterTier] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [isSendingOutreach, setIsSendingOutreach] = useState(false);
+  const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
   const [isDeletingLeads, setIsDeletingLeads] = useState(false);
-  const [actionMessage, setActionMessage] = useState<string>("");
+  const [isSendingOutreach, setIsSendingOutreach] = useState(false);
+  const [actionMessage, setActionMessage] = useState("");
+  const [copiedLeadId, setCopiedLeadId] = useState<string | null>(null);
 
-  // Filtered Leads
+  // Filter Leads
   const filteredLeads = leads.filter((lead) => {
     const matchSearch =
+      searchTerm === "" ||
       lead.businessName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (lead.phone && lead.phone.includes(searchTerm)) ||
-      (lead.city && lead.city.toLowerCase().includes(searchTerm.toLowerCase()));
+      (lead.city && lead.city.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (lead.category && lead.category.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchTier = filterTier === "all" || (lead.leadTier && lead.leadTier.includes(filterTier));
+    const score = lead.leadScore || 0;
+    const matchTier =
+      filterTier === "all" ||
+      (filterTier === "HOT" && score >= 70) ||
+      (filterTier === "WARM" && score < 70);
+
     const matchStatus = filterStatus === "all" || lead.outreachStatus === filterStatus;
 
     return matchSearch && matchTier && matchStatus;
   });
 
+  // Select / Deselect All
   const toggleSelectAll = () => {
     if (selectedLeadIds.length === filteredLeads.length) {
       setSelectedLeadIds([]);
@@ -81,6 +188,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
     }
   };
 
+  // Toggle Single Lead Checkbox
   const toggleSelectOne = (leadId: string) => {
     if (selectedLeadIds.includes(leadId)) {
       setSelectedLeadIds(selectedLeadIds.filter((id) => id !== leadId));
@@ -142,7 +250,6 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
     }
   };
 
-  
   // Sync Leads Directly From Master Google Sheet
   const [isSyncingSheet, setIsSyncingSheet] = useState(false);
   const handleSyncSheet = async () => {
@@ -175,19 +282,19 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
     }
   };
 
-  // Launch Meta WhatsApp Outreach
+  // Launch Meta WhatsApp Outreach with Dynamic Category Demo Routing
   const handleLaunchOutreach = async () => {
     if (selectedLeadIds.length === 0) {
       alert("Please select at least 1 lead to send WhatsApp message.");
       return;
     }
 
-    if (!confirm(`Send official Meta WhatsApp outreach to ${selectedLeadIds.length} selected businesses?`)) {
+    if (!confirm(`Send official Meta WhatsApp outreach with personalized category demos (Dental/Restaurant/Hotel) to ${selectedLeadIds.length} selected businesses?`)) {
       return;
     }
 
     setIsSendingOutreach(true);
-    setActionMessage(`Dispatching Meta WhatsApp templates to ${selectedLeadIds.length} leads...`);
+    setActionMessage(`Dispatching Meta WhatsApp templates to ${selectedLeadIds.length} leads with dynamic demo links...`);
 
     try {
       const res = await fetch("/api/admin/lead-generation/outreach", {
@@ -195,13 +302,13 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           leadIds: selectedLeadIds,
-          templateName: "hello_world"
+          templateName: "local_business_starter"
         })
       });
 
       const data = await res.json();
       if (data.success) {
-        setActionMessage(`✅ Dispatched ${data.sentCount} / ${data.totalProcessed} WhatsApp messages!`);
+        setActionMessage(`✅ Dispatched ${data.sentCount} / ${data.totalProcessed} WhatsApp messages with dynamic category demo URLs!`);
         setSelectedLeadIds([]);
         setTimeout(() => {
           onRefresh();
@@ -217,33 +324,53 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
     }
   };
 
+  // Copy Demo Link to Clipboard
+  const handleCopyDemoLink = (url: string, leadId: string) => {
+    navigator.clipboard.writeText(url);
+    setCopiedLeadId(leadId);
+    setTimeout(() => {
+      setCopiedLeadId(null);
+    }, 2000);
+  };
+
+  // Export CSV
   const handleExportCSV = () => {
-    if (filteredLeads.length === 0) return;
+    if (filteredLeads.length === 0) {
+      alert("No leads to export.");
+      return;
+    }
+
     const headers = [
-      "Business Name", "Category", "City", "Address", "Phone",
-      "WhatsApp Number", "Email", "Website", "CMS Tech", "Rating",
-      "Review Count", "Lead Score", "Lead Tier", "Outreach Status", "Google Maps URL"
+      "Business Name", "Category", "City", "Full Address",
+      "Phone", "WhatsApp Number", "Email", "Website", "CMS Tech", "Rating",
+      "Review Count", "Lead Score", "Lead Tier", "Recommended Pitch",
+      "Dynamic Demo Target", "Google Maps URL", "Outreach Status"
     ];
 
-    const rows = filteredLeads.map((l) => [
-      `"${(l.businessName || "").replace(/"/g, '""')}"`,
-      `"${(l.category || "").replace(/"/g, '""')}"`,
-      `"${(l.city || "").replace(/"/g, '""')}"`,
-      `"${(l.fullAddress || "").replace(/"/g, '""')}"`,
-      `"${l.phone || ""}"`,
-      `"${l.whatsappNumber || ""}"`,
-      `"${l.email || ""}"`,
-      `"${l.website || ""}"`,
-      `"${l.cmsTech || ""}"`,
-      l.rating || 0,
-      l.reviewCount || 0,
-      l.leadScore || 0,
-      `"${(l.leadTier || "").replace(/"/g, '""')}"`,
-      `"${l.outreachStatus || "NEW"}"`,
-      `"${l.gmapsUrl || ""}"`
-    ]);
+    const rows = filteredLeads.map((l) => {
+      const demo = getDemoRouting(l.category, l.businessName);
+      return [
+        `"${(l.businessName || "").replace(/"/g, '""')}"`,
+        `"${(l.category || "").replace(/"/g, '""')}"`,
+        `"${(l.city || "").replace(/"/g, '""')}"`,
+        `"${(l.fullAddress || "").replace(/"/g, '""')}"`,
+        `"${l.phone || ""}"`,
+        `"${l.whatsappNumber || ""}"`,
+        `"${l.email || ""}"`,
+        `"${l.website || ""}"`,
+        `"${l.cmsTech || ""}"`,
+        l.rating || 0,
+        l.reviewCount || 0,
+        l.leadScore || 0,
+        `"${l.leadTier || ""}"`,
+        `"${(l.recommendedPitch || "").replace(/"/g, '""')}"`,
+        `"${demo.url}"`,
+        `"${l.gmapsUrl || ""}"`,
+        `"${l.outreachStatus || "NEW"}"`
+      ].join(",");
+    });
 
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -254,7 +381,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
   };
 
   return (
-    <div className="bg-[#101726]/90 border border-border-app rounded-2xl p-6 backdrop-blur-xl flex flex-col h-full shadow-2xl">
+    <div className="bg-[#101726]/90 border border-border-app rounded-2xl p-4 sm:p-6 backdrop-blur-xl flex flex-col h-full shadow-2xl">
       {/* Table Header & Controls */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5 pb-4 border-b border-border-app">
         <div className="flex items-center gap-2.5 flex-wrap flex-1">
@@ -272,7 +399,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
           <select
             value={filterTier}
             onChange={(e) => setFilterTier(e.target.value)}
-            className="bg-[#0b0f17] border border-border-app rounded-xl px-3 py-2 text-xs text-text-secondary focus:outline-none focus:border-brand-cyan"
+            className="bg-[#0b0f17] border border-border-app rounded-xl px-3 py-2 text-xs text-text-secondary focus:outline-none focus:border-brand-cyan cursor-pointer"
           >
             <option value="all">All Tiers</option>
             <option value="HOT">🔥 HOT Leads</option>
@@ -282,7 +409,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="bg-[#0b0f17] border border-border-app rounded-xl px-3 py-2 text-xs text-text-secondary focus:outline-none focus:border-brand-cyan"
+            className="bg-[#0b0f17] border border-border-app rounded-xl px-3 py-2 text-xs text-text-secondary focus:outline-none focus:border-brand-cyan cursor-pointer"
           >
             <option value="all">All Statuses</option>
             <option value="NEW">🆕 New</option>
@@ -304,7 +431,6 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
             </button>
           )}
 
-          
           <button
             onClick={handleSyncSheet}
             disabled={isSyncingSheet}
@@ -312,7 +438,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
             title="Sync newly scraped rows from Master Google Sheet into VPS Database"
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span>{isSyncingSheet ? "Syncing Sheet..." : "Sync Google Sheet"}</span>
+            <span>{isSyncingSheet ? "Syncing..." : "Sync Google Sheet"}</span>
           </button>
 
           <button
@@ -326,18 +452,19 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
           <button
             onClick={handleLaunchOutreach}
             disabled={selectedLeadIds.length === 0 || isSendingOutreach}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-semibold shadow-lg shadow-emerald-500/20 transition-all disabled:opacity-40"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-semibold shadow-lg shadow-emerald-500/20 transition-all disabled:opacity-40 cursor-pointer"
           >
             <Send className="w-3.5 h-3.5 fill-current" />
             <span>
               {isSendingOutreach
-                ? "Sending..."
+                ? "Dispatching Meta Templates..."
                 : `Launch Meta WhatsApp (${selectedLeadIds.length})`}
             </span>
           </button>
         </div>
       </div>
 
+      {/* Action Notification Alert Bar */}
       {actionMessage && (
         <div className="mb-4 p-3 rounded-xl bg-brand-cyan/10 border border-brand-cyan/30 text-xs font-mono text-brand-cyan flex items-center gap-2">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -345,9 +472,9 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
         </div>
       )}
 
-      {/* 29-Column Responsive Data Grid with Polished Score & Tier Badges */}
-      <div className="flex-1 overflow-x-auto overflow-y-auto max-h-[580px] rounded-xl border border-border-app/80 bg-[#0b0f17]/80 scrollbar-thin scrollbar-thumb-gray-800">
-        <table className="w-full text-left border-collapse text-xs">
+      {/* Responsive Table Container */}
+      <div className="overflow-x-auto rounded-xl border border-border-app relative max-h-[700px] overflow-y-auto">
+        <table className="w-full text-left text-xs border-collapse">
           <thead className="sticky top-0 bg-[#121824] z-20 border-b border-border-app font-mono text-text-secondary text-[11px] uppercase tracking-wider">
             <tr>
               <th className="p-3 w-10 text-center">
@@ -359,21 +486,22 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
                   )}
                 </button>
               </th>
-              <th className="p-3 min-w-[220px]">Business Name</th>
-              <th className="p-3 min-w-[180px]">Score &amp; Tier</th>
-              <th className="p-3 min-w-[140px]">Phone / WhatsApp</th>
+              <th className="p-3 min-w-[200px]">Business Name</th>
+              <th className="p-3 min-w-[170px]">Score &amp; Tier</th>
+              <th className="p-3 min-w-[130px]">Phone / WhatsApp</th>
+              <th className="p-3 min-w-[180px]">Dynamic Demo Target</th>
               <th className="p-3 min-w-[150px]">Website &amp; Tech</th>
-              <th className="p-3 min-w-[150px]">Email</th>
-              <th className="p-3 min-w-[110px]">Rating</th>
+              <th className="p-3 min-w-[140px]">Email</th>
+              <th className="p-3 min-w-[100px]">Rating</th>
               <th className="p-3 min-w-[110px]">Status</th>
-              <th className="p-3 min-w-[160px]">Location</th>
+              <th className="p-3 min-w-[150px]">Location</th>
               <th className="p-3 min-w-[80px] text-center">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-app/50 font-sans">
             {filteredLeads.length === 0 ? (
               <tr>
-                <td colSpan={10} className="p-12 text-center text-text-secondary font-mono">
+                <td colSpan={11} className="p-12 text-center text-text-secondary font-mono">
                   No leads found in this view.
                 </td>
               </tr>
@@ -383,6 +511,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
                 const score = lead.leadScore || 0;
                 const isHot = score >= 70;
                 const rawPhone = lead.whatsappNumber || lead.phone || "";
+                const demo = getDemoRouting(lead.category, lead.businessName);
 
                 return (
                   <tr
@@ -408,16 +537,18 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
                     {/* Business Name */}
                     <td className="p-3">
                       <div className="font-bold text-text-primary">
-                        <span className="truncate block max-w-[220px]">{lead.businessName}</span>
+                        <span className="truncate block max-w-[200px]" title={lead.businessName}>
+                          {lead.businessName}
+                        </span>
                       </div>
                       <span className="text-[10px] text-text-secondary font-mono">{lead.category}</span>
                     </td>
 
-                    {/* Score & Tier (Rectified Clean UI: No overlapping badges) */}
+                    {/* Score & Tier */}
                     <td className="p-3">
                       <div className="flex items-center gap-2.5">
                         <div
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center font-mono font-bold text-xs shadow-inner ${
+                          className={`w-8 h-8 rounded-xl flex items-center justify-center font-mono font-bold text-xs shadow-inner ${
                             isHot
                               ? "bg-amber-500/15 border border-amber-500/40 text-amber-300"
                               : "bg-blue-500/15 border border-blue-500/40 text-blue-300"
@@ -427,7 +558,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
                         </div>
                         <div className="space-y-0.5">
                           <span
-                            className={`inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-0.5 rounded-full font-bold whitespace-nowrap ${
+                            className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full font-bold whitespace-nowrap ${
                               isHot
                                 ? "bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 text-amber-300"
                                 : "bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/40 text-blue-300"
@@ -436,7 +567,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
                             {isHot ? <Flame className="w-3 h-3 fill-current text-amber-400" /> : <Zap className="w-3 h-3 text-blue-400" />}
                             <span>{isHot ? "HOT LEAD" : "WARM LEAD"}</span>
                           </span>
-                          <p className="text-[10px] text-text-secondary font-mono truncate max-w-[130px]">
+                          <p className="text-[10px] text-text-secondary font-mono truncate max-w-[120px]">
                             {lead.hasWebsite ? "Optimization" : "Needs Website"}
                           </p>
                         </div>
@@ -468,6 +599,35 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
                       )}
                     </td>
 
+                    {/* DYNAMIC DEMO SHOWCASE TARGET (Phase 1) */}
+                    <td className="p-3">
+                      <div className="flex items-center gap-1.5">
+                        <a
+                          href={demo.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 font-mono text-[11px] font-semibold transition-all hover:scale-105"
+                          title={`Click to view live ${demo.label}`}
+                        >
+                          <span>{demo.icon}</span>
+                          <span className="truncate max-w-[95px]">{demo.label}</span>
+                          <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyDemoLink(demo.url, lead.leadId)}
+                          className="p-1.5 rounded-lg bg-white/5 border border-border-app hover:border-brand-cyan text-gray-400 hover:text-brand-cyan transition-colors"
+                          title="Copy tailored Demo Link"
+                        >
+                          {copiedLeadId === lead.leadId ? (
+                            <Check className="w-3 h-3 text-emerald-400" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+                    </td>
+
                     {/* Website & Tech */}
                     <td className="p-3">
                       {lead.website ? (
@@ -476,7 +636,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
                             href={lead.website}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-brand-cyan hover:underline flex items-center gap-1 font-mono text-[11px] truncate max-w-[140px]"
+                            className="text-brand-cyan hover:underline flex items-center gap-1 font-mono text-[11px] truncate max-w-[130px]"
                           >
                             <Globe className="w-3 h-3 flex-shrink-0" />
                             <span className="truncate">{lead.website.replace(/^https?:\/\//, '')}</span>
@@ -497,7 +657,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
                       {lead.email ? (
                         <a
                           href={`mailto:${lead.email}`}
-                          className="text-text-primary hover:text-brand-cyan flex items-center gap-1 truncate max-w-[140px]"
+                          className="text-text-primary hover:text-brand-cyan flex items-center gap-1 truncate max-w-[130px]"
                         >
                           <Mail className="w-3 h-3 text-brand-indigo flex-shrink-0" />
                           <span className="truncate">{lead.email}</span>
@@ -536,15 +696,15 @@ export function LeadDataTable({ leads, onRefresh }: LeadTableProps) {
 
                     {/* Location */}
                     <td className="p-3 text-[11px]">
-                      <span className="font-semibold text-text-primary block truncate max-w-[150px]">
+                      <span className="font-semibold text-text-primary block truncate max-w-[140px]">
                         {lead.city || "Local Area"}
                       </span>
-                      <span className="text-[10px] text-text-secondary truncate block max-w-[150px]">
+                      <span className="text-[10px] text-text-secondary truncate block max-w-[140px]">
                         {lead.fullAddress || ""}
                       </span>
                     </td>
 
-                    {/* Actions (GMaps + Single Delete) */}
+                    {/* Actions */}
                     <td className="p-3 text-center">
                       <div className="flex items-center justify-center gap-1">
                         {lead.gmapsUrl && (
