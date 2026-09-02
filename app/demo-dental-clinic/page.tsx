@@ -24,7 +24,9 @@ import {
   Smile,
   Shield,
   Zap,
-  ExternalLink
+  ExternalLink,
+  ClipboardList,
+  Check
 } from "lucide-react";
 
 interface Message {
@@ -35,6 +37,29 @@ interface Message {
   quickReplies?: string[];
 }
 
+const DENTAL_PROBLEMS = [
+  "🦷 Severe Toothache & Sensitivity",
+  "⚡ Painless Root Canal Treatment (RCT)",
+  "✨ Laser Teeth Whitening & Polishing",
+  "🛡️ Invisible Braces & Clear Aligners",
+  "💎 Titanium Dental Implants",
+  "🧼 Ultrasonic Cleaning & Deep Scaling",
+  "👑 Ceramic Dental Crowns & Bridges",
+  "🧒 Kids Dental Cavity & Fluoride Care",
+  "🩸 Bleeding Gums & Pyorrhea Care",
+  "🦷 Wisdom Tooth Extraction & Surgery",
+  "✨ Cosmetic Veneers & Smile Makeover",
+  "🔍 Routine Dental Checkup & 3D X-Ray",
+  "🚨 Emergency Dental Trauma / Pain Relief"
+];
+
+const TIME_SLOTS = [
+  "🌅 10:00 AM – 11:30 AM (Morning)",
+  "☀️ 12:30 PM – 02:00 PM (Afternoon)",
+  "🌇 04:30 PM – 06:00 PM (Evening)",
+  "🌙 07:00 PM – 08:30 PM (Night)"
+];
+
 const SERVICES = [
   {
     icon: Smile,
@@ -42,7 +67,8 @@ const SERVICES = [
     desc: "Single-sitting rotary endodontics with 3D digital apex locator precision.",
     price: "From ₹2,499",
     tag: "Most Popular",
-    color: "from-cyan-500 to-blue-500"
+    color: "from-cyan-500 to-blue-500",
+    problemKey: "⚡ Painless Root Canal Treatment (RCT)"
   },
   {
     icon: Sparkles,
@@ -50,7 +76,8 @@ const SERVICES = [
     desc: "Instant 6-8 shade brightening in 45 minutes with advanced cold-light laser.",
     price: "From ₹1,999",
     tag: "Instant Glow",
-    color: "from-emerald-400 to-teal-500"
+    color: "from-emerald-400 to-teal-500",
+    problemKey: "✨ Laser Teeth Whitening & Polishing"
   },
   {
     icon: Shield,
@@ -58,7 +85,8 @@ const SERVICES = [
     desc: "US FDA-cleared transparent braces. Zero food restrictions, 100% discreet.",
     price: "Free 3D Scan",
     tag: "Modern Ortho",
-    color: "from-indigo-500 to-purple-500"
+    color: "from-indigo-500 to-purple-500",
+    problemKey: "🛡️ Invisible Braces & Clear Aligners"
   },
   {
     icon: Award,
@@ -66,7 +94,8 @@ const SERVICES = [
     desc: "Permanent tooth replacement with Swiss & German lifelong warranty implants.",
     price: "EMI Available",
     tag: "Permanent Fix",
-    color: "from-amber-400 to-orange-500"
+    color: "from-amber-400 to-orange-500",
+    problemKey: "💎 Titanium Dental Implants"
   },
   {
     icon: HeartPulse,
@@ -74,7 +103,8 @@ const SERVICES = [
     desc: "Child-friendly clinic environment with painless cavity filling & fluoride therapy.",
     price: "From ₹799",
     tag: "Gentle Care",
-    color: "from-pink-500 to-rose-500"
+    color: "from-pink-500 to-rose-500",
+    problemKey: "🧒 Kids Dental Cavity & Fluoride Care"
   },
   {
     icon: Stethoscope,
@@ -82,7 +112,8 @@ const SERVICES = [
     desc: "Comprehensive smile makeover combining veneers, crowns, and gum contouring.",
     price: "Custom Plan",
     tag: "Complete Care",
-    color: "from-blue-500 to-cyan-400"
+    color: "from-blue-500 to-cyan-400",
+    problemKey: "✨ Cosmetic Veneers & Smile Makeover"
   }
 ];
 
@@ -128,11 +159,29 @@ const REVIEWS = [
 ];
 
 export default function DentalClinicDemoPage() {
+  // Booking Form State
+  const [activeTab, setActiveTab] = useState<"form" | "ai">("form");
+  const [patientName, setPatientName] = useState("");
+  const [patientPhone, setPatientPhone] = useState("");
+  const [selectedProblem, setSelectedProblem] = useState(DENTAL_PROBLEMS[0]);
+  const [appointmentDate, setAppointmentDate] = useState("2026-09-03");
+  const [selectedSlot, setSelectedSlot] = useState(TIME_SLOTS[2]);
+
+  // Set tomorrow's date on mount
+  useEffect(() => {
+    try {
+      const d = new Date();
+      d.setDate(d.getDate() + 1);
+      setAppointmentDate(d.toISOString().split("T")[0]);
+    } catch (e) {}
+  }, []);
+
+  // AI Chat State
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
       sender: "bot",
-      text: "Namaste! 🙏 Welcome to Apex Dental & Aesthetics. I am your 24/7 AI Receptionist. How can I help you today?",
+      text: "Namaste! 🙏 Welcome to Apex Dental Clinic. I am your 24/7 AI Receptionist. How can I help you today?",
       time: "Just now",
       quickReplies: [
         "📅 Book Appointment Today",
@@ -148,7 +197,40 @@ export default function DentalClinicDemoPage() {
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
+  }, [messages, isTyping, activeTab]);
+
+  // Generate WhatsApp Message
+  const buildWhatsAppUrl = (customName?: string, customProblem?: string) => {
+    const name = customName || patientName || "Guest Patient";
+    const phone = patientPhone ? "\n📱 *Contact:* " + patientPhone : "";
+    const problem = customProblem || selectedProblem;
+
+    const formattedMsg =
+      "🦷 *NEW DENTAL APPOINTMENT BOOKING*\n" +
+      "━━━━━━━━━━━━━━━━━━━━\n" +
+      "👤 *Patient Name:* " + name + phone + "\n" +
+      "🩺 *Dental Concern:* " + problem + "\n" +
+      "📅 *Preferred Date:* " + appointmentDate + "\n" +
+      "⏰ *Preferred Slot:* " + selectedSlot + "\n" +
+      "🏥 *Clinic:* Apex Dental & Aesthetic Center\n" +
+      "━━━━━━━━━━━━━━━━━━━━\n" +
+      "_Please confirm my appointment slot. Thank you!_";
+
+    return "https://wa.me/918768138086?text=" + encodeURIComponent(formattedMsg);
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const url = buildWhatsAppUrl();
+    window.open(url, "_blank");
+  };
+
+  const handleSelectServiceQuickBook = (problemKey: string) => {
+    setSelectedProblem(problemKey);
+    setActiveTab("form");
+    const el = document.getElementById("booking-engine");
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  };
 
   const handleSendMessage = (textToSend?: string) => {
     const text = textToSend || inputValue;
@@ -171,19 +253,19 @@ export default function DentalClinicDemoPage() {
 
       const lower = text.toLowerCase();
       if (lower.includes("book") || lower.includes("appointment") || lower.includes("today")) {
-        botReply = "Great! Dr. Ananya Roy is available today at 4:30 PM and 6:00 PM. Would you like me to reserve a VIP Consultation slot for you?";
-        replies = ["✅ Yes, book 4:30 PM", "✅ Yes, book 6:00 PM", "💬 Chat with Human Doctor"];
+        botReply = "Great! Dr. Ananya Roy is available for consultation. Fill in your details on the Booking Form tab or click below to WhatsApp immediately!";
+        replies = ["✅ Open 1-Tap Form", "💬 WhatsApp Doctor Directly"];
       } else if (lower.includes("price") || lower.includes("cost") || lower.includes("offer")) {
-        botReply = "Our current Special Offers:\n• Single-Sitting RCT: ₹2,499 (Save ₹1,000)\n• Laser Whitening: ₹1,999\n• Full 3D Digital Smile Scan: 100% FREE this week!";
+        botReply = "Special Clinic Offers:\n• Single-Sitting RCT: ₹2,499 (Save ₹1,000)\n• Laser Teeth Whitening: ₹1,999\n• Full 3D Digital Smile Scan: 100% FREE this week!";
         replies = ["📅 Claim Free 3D Scan", "🦷 Book RCT Offer"];
       } else if (lower.includes("toothache") || lower.includes("pain") || lower.includes("emergency")) {
-        botReply = "🚨 Emergency Case Flagged! Please rinse with lukewarm salt water. Our emergency duty dentist can attend you in 30 minutes. Please click below to call immediately!";
+        botReply = "🚨 Emergency Case Flagged! Please rinse with lukewarm salt water. Our emergency duty dentist can attend you in 30 minutes. Click below to call immediately!";
         replies = ["📞 Call Clinic Directly", "📍 Get Instant GPS Route"];
       } else if (lower.includes("location") || lower.includes("timing") || lower.includes("address")) {
         botReply = "📍 Address: 2nd Floor, Apex Health City, Barasat-Habra Road (Opp. City Mall).\n⏰ Timings: Mon-Sun, 9:00 AM – 9:00 PM (Open all 7 days).";
         replies = ["📅 Book Visit", "💬 Open in WhatsApp"];
       } else {
-        botReply = "Thank you! I have registered your inquiry. One of our doctors will WhatsApp you shortly with personalized details!";
+        botReply = "Thank you! I have registered your inquiry. Our senior consultant will WhatsApp you shortly with personalized details!";
         replies = ["📅 Book Consultation Now", "⭐ View Real Patient Reviews"];
       }
 
@@ -201,13 +283,6 @@ export default function DentalClinicDemoPage() {
     }, 800);
   };
 
-  const handleWhatsAppDirect = () => {
-    const waText = encodeURIComponent(
-      "Hello Apex Dental Clinic! I would like to book a dental appointment for consultation."
-    );
-    window.open(`https://wa.me/918768138086?text=${waText}`, "_blank");
-  };
-
   const handleCallDirect = () => {
     window.location.href = "tel:+918768138086";
   };
@@ -223,7 +298,7 @@ export default function DentalClinicDemoPage() {
             <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
           </span>
           <p className="text-[11px] sm:text-xs font-mono text-cyan-200 truncate">
-            <span className="font-bold text-white">Live Showcase:</span> Apex Dental Clinic &amp; AI Receptionist
+            <span className="font-bold text-white">Live Showcase:</span> Apex Dental Clinic &amp; WhatsApp Booking Engine
           </p>
         </div>
         <Link
@@ -264,180 +339,314 @@ export default function DentalClinicDemoPage() {
             <Phone className="w-3.5 h-3.5 text-cyan-400" />
             <span>+91 87681 38086</span>
           </button>
-          <button
-            onClick={handleWhatsAppDirect}
+          <a
+            href="#booking-engine"
             className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs font-mono tracking-wide shadow-lg shadow-emerald-500/20 flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
           >
-            <MessageSquare className="w-3.5 h-3.5 fill-black" />
-            <span>Book Visit</span>
-          </button>
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Book Appointment</span>
+          </a>
         </div>
       </header>
 
-      {/* HERO SECTION */}
-      <section className="px-3 sm:px-6 pt-6 sm:pt-12 pb-10 sm:pb-16 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-center">
+      {/* HERO SECTION WITH DUAL ENGINE (WHATSAPP FORM + AI RECEPTIONIST) */}
+      <section id="booking-engine" className="px-3 sm:px-6 pt-6 sm:pt-10 pb-10 sm:pb-16 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-start">
           
-          {/* Left Column: Clinic Pitch */}
-          <div className="lg:col-span-7 space-y-4 sm:space-y-6 text-center lg:text-left">
+          {/* Left Column: Clinic Pitch & Quick Highlights */}
+          <div className="lg:col-span-6 space-y-4 sm:space-y-6 text-center lg:text-left">
             
             {/* Pill Badge */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 sm:py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-[11px] sm:text-xs font-mono font-medium shadow-inner">
+            <div className="inline-flex items-center gap-2 px-3 py-1 sm:py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-[11px] sm:text-xs font-mono font-medium">
               <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-cyan-400" />
               <span>Advanced Laser &amp; Painless Micro-Dentistry</span>
             </div>
 
             {/* Main Headline */}
-            <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.15]">
-              Smile With Complete Confidence.{" "}
+            <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-[1.15]">
+              Smile With Confidence.{" "}
               <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-400 bg-clip-text text-transparent">
                 100% Painless Care.
               </span>
             </h2>
 
             {/* Subtext */}
-            <p className="text-xs sm:text-base text-slate-300 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed">
-              Experience Kolkata’s premier dental care with 3D digital smile design, single-visit painless root canals, and invisible aligners. 
-              Open 7 days a week with 24/7 emergency care.
+            <p className="text-xs sm:text-sm md:text-base text-slate-300 max-w-xl mx-auto lg:mx-0 font-normal leading-relaxed">
+              Experience Kolkata’s premier dental clinic. Instant 1-tap WhatsApp doctor appointment booking, zero waiting time, and 3D digital smile imaging.
             </p>
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-1 max-w-lg mx-auto lg:mx-0">
-              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-2.5 sm:p-4 text-center">
-                <p className="text-base sm:text-2xl font-black text-cyan-400 font-mono">15,000+</p>
-                <p className="text-[10px] sm:text-xs text-slate-400 font-mono">Smiles Crafted</p>
+            <div className="grid grid-cols-3 gap-2 sm:gap-3.5 pt-1 max-w-lg mx-auto lg:mx-0">
+              <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-2.5 sm:p-3 text-center">
+                <p className="text-base sm:text-xl font-black text-cyan-400 font-mono">15,000+</p>
+                <p className="text-[10px] sm:text-xs text-slate-400 font-mono">Smiles Fixed</p>
               </div>
-              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-2.5 sm:p-4 text-center">
-                <p className="text-base sm:text-2xl font-black text-emerald-400 font-mono">4.9 ★</p>
+              <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-2.5 sm:p-3 text-center">
+                <p className="text-base sm:text-xl font-black text-emerald-400 font-mono">4.9 ★</p>
                 <p className="text-[10px] sm:text-xs text-slate-400 font-mono">Google Rating</p>
               </div>
-              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-2.5 sm:p-4 text-center">
-                <p className="text-base sm:text-2xl font-black text-indigo-400 font-mono">100%</p>
-                <p className="text-[10px] sm:text-xs text-slate-400 font-mono">Painless Tech</p>
+              <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-2.5 sm:p-3 text-center">
+                <p className="text-base sm:text-xl font-black text-indigo-400 font-mono">20 Sec</p>
+                <p className="text-[10px] sm:text-xs text-slate-400 font-mono">WA Booking</p>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 justify-center lg:justify-start">
-              <button
-                onClick={handleWhatsAppDirect}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-black font-extrabold text-xs sm:text-sm font-mono tracking-wide shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer"
-              >
-                <MessageSquare className="w-4 h-4 fill-black" />
-                <span>Book 1-Tap Appointment (WhatsApp)</span>
-              </button>
-              <button
-                onClick={handleCallDirect}
-                className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-mono text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all"
-              >
-                <Phone className="w-4 h-4 text-cyan-400" />
-                <span>Emergency: +91 87681 38086</span>
-              </button>
+            {/* Key Advantages Checklist */}
+            <div className="space-y-2 pt-2 text-left max-w-md mx-auto lg:mx-0">
+              <div className="flex items-center gap-2 text-xs text-slate-300">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <span>Zero waiting time with guaranteed VIP scheduled slot</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-300">
+                <CheckCircle2 className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                <span>Instant automated confirmation directly on your WhatsApp</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-300">
+                <CheckCircle2 className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+                <span>Complimentary 3D Digital Smile Scan with first visit</span>
+              </div>
             </div>
           </div>
 
-          {/* Right Column: 24/7 AI Receptionist Chat Simulator */}
-          <div className="lg:col-span-5">
-            <div className="bg-[#0b101d] border border-cyan-500/30 rounded-3xl p-3.5 sm:p-5 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl relative overflow-hidden">
+          {/* Right Column: INTERACTIVE WHATSAPP BOOKING PORTAL + AI RECEPTIONIST */}
+          <div className="lg:col-span-6">
+            <div className="bg-[#0b101e] border border-cyan-500/40 rounded-3xl p-4 sm:p-6 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl relative">
               
-              {/* Top Chat Bar */}
-              <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="relative">
-                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-cyan-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300">
-                      <Bot className="w-5 h-5" />
-                    </div>
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-slate-900"></span>
-                  </div>
-                  <div>
-                    <h3 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
-                      <span>Apex AI Receptionist</span>
-                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                        ONLINE 24/7
-                      </span>
-                    </h3>
-                    <p className="text-[10px] text-slate-400 font-mono">Instant Appointment &amp; Pricing Bot</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1 text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-2 py-1 rounded-lg border border-cyan-500/20">
-                  <Activity className="w-3 h-3 animate-pulse" />
-                  <span>&lt; 5s Reply</span>
-                </div>
+              {/* Tab Selector Bar */}
+              <div className="flex items-center justify-between p-1 bg-slate-950/80 border border-slate-800 rounded-2xl mb-4">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("form")}
+                  className={`flex-1 py-2 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all ${
+                    activeTab === "form"
+                      ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-black shadow-lg shadow-emerald-500/20"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>1-Tap WhatsApp Booking</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("ai")}
+                  className={`flex-1 py-2 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all ${
+                    activeTab === "ai"
+                      ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-black shadow-lg shadow-cyan-500/20"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <Bot className="w-3.5 h-3.5" />
+                  <span>24/7 AI Receptionist</span>
+                </button>
               </div>
 
-              {/* Chat Message Box */}
-              <div className="space-y-3 h-[250px] sm:h-[280px] overflow-y-auto pr-1 text-xs font-sans scrollbar-thin scrollbar-thumb-slate-800">
-                {messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}
-                  >
-                    <div
-                      className={`max-w-[88%] sm:max-w-[80%] rounded-2xl px-3.5 py-2.5 ${
-                        msg.sender === "user"
-                          ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-semibold shadow-md"
-                          : "bg-slate-900/90 border border-slate-800 text-slate-200"
-                      }`}
+              {/* TAB 1: INTERACTIVE WHATSAPP BOOKING FORM */}
+              {activeTab === "form" ? (
+                <form onSubmit={handleFormSubmit} className="space-y-3.5 text-left">
+                  
+                  {/* Patient Name & Phone Inputs */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-mono text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <User className="w-3 h-3 text-cyan-400" />
+                        <span>Patient Full Name:</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={patientName}
+                        onChange={(e) => setPatientName(e.target.value)}
+                        placeholder="e.g. Rahul Mukherjee"
+                        className="w-full bg-[#050812] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-400 transition-colors"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-mono text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <Phone className="w-3 h-3 text-emerald-400" />
+                        <span>WhatsApp Number:</span>
+                      </label>
+                      <input
+                        type="tel"
+                        value={patientPhone}
+                        onChange={(e) => setPatientPhone(e.target.value)}
+                        placeholder="e.g. 9876543210"
+                        className="w-full bg-[#050812] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-400 transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 13-Option Dental Problem Dropdown */}
+                  <div>
+                    <label className="block text-[11px] font-mono text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1">
+                      <ClipboardList className="w-3 h-3 text-cyan-400" />
+                      <span>Select Dental Problem / Treatment:</span>
+                    </label>
+                    <select
+                      value={selectedProblem}
+                      onChange={(e) => setSelectedProblem(e.target.value)}
+                      className="w-full bg-[#050812] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-cyan-300 focus:outline-none focus:border-cyan-400 transition-colors cursor-pointer"
                     >
-                      <p className="whitespace-pre-line leading-relaxed text-[11px] sm:text-xs">{msg.text}</p>
-                      <span
-                        className={`text-[9px] block mt-1 ${
-                          msg.sender === "user" ? "text-black/70" : "text-slate-400"
-                        }`}
+                      {DENTAL_PROBLEMS.map((prob, idx) => (
+                        <option key={idx} value={prob} className="bg-slate-950 text-slate-200">
+                          {prob}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Appointment Date & Preferred Slot */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-mono text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-indigo-400" />
+                        <span>Appointment Date:</span>
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={appointmentDate}
+                        onChange={(e) => setAppointmentDate(e.target.value)}
+                        className="w-full bg-[#050812] border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 transition-colors cursor-pointer"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-mono text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-amber-400" />
+                        <span>Preferred Time Slot:</span>
+                      </label>
+                      <select
+                        value={selectedSlot}
+                        onChange={(e) => setSelectedSlot(e.target.value)}
+                        className="w-full bg-[#050812] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-400 transition-colors cursor-pointer"
                       >
-                        {msg.time}
+                        {TIME_SLOTS.map((slot, idx) => (
+                          <option key={idx} value={slot} className="bg-slate-950 text-slate-200">
+                            {slot}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Auto-Filled WhatsApp Live Message Preview Box */}
+                  <div className="bg-slate-950/90 border border-emerald-500/30 rounded-2xl p-3 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono font-bold text-emerald-400 flex items-center gap-1">
+                        <MessageSquare className="w-3 h-3" />
+                        <span>Auto-Filled WhatsApp Message Preview:</span>
+                      </span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                        1-Tap Auto Fill
                       </span>
                     </div>
 
-                    {/* Quick Reply Chips */}
-                    {msg.quickReplies && msg.quickReplies.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-2 max-w-[95%]">
-                        {msg.quickReplies.map((reply, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => handleSendMessage(reply)}
-                            className="text-[10px] sm:text-[11px] font-mono px-2.5 py-1 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 hover:border-cyan-400 transition-all text-left"
-                          >
-                            {reply}
-                          </button>
-                        ))}
+                    <div className="bg-[#040711] border border-slate-800 rounded-xl p-2.5 text-[11px] font-mono text-slate-300 whitespace-pre-line leading-relaxed">
+                      {"🦷 *APEX DENTAL CLINIC APPOINTMENT*\n" +
+                        "👤 Name: " + (patientName || "[Patient Name]") + "\n" +
+                        "🩺 Concern: " + selectedProblem + "\n" +
+                        "📅 Date: " + appointmentDate + " | Slot: " + selectedSlot.split("(")[0] + "\n" +
+                        "📍 Location: Barasat-Habra Road"}
+                    </div>
+                  </div>
+
+                  {/* Glowing 1-Click WhatsApp Action Button */}
+                  <button
+                    type="submit"
+                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-500 hover:from-emerald-300 hover:to-cyan-400 text-black font-extrabold text-xs sm:text-sm font-mono tracking-wide shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
+                  >
+                    <MessageSquare className="w-4 h-4 fill-black" />
+                    <span>Confirm &amp; Book via WhatsApp (+91 87681 38086)</span>
+                  </button>
+                </form>
+              ) : (
+                /* TAB 2: 24/7 AI RECEPTIONIST CHAT */
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <div className="w-8 h-8 rounded-full bg-cyan-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300">
+                          <Bot className="w-4 h-4" />
+                        </div>
+                        <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-slate-900"></span>
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-white">Apex AI Receptionist</h4>
+                        <p className="text-[9px] text-slate-400 font-mono">Answers pricing, slots &amp; emergency care</p>
+                      </div>
+                    </div>
+                    <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                      ONLINE
+                    </span>
+                  </div>
+
+                  {/* Chat Box */}
+                  <div className="space-y-2.5 h-[230px] overflow-y-auto pr-1 text-xs scrollbar-thin scrollbar-thumb-slate-800">
+                    {messages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}
+                      >
+                        <div
+                          className={`max-w-[88%] rounded-2xl px-3 py-2 ${
+                            msg.sender === "user"
+                              ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-semibold shadow-md"
+                              : "bg-slate-900/90 border border-slate-800 text-slate-200"
+                          }`}
+                        >
+                          <p className="whitespace-pre-line text-[11px] leading-relaxed">{msg.text}</p>
+                          <span className="text-[9px] block mt-0.5 opacity-70">{msg.time}</span>
+                        </div>
+
+                        {msg.quickReplies && msg.quickReplies.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5 max-w-[95%]">
+                            {msg.quickReplies.map((reply, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => handleSendMessage(reply)}
+                                className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition-all text-left"
+                              >
+                                {reply}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {isTyping && (
+                      <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-slate-900/60 border border-slate-800 text-slate-400 text-[10px] font-mono w-20">
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+                        <span>Typing...</span>
                       </div>
                     )}
+                    <div ref={chatBottomRef} />
                   </div>
-                ))}
 
-                {isTyping && (
-                  <div className="flex items-center gap-1.5 p-2 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-400 text-xs font-mono w-24">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
-                    <span>Typing...</span>
-                  </div>
-                )}
-                <div ref={chatBottomRef} />
-              </div>
-
-              {/* Chat Input Bar */}
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSendMessage();
-                }}
-                className="mt-3 pt-3 border-t border-slate-800/80 flex items-center gap-2"
-              >
-                <input
-                  type="text"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Ask treatment price, doctor time..."
-                  className="flex-1 bg-[#050811] border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-400 transition-colors"
-                />
-                <button
-                  type="submit"
-                  className="p-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-black hover:scale-105 active:scale-95 transition-transform"
-                >
-                  <Send className="w-3.5 h-3.5 fill-black" />
-                </button>
-              </form>
+                  {/* Chat Input */}
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }}
+                    className="pt-2 border-t border-slate-800 flex items-center gap-2"
+                  >
+                    <input
+                      type="text"
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      placeholder="Ask price, timings, emergency..."
+                      className="flex-1 bg-[#050812] border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-400"
+                    />
+                    <button
+                      type="submit"
+                      className="p-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-black hover:scale-105 active:scale-95 transition-transform"
+                    >
+                      <Send className="w-3.5 h-3.5 fill-black" />
+                    </button>
+                  </form>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -447,13 +656,13 @@ export default function DentalClinicDemoPage() {
       <section className="px-3 sm:px-6 py-10 sm:py-16 max-w-7xl mx-auto border-t border-slate-900">
         <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12 space-y-2">
           <span className="text-cyan-400 text-xs font-mono uppercase tracking-widest font-bold">
-            World-Class Care
+            World-Class Treatments
           </span>
           <h3 className="text-xl sm:text-3xl font-black text-white tracking-tight">
-            Comprehensive Dental Treatments
+            Comprehensive Dental Services
           </h3>
           <p className="text-xs sm:text-sm text-slate-400">
-            Transparent pricing, zero hidden charges, and German precision technology.
+            Transparent pricing, zero hidden charges, and German rotary precision.
           </p>
         </div>
 
@@ -488,10 +697,10 @@ export default function DentalClinicDemoPage() {
                     {s.price}
                   </span>
                   <button
-                    onClick={handleWhatsAppDirect}
+                    onClick={() => handleSelectServiceQuickBook(s.problemKey)}
                     className="text-[11px] font-mono font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
                   >
-                    <span>Book Now</span>
+                    <span>Quick Book</span>
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -505,7 +714,7 @@ export default function DentalClinicDemoPage() {
       <section className="px-3 sm:px-6 py-10 sm:py-16 max-w-7xl mx-auto border-t border-slate-900 bg-slate-950/40 rounded-3xl my-6">
         <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12 space-y-2">
           <span className="text-cyan-400 text-xs font-mono uppercase tracking-widest font-bold">
-            Certified Expertise
+            Certified Doctors
           </span>
           <h3 className="text-xl sm:text-3xl font-black text-white tracking-tight">
             Meet Our Senior Specialists
@@ -547,7 +756,7 @@ export default function DentalClinicDemoPage() {
       <section className="px-3 sm:px-6 py-10 sm:py-16 max-w-7xl mx-auto border-t border-slate-900">
         <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12 space-y-2">
           <span className="text-emerald-400 text-xs font-mono uppercase tracking-widest font-bold">
-            Verified Feedback
+            Verified Reviews
           </span>
           <h3 className="text-xl sm:text-3xl font-black text-white tracking-tight">
             Loved By Over 15,000+ Happy Patients
@@ -594,13 +803,13 @@ export default function DentalClinicDemoPage() {
         <div className="bg-gradient-to-r from-cyan-950 via-slate-900 to-indigo-950 border-2 border-cyan-500/40 rounded-3xl p-5 sm:p-10 text-center shadow-2xl relative overflow-hidden">
           <div className="space-y-3 sm:space-y-4">
             <span className="text-[10px] sm:text-xs font-mono font-bold px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-              ⚡ GROW YOUR LOCAL BUSINESS WITH AI &amp; WHATSAPP
+              ⚡ GROW YOUR CLINIC WITH WHATSAPP APPOINTMENT AUTOMATION
             </span>
             <h3 className="text-lg sm:text-2xl md:text-3xl font-black text-white max-w-2xl mx-auto leading-tight">
               Want this kind of customized high-speed mobile website + automated WhatsApp booking receptionist starting at ₹2,999/-?
             </h3>
             <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto font-normal">
-              Built and delivered in 24 hours. Includes custom domain, 24/7 AI chat widget, Google Maps SEO ranker &amp; Meta WhatsApp Business integration.
+              Built and delivered in 24 hours. Includes custom domain, 13-service WhatsApp booking form, 24/7 AI chat widget &amp; Google Maps SEO ranker.
             </p>
             <div className="pt-3">
               <Link
@@ -625,13 +834,13 @@ export default function DentalClinicDemoPage() {
           <Phone className="w-3.5 h-3.5 text-cyan-400" />
           <span>Call Doctor</span>
         </button>
-        <button
-          onClick={handleWhatsAppDirect}
+        <a
+          href="#booking-engine"
           className="flex-1 py-2.5 px-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-black font-extrabold text-xs font-mono flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"
         >
-          <MessageSquare className="w-3.5 h-3.5 fill-black" />
+          <Calendar className="w-3.5 h-3.5" />
           <span>WhatsApp Book</span>
-        </button>
+        </a>
       </div>
 
       {/* FOOTER */}
