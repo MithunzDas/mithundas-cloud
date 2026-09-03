@@ -81,12 +81,14 @@ export function SearchHistoryList({
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   // Filter Batches by search query
-  const filteredBatches = batches.filter(
-    (b) =>
-      b.category.toLowerCase().includes(filterQuery.toLowerCase()) ||
-      b.city.toLowerCase().includes(filterQuery.toLowerCase()) ||
-      (b.searchQuery && b.searchQuery.toLowerCase().includes(filterQuery.toLowerCase()))
-  );
+  const filteredBatches = batches
+    .filter((b) => (b._count?.leads ?? b.totalFound ?? 0) > 0) // Hide placeholder boxes with 0 leads
+    .filter(
+      (b) =>
+        b.category.toLowerCase().includes(filterQuery.toLowerCase()) ||
+        b.city.toLowerCase().includes(filterQuery.toLowerCase()) ||
+        (b.searchQuery && b.searchQuery.toLowerCase().includes(filterQuery.toLowerCase()))
+    );
 
   const handleDeleteBatch = async (e: React.MouseEvent, batch: BatchItem) => {
     e.stopPropagation();
@@ -221,7 +223,7 @@ export function SearchHistoryList({
           ) : (
             filteredBatches.map((batch) => {
               const isSelected = selectedBatchId === batch.batchId;
-              const count = batch._count?.leads || batch.totalFound || batch.targetCount;
+              const count = batch._count?.leads ?? batch.totalFound ?? 0;
               const isThisDeleting = isDeleting === batch.batchId;
               const istTimestamp = formatIndianTimestamp(batch.createdAt);
 

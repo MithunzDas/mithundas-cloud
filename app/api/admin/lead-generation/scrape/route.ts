@@ -14,19 +14,34 @@ export async function POST(req: NextRequest) {
     }
 
     const searchQuery = `${category} in ${city}`;
-    const batchId = `batch_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const safeKey = `${category}_${city}`
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "_")
+      .replace(/_+/g, "_")
+      .slice(0, 45);
+
+    const batchId = `batch_${safeKey}`;
     const count = Number(targetCount) || 50;
 
-    // 1. Initialize Batch in VPS PostgreSQL Database
-    const batch = await prisma.scrapedLeadBatch.create({
-      data: {
+    // Reuse existing batch or upsert with deterministic batchId
+    const batch = await prisma.scrapedLeadBatch.upsert({
+      where: { batchId },
+      update: {
+        category,
+        city,
+        searchQuery,
+        targetCount: count,
+        createdAt: new Date()
+      },
+      create: {
         batchId,
         category,
         city,
         searchQuery,
         targetCount: count,
         totalFound: 0,
-        hotCount: 0
+        hotCount: 0,
+        createdAt: new Date()
       }
     });
 
