@@ -880,6 +880,8 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                               ? "bg-indigo-500/20 border-indigo-400 text-indigo-300"
                               : lead.outreachStatus === "SENT"
                               ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300"
+                              : lead.outreachStatus === "FAILED"
+                              ? "bg-rose-500/20 border-rose-500/60 text-rose-300"
                               : "bg-slate-900 border-slate-700 text-slate-400"
                           }`}
                           style={{
@@ -893,6 +895,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                           <option value="DELIVERED" className="bg-slate-950 text-indigo-300">📬 DELIVERED (✓✓)</option>
                           <option value="READ" className="bg-slate-950 text-sky-300">👀 READ (✓✓)</option>
                           <option value="REPLIED" className="bg-slate-950 text-emerald-300">💬 REPLIED (Inquiry)</option>
+                          <option value="FAILED" className="bg-slate-950 text-rose-400">❌ FAILED</option>
                         </select>
 
                         {/* If Client Replied: Display Inbound Message Bubble (Clickable to open Chat) */}

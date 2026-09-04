@@ -123,6 +123,12 @@ export async function POST(req: NextRequest) {
           messageText = message.interactive.list_reply.title;
         } else if (message.button?.text) {
           messageText = message.button.text;
+        } else if (message.type === "contacts" && Array.isArray(message.contacts) && message.contacts.length > 0) {
+          const c = message.contacts[0];
+          const contactName = c.name?.formatted_name || `${c.name?.first_name || ""} ${c.name?.last_name || ""}`.trim() || "Contact";
+          const contactPhone = c.phones?.[0]?.phone || c.phones?.[0]?.wa_id || "";
+          const phoneType = c.phones?.[0]?.type ? ` (${c.phones[0].type})` : "";
+          messageText = `👤 Contact Shared:\nName: ${contactName}\nPhone: ${contactPhone}${phoneType}`;
         } else if (message.type) {
           messageText = `[${message.type} received]`;
         }
