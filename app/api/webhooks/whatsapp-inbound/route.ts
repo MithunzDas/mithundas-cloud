@@ -6,6 +6,13 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8778455466:AAFCpet
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "5000978436";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.mithundas.cloud";
 
+function escapeHtml(str: string = ""): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 // 1. Webhook Handshake (GET) for Meta WhatsApp verification
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -122,7 +129,7 @@ export async function POST(req: NextRequest) {
 
         console.log(`[Meta Webhook] Inbound reply from +${fromPhone}: "${messageText}" (WAMID: ${wamid})`);
 
-        // Find matching lead in database
+        // 1. Find matching lead in database (by phone suffix, clean digits)
         const lead = await prisma.scrapedLead.findFirst({
           where: {
             OR: [
@@ -133,7 +140,7 @@ export async function POST(req: NextRequest) {
         });
 
         if (lead) {
-          // 1. Update lead status to REPLIED
+          // Update lead status to REPLIED
           await prisma.scrapedLead.update({
             where: { id: lead.id },
             data: {
@@ -144,7 +151,7 @@ export async function POST(req: NextRequest) {
           });
           console.log(`[Meta Webhook] Lead "${lead.businessName}" flipped to 💬 REPLIED!`);
 
-          // 2. Save message in LeadChatMessage table
+          // Save message in LeadChatMessage table
           try {
             await (prisma as any).leadChatMessage.create({
               data: {
@@ -166,33 +173,36 @@ export async function POST(req: NextRequest) {
           console.log(`[Meta Webhook] Inbound message from +${fromPhone} does not match an existing lead. Phone suffix: ${phoneSuffix}`);
         }
 
-        // 3. Send Instant Telegram Alert if configured
+        // 2. Send Instant Bulletproof Telegram Push Alert (HTML mode)
         if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
           try {
             const leadName = lead?.businessName || "Prospective Client";
+            const category = lead?.category || "Local Business";
             const city = lead?.city || "West Bengal";
             const directChatUrl = `https://wa.me/${fromPhone}`;
             const dashboardChatUrl = `${SITE_URL}/admin/lead-generation`;
 
-            const alertText =
-              `🚨 *HOT CLIENT REPLY RECEIVED!* 🚨\n\n` +
-              `🏢 *Business:* ${leadName}\n` +
-              `📍 *Location:* ${city}\n` +
-              `📱 *Phone:* +${fromPhone}\n` +
-              `💬 *Reply:* "${messageText}"\n\n` +
-              `💻 [Open CRM Dashboard](${dashboardChatUrl})\n` +
-              `👉 [Click to Chat on WhatsApp](${directChatUrl})`;
+            const alertHtml =
+              `🚨 <b>HOT CLIENT REPLY RECEIVED!</b> 🚨\n\n` +
+              `🏢 <b>Business:</b> ${escapeHtml(leadName)}\n` +
+              `🏷️ <b>Category:</b> ${escapeHtml(category)}\n` +
+              `📍 <b>Location:</b> ${escapeHtml(city)}\n` +
+              `📱 <b>Phone:</b> <code>+${fromPhone}</code>\n` +
+              `💬 <b>Client Reply:</b> <i>"${escapeHtml(messageText)}"</i>\n\n` +
+              `⏱️ <b>Status:</b> 🟢 24h Free Reply Window is ACTIVE!\n\n` +
+              `💻 <a href="${dashboardChatUrl}">Open CRM Live Chat</a>\n` +
+              `👉 <a href="${directChatUrl}">Click to Reply on WhatsApp</a>`;
 
             await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 chat_id: TELEGRAM_CHAT_ID,
-                text: alertText,
-                parse_mode: "Markdown"
+                text: alertHtml,
+                parse_mode: "HTML"
               })
             });
-            console.log(`[Meta Webhook] Telegram push alert sent successfully for ${leadName}!`);
+            console.log(`[Meta Webhook] Telegram push alert delivered for ${leadName}!`);
           } catch (teleErr) {
             console.error("[Meta Webhook] Telegram notification error:", teleErr);
           }
