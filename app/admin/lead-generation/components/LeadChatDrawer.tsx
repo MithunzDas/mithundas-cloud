@@ -349,11 +349,16 @@ export default function LeadChatDrawer({
                       {isOutbound && (
                         <span>
                           {msg.status === "READ" ? (
-                            <CheckCheck className="w-3.5 h-3.5 text-cyan-300 inline" />
+                            <span title="Read by recipient"><CheckCheck className="w-3.5 h-3.5 text-cyan-300 inline" /></span>
                           ) : msg.status === "DELIVERED" ? (
-                            <CheckCheck className="w-3.5 h-3.5 text-emerald-200 inline" />
+                            <span title="Delivered to device"><CheckCheck className="w-3.5 h-3.5 text-emerald-200 inline" /></span>
+                          ) : msg.status === "FAILED" ? (
+                            <span title="Delivery blocked: Customer 24h window closed" className="inline-flex items-center gap-1 text-rose-400 font-medium">
+                              <AlertCircle className="w-3.5 h-3.5 inline" />
+                              <span className="text-[9px]">Failed</span>
+                            </span>
                           ) : (
-                            <Check className="w-3.5 h-3.5 text-emerald-300 inline" />
+                            <span title="Sent to WhatsApp network"><Check className="w-3.5 h-3.5 text-emerald-300 inline" /></span>
                           )}
                         </span>
                       )}
