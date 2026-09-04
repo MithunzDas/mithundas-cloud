@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 const VERIFY_TOKEN = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || "mithundas_leadgen_secure_token_2026";
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.mithundas.cloud";
 
 // 1. Webhook Handshake (GET) for Meta WhatsApp verification
 export async function GET(req: NextRequest) {
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest) {
   return new Response("Forbidden", { status: 403 });
 }
 
-// 2. Inbound Event Handler (POST): Handles Message Replies AND Delivery Statuses
+// 2. Inbound Event Handler (POST): Handles Message Replies, History Storage & Delivery Statuses
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -44,7 +45,19 @@ export async function POST(req: NextRequest) {
 
         console.log(`[Meta Webhook] Delivery status for +${recipientPhone}: ${metaStatus} (ID: ${wamid})`);
 
-        // Find matching lead in database
+        // 1. Update LeadChatMessage status if wamid matches
+        if (wamid) {
+          try {
+            await (prisma as any).leadChatMessage.updateMany({
+              where: { wamid },
+              data: { status: metaStatus.toUpperCase() }
+            });
+          } catch (chatErr) {
+            console.warn("[Meta Webhook] Error updating LeadChatMessage status:", chatErr);
+          }
+        }
+
+        // 2. Find matching lead in database
         const lead = await prisma.scrapedLead.findFirst({
           where: {
             OR: [
@@ -63,25 +76,19 @@ export async function POST(req: NextRequest) {
           if (metaStatus === "read") {
             await prisma.scrapedLead.update({
               where: { id: lead.id },
-              data: {
-                outreachStatus: "READ"
-              }
+              data: { outreachStatus: "READ" }
             });
             console.log(`[Meta Webhook] Lead "${lead.businessName}" marked as READ 👀`);
           } else if (metaStatus === "delivered" && lead.outreachStatus !== "READ") {
             await prisma.scrapedLead.update({
               where: { id: lead.id },
-              data: {
-                outreachStatus: "DELIVERED"
-              }
+              data: { outreachStatus: "DELIVERED" }
             });
             console.log(`[Meta Webhook] Lead "${lead.businessName}" marked as DELIVERED 📬`);
           } else if (metaStatus === "failed") {
             await prisma.scrapedLead.update({
               where: { id: lead.id },
-              data: {
-                outreachStatus: "FAILED"
-              }
+              data: { outreachStatus: "FAILED" }
             });
             console.warn(`[Meta Webhook] Lead "${lead.businessName}" outreach FAILED ❌`);
           }
@@ -97,6 +104,7 @@ export async function POST(req: NextRequest) {
       for (const message of messages) {
         const fromPhone = message.from; // e.g. "917679160114"
         const phoneSuffix = fromPhone.replace(/\D/g, "").slice(-10);
+        const wamid = message.id;
 
         // Extract message content from all possible WhatsApp message types
         let messageText = "Customer replied via WhatsApp";
@@ -112,7 +120,7 @@ export async function POST(req: NextRequest) {
           messageText = `[${message.type} received]`;
         }
 
-        console.log(`[Meta Webhook] Inbound reply from +${fromPhone}: "${messageText}"`);
+        console.log(`[Meta Webhook] Inbound reply from +${fromPhone}: "${messageText}" (WAMID: ${wamid})`);
 
         // Find matching lead in database
         const lead = await prisma.scrapedLead.findFirst({
@@ -125,6 +133,7 @@ export async function POST(req: NextRequest) {
         });
 
         if (lead) {
+          // 1. Update lead status to REPLIED
           await prisma.scrapedLead.update({
             where: { id: lead.id },
             data: {
@@ -134,38 +143,66 @@ export async function POST(req: NextRequest) {
             }
           });
           console.log(`[Meta Webhook] Lead "${lead.businessName}" flipped to 💬 REPLIED!`);
+
+          // 2. Save message in LeadChatMessage table
+          try {
+            await (prisma as any).leadChatMessage.create({
+              data: {
+                leadId: lead.id,
+                sender: "CLIENT",
+                direction: "INBOUND",
+                channel: "WHATSAPP",
+                messageText: messageText,
+                wamid: wamid || null,
+                status: "DELIVERED",
+                rawPayload: JSON.stringify(message)
+              }
+            });
+            console.log(`[Meta Webhook] Saved inbound message to LeadChatMessage for "${lead.businessName}"`);
+          } catch (msgErr) {
+            console.error("[Meta Webhook] Error saving LeadChatMessage:", msgErr);
+          }
+        } else {
+          console.log(`[Meta Webhook] Inbound message from +${fromPhone} does not match an existing lead. Phone suffix: ${phoneSuffix}`);
         }
 
-        // Send Instant Telegram Alert if configured
+        // 3. Send Instant Telegram Alert if configured
         if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
-          const leadName = lead?.businessName || "Prospective Client";
-          const city = lead?.city || "West Bengal";
-          const directChatUrl = `https://wa.me/${fromPhone}`;
+          try {
+            const leadName = lead?.businessName || "Prospective Client";
+            const city = lead?.city || "West Bengal";
+            const directChatUrl = `https://wa.me/${fromPhone}`;
+            const dashboardChatUrl = `${SITE_URL}/admin/lead-generation`;
 
-          const alertText =
-            `🚨 *HOT CLIENT REPLY RECEIVED!* 🚨\n\n` +
-            `🏢 *Business:* ${leadName}\n` +
-            `📍 *Location:* ${city}\n` +
-            `📱 *Phone:* +${fromPhone}\n` +
-            `💬 *Reply:* "${messageText}"\n\n` +
-            `👉 [Click to Reply on WhatsApp](${directChatUrl})`;
+            const alertText =
+              `🚨 *HOT CLIENT REPLY RECEIVED!* 🚨\n\n` +
+              `🏢 *Business:* ${leadName}\n` +
+              `📍 *Location:* ${city}\n` +
+              `📱 *Phone:* +${fromPhone}\n` +
+              `💬 *Reply:* "${messageText}"\n\n` +
+              `💻 [Open CRM Dashboard](${dashboardChatUrl})\n` +
+              `👉 [Click to Chat on WhatsApp](${directChatUrl})`;
 
-          fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: TELEGRAM_CHAT_ID,
-              text: alertText,
-              parse_mode: "Markdown"
-            })
-          }).catch((err) => console.error("Telegram notification failed:", err));
+            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: TELEGRAM_CHAT_ID,
+                text: alertText,
+                parse_mode: "Markdown"
+              })
+            });
+            console.log(`[Meta Webhook] Telegram push alert sent successfully for ${leadName}!`);
+          } catch (teleErr) {
+            console.error("[Meta Webhook] Telegram notification error:", teleErr);
+          }
         }
       }
     }
 
     return NextResponse.json({ status: "EVENT_RECEIVED" });
   } catch (error: any) {
-    console.error("Error processing inbound WhatsApp webhook:", error);
-    return NextResponse.json({ status: "ERROR", error: error.message }, { status: 500 });
+    console.error("[Meta Webhook] Error processing inbound webhook:", error);
+    return NextResponse.json({ status: "EVENT_RECEIVED", error: error.message }, { status: 200 });
   }
 }

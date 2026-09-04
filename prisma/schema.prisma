@@ -233,9 +233,28 @@ model ScrapedLead {
   repliedAt        DateTime?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
+  messages         LeadChatMessage[]
 
   @@index([outreachStatus])
   @@index([leadTier])
   @@index([city, category])
   @@index([phone])
+}
+
+model LeadChatMessage {
+  id          String       @id @default(cuid())
+  leadId      String
+  lead        ScrapedLead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  sender      String       // "CLIENT" | "ADMIN"
+  direction   String       // "INBOUND" | "OUTBOUND"
+  channel     String       @default("WHATSAPP") // "WHATSAPP", "MANUAL"
+  messageText String       @db.Text
+  wamid       String?
+  status      String?      @default("SENT") // "SENT", "DELIVERED", "READ", "FAILED"
+  rawPayload  String?      @db.Text
+  createdAt   DateTime     @default(now())
+
+  @@index([leadId])
+  @@index([wamid])
+  @@index([createdAt])
 }

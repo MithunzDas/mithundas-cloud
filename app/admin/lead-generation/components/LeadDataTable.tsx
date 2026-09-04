@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import LeadChatDrawer from "./LeadChatDrawer";
 import {
   Phone,
   Globe,
@@ -210,6 +211,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
 
   // Preview Modal State
   const [previewModalLead, setPreviewModalLead] = useState<LeadItem | null>(null);
+  const [activeChatLeadId, setActiveChatLeadId] = useState<string | null>(null);
   const [copiedModalText, setCopiedModalText] = useState(false);
 
   // Filter Leads
@@ -874,11 +876,16 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                           <option value="REPLIED" className="bg-slate-950 text-emerald-300">💬 REPLIED (Inquiry)</option>
                         </select>
 
-                        {/* If Client Replied: Display Inbound Message Bubble */}
+                        {/* If Client Replied: Display Inbound Message Bubble (Clickable to open Chat) */}
                         {isReplied && lead.lastReplyMessage && (
-                          <div className="p-2 rounded-xl bg-emerald-950/70 border border-emerald-500/40 text-emerald-200 text-[11px] font-mono leading-tight max-w-[200px] shadow-md">
-                            <span className="font-bold text-emerald-400 block text-[9px] uppercase tracking-wider mb-0.5">
-                              💬 Client Reply:
+                          <button
+                            onClick={() => setActiveChatLeadId(lead.id)}
+                            className="p-2 rounded-xl bg-emerald-950/70 border border-emerald-500/40 hover:border-emerald-400 text-emerald-200 text-[11px] font-mono leading-tight max-w-[200px] shadow-md hover:shadow-emerald-500/20 text-left transition-all cursor-pointer group"
+                            title="Click to open live chat history"
+                          >
+                            <span className="font-bold text-emerald-400 flex items-center justify-between text-[9px] uppercase tracking-wider mb-0.5">
+                              <span>💬 Client Reply:</span>
+                              <span className="text-[8px] text-emerald-300 group-hover:underline">Open &rarr;</span>
                             </span>
                             <p className="line-clamp-2 italic text-emerald-100">"{lead.lastReplyMessage}"</p>
                             {repliedTime && (
@@ -886,7 +893,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                                 {repliedTime}
                               </span>
                             )}
-                          </div>
+                          </button>
                         )}
 
                         {/* Contacted Timestamp */}
@@ -908,20 +915,27 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                     {/* Phase 3: Quick Actions */}
                     <td className="p-3 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        {/* If client replied: Glow green reply button */}
+                        {/* If client replied: Glow green live chat drawer button */}
                         {isReplied ? (
-                          <a
-                            href={waWebUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-[10px] font-mono flex items-center gap-1 shadow-md shadow-emerald-500/20 active:scale-95 transition-all"
-                            title="Reply to Client on WhatsApp Web"
+                          <button
+                            onClick={() => setActiveChatLeadId(lead.id)}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-extrabold text-[10px] font-mono flex items-center gap-1.5 shadow-lg shadow-emerald-500/30 active:scale-95 transition-all animate-pulse"
+                            title="Open WhatsApp Live Chat & History"
                           >
-                            <MessageSquare className="w-3 h-3 fill-black" />
-                            <span>Reply</span>
-                          </a>
+                            <MessageCircle className="w-3.5 h-3.5 fill-slate-950" />
+                            <span>Live Chat</span>
+                          </button>
                         ) : (
                           <>
+                            {/* Open Chat Drawer for any lead */}
+                            <button
+                              onClick={() => setActiveChatLeadId(lead.id)}
+                              className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/25 flex items-center justify-center text-emerald-400 transition-colors"
+                              title="Open Conversation History & Chat"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                            </button>
+
                             {/* Message Preview Modal Trigger */}
                             <button
                               onClick={() => setPreviewModalLead(lead)}
@@ -937,10 +951,10 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                                 href={waWebUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/25 flex items-center justify-center text-emerald-400 transition-colors"
-                                title="Open WhatsApp Web Chat"
+                                className="w-7 h-7 rounded-lg bg-slate-800/80 border border-slate-700 hover:border-emerald-500/40 flex items-center justify-center text-slate-400 hover:text-emerald-400 transition-colors"
+                                title="Open Personal WhatsApp (wa.me)"
                               >
-                                <MessageSquare className="w-3.5 h-3.5" />
+                                <ExternalLink className="w-3.5 h-3.5" />
                               </a>
                             )}
                           </>
@@ -1104,6 +1118,12 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
         );
       })()}
 
+          {/* Phase 4: Full Two-Way WhatsApp Live Chat Drawer */}
+      <LeadChatDrawer
+        leadId={activeChatLeadId}
+        onClose={() => setActiveChatLeadId(null)}
+        onStatusUpdated={onRefresh}
+      />
     </div>
   );
 }
