@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
 const VERIFY_TOKEN = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || "mithundas_leadgen_secure_token_2026";
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8778455466:AAFCpetM_e7Hxxqxl28WwUPuSI87VffTuVM";
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "5000978436";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.mithundas.cloud";
 
 // 1. Webhook Handshake (GET) for Meta WhatsApp verification
