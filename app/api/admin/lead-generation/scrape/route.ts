@@ -95,8 +95,18 @@ export async function POST(req: NextRequest) {
         const score = Number(lead.lead_score || lead.leadScore) || 75;
         if (score >= 70) hotCount++;
 
-        const leadId = `lead_${batchId}_${Math.random().toString(36).substring(2, 9)}`;
         const cleanPhone = (lead.whatsapp_number || lead.whatsappNumber || lead.phone || "").replace(/\D/g, "");
+        const hasValidPhone = cleanPhone.length >= 10;
+        const rawEmail = (lead.email || "").trim();
+        const hasValidEmail = Boolean(rawEmail.length > 3 && rawEmail.includes("@") && rawEmail.includes("."));
+
+        // Contactability Filter: Must have at least ONE valid contact route (Valid Phone or Valid Email)
+        if (!hasValidPhone && !hasValidEmail) {
+          console.log(`[Scraper] ⏭️ Skipping "${lead.business_name || lead.businessName || 'Unnamed'}": No contact route (no valid phone or email).`);
+          continue;
+        }
+
+        const leadId = `lead_${batchId}_${Math.random().toString(36).substring(2, 9)}`;
 
         await prisma.scrapedLead.create({
           data: {

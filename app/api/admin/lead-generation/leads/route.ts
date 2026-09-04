@@ -141,6 +141,16 @@ export async function POST(req: NextRequest) {
       if (cleanPhone.startsWith("0")) cleanPhone = cleanPhone.slice(1);
       const phoneSuffix = cleanPhone.slice(-10);
 
+      // Contactability Filter: Must have at least ONE valid contact route (Valid Phone or Valid Email)
+      const hasValidPhone = Boolean(phoneSuffix && phoneSuffix.length === 10);
+      const rawEmail = (l.email || "").trim();
+      const hasValidEmail = Boolean(rawEmail.length > 3 && rawEmail.includes("@") && rawEmail.includes("."));
+
+      if (!hasValidPhone && !hasValidEmail) {
+        console.log(`[Lead Ingestion] ⏭️ Skipping "${l.business_name || l.businessName || 'Unnamed'}": No contact route (no valid phone or email).`);
+        continue;
+      }
+
       // Phase 4: Proactive Global Phone Deduplication Check
       let existingLead = null;
       if (phoneSuffix && phoneSuffix.length === 10) {
