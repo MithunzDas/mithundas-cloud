@@ -14,7 +14,8 @@ import {
   RefreshCw,
   AlertCircle,
   Zap,
-  Info
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
 interface LeadMessage {
@@ -50,12 +51,19 @@ export default function LeadChatDrawer({
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const pillsContainerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeftState, setScrollLeftState] = useState(0);
 
   const quickReplies = [
-    "Hello! Our custom website package starts at ₹3,999 with 1-year hosting & domain included. Would you like a quick walkthrough?",
-    "Hi! Did you get a chance to view the 2-minute live demo video we shared?",
-    "What is a convenient time today for a quick 5-minute call?",
-    "Yes, absolutely! We can customize the design and features specifically for your business."
+    { label: "💰 Package Pricing", text: "Hello! Our custom website package starts at ₹3,999 with 1-year high-speed hosting, custom domain, and mobile-friendly design included. Would you like to see a sample?" },
+    { label: "🎥 2-Min Demo Video", text: "Hi! Did you get a chance to view the 2-minute live demo video we shared earlier for your business?" },
+    { label: "📞 5-Min Walkthrough Call", text: "What is a convenient time today or tomorrow for a quick 5-minute walkthrough call?" },
+    { label: "🩺 Doctor/Clinic Features", text: "Yes! Our clinic websites feature 1-click WhatsApp appointment booking, Google Map directions, doctor profiles, and patient reviews." },
+    { label: "⚖️ Legal Practice Features", text: "Yes! Our advocate websites include professional court profiles, case consultation booking, and direct contact forms." },
+    { label: "🏨 Restaurant & Menu Features", text: "Yes! Our restaurant websites include digital food menus, table reservation inquiries, and direct WhatsApp ordering." },
+    { label: "🚀 Ready to Launch", text: "We can have your live website up and running within 48 to 72 hours. Should I share the onboarding details?" }
   ];
 
   // Fetch conversation history
@@ -83,7 +91,6 @@ export default function LeadChatDrawer({
   useEffect(() => {
     if (leadId) {
       fetchChat();
-      // Auto-poll for new messages every 6 seconds while open
       const interval = setInterval(() => {
         fetchChat(true);
       }, 6000);
@@ -91,12 +98,48 @@ export default function LeadChatDrawer({
     }
   }, [leadId]);
 
-  // Scroll to bottom whenever messages update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
   if (!leadId) return null;
+
+  // Smooth Horizontal Scrolling Handlers for PC/Desktop/Tablet
+  const handleScrollPills = (direction: "left" | "right") => {
+    if (pillsContainerRef.current) {
+      pillsContainerRef.current.scrollBy({
+        left: direction === "left" ? -240 : 240,
+        behavior: "smooth"
+      });
+    }
+  };
+
+  const handleWheelScroll = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (pillsContainerRef.current && e.deltaY !== 0) {
+      e.preventDefault();
+      pillsContainerRef.current.scrollLeft += e.deltaY * 0.9;
+    }
+  };
+
+  // Mouse Drag to Scroll for Desktop
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!pillsContainerRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - pillsContainerRef.current.offsetLeft);
+    setScrollLeftState(pillsContainerRef.current.scrollLeft);
+  };
+
+  const handleMouseLeaveOrUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging || !pillsContainerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - pillsContainerRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    pillsContainerRef.current.scrollLeft = scrollLeftState - walk;
+  };
 
   const handleSendMessage = async () => {
     if (!inputText.trim() || sending) return;
@@ -120,7 +163,6 @@ export default function LeadChatDrawer({
       if (data.success) {
         setInputText("");
         setSuccessNotice("Message delivered via Meta WhatsApp Cloud API (+91 82509 68170)");
-        // Add message locally
         setMessages((prev) => [...prev, data.message]);
         if (onStatusUpdated) onStatusUpdated();
         setTimeout(() => setSuccessNotice(null), 4000);
@@ -160,14 +202,15 @@ export default function LeadChatDrawer({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm transition-opacity duration-300">
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/65 backdrop-blur-sm transition-opacity duration-300">
       {/* Click outside to close */}
       <div className="flex-1" onClick={onClose} />
 
-      {/* Main Drawer Panel */}
-      <div className="w-full max-w-lg bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-300">
+      {/* Main Drawer Panel - Responsive width for desktop & tablets */}
+      <div className="w-full max-w-md sm:max-w-lg lg:max-w-xl bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-300">
+        
         {/* Top Header */}
-        <div className="p-4 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md flex items-center justify-between">
+        <div className="p-4 border-b border-slate-800 bg-slate-900/95 backdrop-blur-md flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold shrink-0">
               {lead?.businessName ? lead.businessName.charAt(0).toUpperCase() : "C"}
@@ -219,7 +262,7 @@ export default function LeadChatDrawer({
         </div>
 
         {/* 24-Hour Window Banner */}
-        <div className="px-4 py-2 bg-slate-950/80 border-b border-slate-850 flex items-center justify-between text-xs">
+        <div className="px-4 py-2.5 bg-slate-950/90 border-b border-slate-800/80 flex items-center justify-between text-xs">
           {is24hActive ? (
             <div className="flex items-center gap-2 text-emerald-400 font-medium">
               <span className="relative flex h-2 w-2">
@@ -231,7 +274,7 @@ export default function LeadChatDrawer({
           ) : (
             <div className="flex items-center gap-2 text-amber-400">
               <Clock className="w-3.5 h-3.5" />
-              <span>Outside 24h Window (Meta template required or use Personal WhatsApp)</span>
+              <span>Outside 24h Window (Meta template or Personal WhatsApp)</span>
             </div>
           )}
 
@@ -323,27 +366,61 @@ export default function LeadChatDrawer({
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick Reply Pills */}
-        <div className="px-3 py-2 bg-slate-900 border-t border-slate-800">
-          <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-1.5 flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-amber-400" />
-            <span>Quick Replies (Click to Insert)</span>
+        {/* Quick Reply Pills with Smooth Horizontal Scrolling for Desktop/Tablet */}
+        <div className="px-3.5 py-2.5 bg-slate-900/95 border-t border-slate-800">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Quick Replies (Click to Insert)</span>
+            </div>
+
+            {/* Desktop Navigation Scroll Controls */}
+            <div className="hidden sm:flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => handleScrollPills("left")}
+                className="w-5 h-5 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700/80 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+                title="Scroll left"
+              >
+                <ChevronLeft className="w-3 h-3" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleScrollPills("right")}
+                className="w-5 h-5 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700/80 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+                title="Scroll right"
+              >
+                <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
           </div>
-          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+
+          {/* Smooth Horizontal Scroll Track */}
+          <div
+            ref={pillsContainerRef}
+            onWheel={handleWheelScroll}
+            onMouseDown={handleMouseDown}
+            onMouseLeave={handleMouseLeaveOrUp}
+            onMouseUp={handleMouseLeaveOrUp}
+            onMouseMove={handleMouseMove}
+            className="flex gap-2 overflow-x-auto pb-2 scroll-smooth select-none cursor-grab active:cursor-grabbing [scrollbar-width:thin] [scrollbar-color:#334155_#0f172a]"
+          >
             {quickReplies.map((pill, idx) => (
               <button
                 key={idx}
-                onClick={() => setInputText(pill)}
-                className="text-[11px] whitespace-nowrap px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white transition-colors"
+                type="button"
+                onClick={() => setInputText(pill.text)}
+                className="text-[11px] whitespace-nowrap px-3 py-1.5 rounded-full bg-slate-800/90 hover:bg-slate-700 border border-slate-700/90 hover:border-emerald-500/50 text-slate-200 hover:text-white transition-all shadow-sm active:scale-95 shrink-0 flex items-center gap-1"
+                title={pill.text}
               >
-                {pill.slice(0, 32)}...
+                <span>{pill.label}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Input & Action Area */}
-        <div className="p-3 bg-slate-900 border-t border-slate-800 flex flex-col gap-2">
+        {/* Input & Action Area with comfortable padding */}
+        <div className="p-3.5 bg-slate-900 border-t border-slate-800 flex flex-col gap-2.5 pb-5">
           <div className="flex gap-2 items-end">
             <textarea
               value={inputText}
@@ -360,7 +437,7 @@ export default function LeadChatDrawer({
                   ? "Type your reply... (Enter to send via +91 82509 68170)"
                   : "Type your reply... (24h window closed - use Personal WhatsApp or approved template)"
               }
-              className="flex-1 bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors resize-none"
+              className="flex-1 bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors resize-none leading-relaxed"
             />
             <button
               onClick={handleSendMessage}
@@ -376,22 +453,23 @@ export default function LeadChatDrawer({
             </button>
           </div>
 
-          <div className="flex items-center justify-between text-[11px] text-slate-400">
-            <span className="flex items-center gap-1">
+          <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
+            <span className="flex items-center gap-1 text-emerald-400 font-medium">
               <Zap className="w-3 h-3 text-emerald-400" />
-              Direct Meta Cloud API
+              Direct Meta Cloud API (+91 82509 68170)
             </span>
             <a
               href={waMeUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-emerald-400 hover:underline flex items-center gap-1"
+              className="text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-1 font-medium transition-colors"
             >
               <ExternalLink className="w-3 h-3" />
               Chat via Personal WhatsApp (wa.me)
             </a>
           </div>
         </div>
+
       </div>
     </div>
   );
