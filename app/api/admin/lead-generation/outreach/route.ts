@@ -181,33 +181,57 @@ export async function POST(req: NextRequest) {
       const ratingText = `${lead.rating ? Number(lead.rating).toFixed(1) : "4.8"}★ (${lead.reviewCount || 45}+ reviews)`;
       const cityText = lead.city || "West Bengal";
 
-      const templatePayload = {
-        messaging_product: "whatsapp",
-        to: cleanPhone,
-        type: "template",
-        template: {
-          name: "local_business_starter",
-          language: { code: "en" },
-          components: [
-            {
-              type: "body",
-              parameters: [
-                { type: "text", text: cleanBusinessName },
-                { type: "text", text: ratingText },
-                { type: "text", text: cityText }
-              ]
-            },
-            {
-              type: "button",
-              sub_type: "url",
-              index: "1",
-              parameters: [
-                { type: "text", text: demoInfo.slug }
-              ]
-            }
-          ]
-        }
-      };
+      let templatePayload: any;
+
+      if (templateName === "client_followup_checkin") {
+        templatePayload = {
+          messaging_product: "whatsapp",
+          to: cleanPhone,
+          type: "template",
+          template: {
+            name: "client_followup_checkin",
+            language: { code: "en" },
+            components: [
+              {
+                type: "body",
+                parameters: [
+                  { type: "text", text: cleanBusinessName },
+                  { type: "text", text: cityText },
+                  { type: "text", text: cleanBusinessName }
+                ]
+              }
+            ]
+          }
+        };
+      } else {
+        templatePayload = {
+          messaging_product: "whatsapp",
+          to: cleanPhone,
+          type: "template",
+          template: {
+            name: "local_business_starter",
+            language: { code: "en" },
+            components: [
+              {
+                type: "body",
+                parameters: [
+                  { type: "text", text: cleanBusinessName },
+                  { type: "text", text: ratingText },
+                  { type: "text", text: cityText }
+                ]
+              },
+              {
+                type: "button",
+                sub_type: "url",
+                index: "1",
+                parameters: [
+                  { type: "text", text: demoInfo.slug }
+                ]
+              }
+            ]
+          }
+        };
+      }
 
       try {
         console.log(`[Meta Outreach ${i + 1}/${leads.length}] Sending to ${cleanBusinessName} (${cleanPhone}) ➔ ${demoInfo.slug}`);

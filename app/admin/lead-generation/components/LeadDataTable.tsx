@@ -213,6 +213,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
   const [previewModalLead, setPreviewModalLead] = useState<LeadItem | null>(null);
   const [activeChatLeadId, setActiveChatLeadId] = useState<string | null>(null);
   const [copiedModalText, setCopiedModalText] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<"client_followup_checkin" | "local_business_starter">("client_followup_checkin");
 
   // Filter Leads
   const filteredLeads = leads.filter((lead) => {
@@ -382,7 +383,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           leadIds: ids,
-          templateName: "local_business_starter"
+          templateName: selectedTemplate
         })
       });
 
@@ -576,6 +577,24 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
             <Download className="w-3.5 h-3.5" />
             <span>Export CSV</span>
           </button>
+
+          {/* Template Selector Dropdown */}
+          <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-750 px-2.5 py-1.5 rounded-xl shadow-inner">
+            <span className="text-[11px] text-slate-400 font-mono hidden md:inline">Template:</span>
+            <select
+              value={selectedTemplate}
+              onChange={(e) => setSelectedTemplate(e.target.value as any)}
+              className="bg-transparent text-xs text-slate-200 focus:outline-none font-medium cursor-pointer"
+              title="Choose approved Meta WhatsApp template to dispatch"
+            >
+              <option value="client_followup_checkin" className="bg-slate-900 text-slate-100">
+                💬 Follow-Up Check-in (3 Quick Replies)
+              </option>
+              <option value="local_business_starter" className="bg-slate-900 text-slate-100">
+                🚀 Initial Pitch (Video Demo + Rating)
+              </option>
+            </select>
+          </div>
 
           <button
             onClick={() => handleLaunchOutreach()}
