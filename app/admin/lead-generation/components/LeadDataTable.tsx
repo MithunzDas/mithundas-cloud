@@ -196,6 +196,20 @@ function formatContactDate(dateString?: string): string {
   }
 }
 
+// Helper: Build personalized dynamic demo URL with clinic query parameters
+export const getPersonalizedDemoUrl = (rawUrl: string, item: LeadItem) => {
+  if (!rawUrl) return rawUrl;
+  const cName = (item.businessName || "").trim();
+  const cCity = (item.city || "West Bengal").trim();
+  const cRating = item.rating ? Number(item.rating).toFixed(1) : "4.8";
+  const cReviews = String(item.reviewCount || 45);
+
+  if (rawUrl.includes("demo-dental-clinic")) {
+    return `${rawUrl}?clinic=${encodeURIComponent(cName)}&city=${encodeURIComponent(cCity)}&rating=${cRating}&reviews=${cReviews}`;
+  }
+  return rawUrl;
+};
+
 export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
   // View Modes: "outreach" (focused 7-col) vs "full" (all 11-col)
   const [viewMode, setViewMode] = useState<"outreach" | "full">("outreach");
@@ -490,7 +504,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
         l.leadScore || 0,
         `"${l.leadTier || ""}"`,
         `"${(l.recommendedPitch || "").replace(/"/g, '""')}"`,
-        `"${demo.url}"`,
+        `"${getPersonalizedDemoUrl(demo.url, l)}"`, // Dynamic personalized URL for dentists
         `"${l.gmapsUrl || ""}"`,
         `"${l.outreachStatus || "NEW"}"`,
         `"${(l.lastReplyMessage || "").replace(/"/g, '""')}"`,
@@ -706,7 +720,8 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                 const isHot = score >= 70;
                 const rawPhone = lead.whatsappNumber || lead.phone || "";
                 const demo = getDemoRouting(lead.category, lead.businessName);
-                const waWebUrl = getWhatsAppWebUrl(lead, demo.url);
+                const personalizedDemoUrl = getPersonalizedDemoUrl(demo.url, lead);
+                const waWebUrl = getWhatsAppWebUrl(lead, personalizedDemoUrl);
                 const contactedTime = formatContactDate(lead.contactedAt);
                 const repliedTime = formatContactDate(lead.repliedAt);
                 const isReplied = lead.outreachStatus === "REPLIED";
@@ -815,11 +830,11 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                     <td className="p-3">
                       <div className="flex items-center gap-1.5">
                         <a
-                          href={demo.url}
+                          href={personalizedDemoUrl}
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 font-mono text-[11px] font-semibold transition-all hover:scale-105"
-                          title={`Click to view live ${demo.label}`}
+                          title={`Click to view live personalized demo for ${lead.businessName}`}
                         >
                           <span>{demo.icon}</span>
                           <span className="truncate max-w-[95px]">{demo.label}</span>
@@ -827,9 +842,9 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
                         </a>
                         <button
                           type="button"
-                          onClick={() => handleCopyDemoLink(demo.url, lead.leadId)}
+                          onClick={() => handleCopyDemoLink(personalizedDemoUrl, lead.leadId)}
                           className="p-1.5 rounded-lg bg-white/5 border border-border-app hover:border-brand-cyan text-gray-400 hover:text-brand-cyan transition-colors"
-                          title="Copy tailored Demo Link"
+                          title={`Copy tailored personalized Demo Link for ${lead.businessName}`}
                         >
                           {copiedLeadId === lead.leadId ? (
                             <Check className="w-3 h-3 text-emerald-400" />

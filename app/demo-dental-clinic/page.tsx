@@ -404,10 +404,15 @@ function DentalClinicDemoContent() {
               <span>Advanced Laser &amp; Painless Micro-Dentistry</span>
             </div>
 
-            <h2 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight leading-[1.2] break-words">
-              Smile With Confidence at{" "}
-              <span className="block mt-1 sm:mt-1.5 bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-400 bg-clip-text text-transparent break-words">
-                {displayClinicName}
+            <h2 className="text-2xl sm:text-4xl lg:text-[44px] font-black text-white tracking-tight leading-[1.18] break-words">
+              <span>Smile With Confidence</span>
+              <span className="block mt-1.5 sm:mt-2 text-xl sm:text-3xl lg:text-[36px] leading-tight break-words">
+                <span className="text-cyan-400 font-mono font-medium text-base sm:text-xl lg:text-2xl mr-2 lowercase tracking-normal">
+                  at
+                </span>
+                <span className="bg-gradient-to-r from-cyan-300 via-teal-200 to-blue-400 bg-clip-text text-transparent font-black">
+                  {displayClinicName}
+                </span>
               </span>
             </h2>
 

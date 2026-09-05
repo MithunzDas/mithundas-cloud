@@ -208,7 +208,10 @@ export async function POST(req: NextRequest) {
                 sub_type: "url",
                 index: "0",
                 parameters: [
-                  { type: "text", text: demoInfo.slug }
+                  { 
+                    type: "text", 
+                    text: `${demoInfo.slug}?clinic=${encodeURIComponent(cleanBusinessName)}&city=${encodeURIComponent(cityText)}&rating=${ratingVal}&reviews=${reviewVal}` 
+                  }
                 ]
               }
             ]
