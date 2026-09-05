@@ -7,33 +7,21 @@ const VPS_SCRAPER_LOCAL = "http://127.0.0.1:3333/scrape";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { category, city, targetCount = 50 } = body;
+    const { category, city, targetCount = 50, batchId: clientBatchId } = body;
 
     if (!category || !city) {
       return NextResponse.json({ success: false, error: "Category and City are required" }, { status: 400 });
     }
 
     const searchQuery = `${category} in ${city}`;
-    const safeKey = `${category}_${city}`
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "_")
-      .replace(/_+/g, "_")
-      .slice(0, 45);
-
-    const batchId = `batch_${safeKey}`;
+    
+    // REQUIREMENT: Each live scraper launch MUST create a brand-new, distinct batch card every time!
+    const batchId = clientBatchId || `batch_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const count = Number(targetCount) || 50;
 
-    // Reuse existing batch or upsert with deterministic batchId
-    const batch = await prisma.scrapedLeadBatch.upsert({
-      where: { batchId },
-      update: {
-        category,
-        city,
-        searchQuery,
-        targetCount: count,
-        createdAt: new Date()
-      },
-      create: {
+    // Create a new dedicated batch box in database
+    const batch = await prisma.scrapedLeadBatch.create({
+      data: {
         batchId,
         category,
         city,
@@ -47,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     let extractedLeads: any[] = [];
 
-    // 2. Trigger n8n Webhook / VPS Scraper Engine
+    // 2. Trigger n8n Webhook / VPS Scraper Engine with dedicated batchId
     try {
       console.log(`Triggering n8n Scrape Webhook: ${N8N_SCRAPE_WEBHOOK}`);
       const n8nRes = await fetch(N8N_SCRAPE_WEBHOOK, {
@@ -75,7 +63,7 @@ export async function POST(req: NextRequest) {
     // 3. Fallback: Check local VPS microservice if n8n webhook is not yet imported
     if (extractedLeads.length === 0) {
       try {
-        const localRes = await fetch(`${VPS_SCRAPER_LOCAL}?category=${encodeURIComponent(category)}&location=${encodeURIComponent(city)}&count=${count}`, {
+        const localRes = await fetch(`${VPS_SCRAPER_LOCAL}?category=${encodeURIComponent(category)}&location=${encodeURIComponent(city)}&count=${count}&batchId=${encodeURIComponent(batchId)}`, {
           signal: AbortSignal.timeout(35000)
         }).catch(() => null);
 
@@ -88,7 +76,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 4. Save Extracted Leads into VPS Prisma Database
+    // 4. Save Extracted Leads into VPS Prisma Database attached to this dedicated batch
     let hotCount = 0;
     if (extractedLeads.length > 0) {
       for (const lead of extractedLeads) {
@@ -152,7 +140,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       batchId,
-      message: `Search triggered for "${searchQuery}". Syncing across n8n, VPS DB, and Google Sheets!`,
+      message: `Search triggered for "${searchQuery}". Dedicated batch card created!`,
       totalFound: extractedLeads.length,
       hotCount,
       batch
