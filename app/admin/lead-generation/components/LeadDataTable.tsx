@@ -203,9 +203,11 @@ export const getPersonalizedDemoUrl = (rawUrl: string, item: LeadItem) => {
   const cCity = (item.city || "West Bengal").trim();
   const cRating = item.rating ? Number(item.rating).toFixed(1) : "4.8";
   const cReviews = String(item.reviewCount || 45);
+  const cPhone = (item.whatsappNumber || item.phone || "").replace(/\D/g, "");
 
   if (rawUrl.includes("demo-dental-clinic")) {
-    return `${rawUrl}?clinic=${encodeURIComponent(cName)}&city=${encodeURIComponent(cCity)}&rating=${cRating}&reviews=${cReviews}`;
+    const phoneParam = cPhone ? `&phone=${encodeURIComponent(cPhone)}` : "";
+    return `${rawUrl}?clinic=${encodeURIComponent(cName)}&city=${encodeURIComponent(cCity)}&rating=${cRating}&reviews=${cReviews}${phoneParam}`;
   }
   return rawUrl;
 };

@@ -191,6 +191,23 @@ function DentalClinicDemoContent() {
   const rawReviews = searchParams.get("reviews");
   const displayReviews = rawReviews ? rawReviews.trim() : "150";
 
+  // Dynamic Clinic Phone Personalization
+  const rawPhone = searchParams.get("phone") || searchParams.get("wa") || "";
+  const cleanPhoneDigits = rawPhone.replace(/\D/g, "");
+  const displayClinicPhone = cleanPhoneDigits
+    ? cleanPhoneDigits.length === 10
+      ? `+91 ${cleanPhoneDigits.slice(0, 5)} ${cleanPhoneDigits.slice(5)}`
+      : cleanPhoneDigits.startsWith("91") && cleanPhoneDigits.length === 12
+      ? `+91 ${cleanPhoneDigits.slice(2, 7)} ${cleanPhoneDigits.slice(7)}`
+      : `+${cleanPhoneDigits}`
+    : "+91 87681 38086";
+
+  const clinicWaPhone = cleanPhoneDigits
+    ? cleanPhoneDigits.length === 10
+      ? `91${cleanPhoneDigits}`
+      : cleanPhoneDigits
+    : "918768138086";
+
   // Clinical Demographics State
   const [activeTab, setActiveTab] = useState<"form" | "ai">("form");
   const [patientName, setPatientName] = useState("");
@@ -258,7 +275,7 @@ function DentalClinicDemoContent() {
       "━━━━━━━━━━━━━━━━━━━━\n" +
       "_Please confirm my appointment slot with doctor. Thank you!_";
 
-    return "https://wa.me/918768138086?text=" + encodeURIComponent(formattedMsg);
+    return `https://wa.me/${clinicWaPhone}?text=` + encodeURIComponent(formattedMsg);
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -326,7 +343,7 @@ function DentalClinicDemoContent() {
   };
 
   const handleCallDirect = () => {
-    window.location.href = "tel:+918768138086";
+    window.location.href = `tel:${clinicWaPhone}`;
   };
 
   return (
@@ -386,7 +403,7 @@ function DentalClinicDemoContent() {
             title="Call Clinic Doctor"
           >
             <Phone className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="hidden md:inline">+91 87681 38086</span>
+            <span className="hidden md:inline">{displayClinicPhone}</span>
           </button>
           <a
             href="#booking-engine"
@@ -654,7 +671,7 @@ function DentalClinicDemoContent() {
                     className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-500 hover:from-emerald-300 hover:to-cyan-400 text-black font-extrabold text-xs sm:text-sm font-mono tracking-wide shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
                   >
                     <MessageSquare className="w-4 h-4 fill-black" />
-                    <span>Confirm &amp; Book via WhatsApp (+91 87681 38086)</span>
+                    <span>Confirm &amp; Book via WhatsApp ({displayClinicPhone})</span>
                   </button>
                 </form>
               ) : (

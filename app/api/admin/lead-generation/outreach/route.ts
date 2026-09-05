@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
                 parameters: [
                   { 
                     type: "text", 
-                    text: `${demoInfo.slug}?clinic=${encodeURIComponent(cleanBusinessName)}&city=${encodeURIComponent(cityText)}&rating=${ratingVal}&reviews=${reviewVal}` 
+                    text: `${demoInfo.slug}?clinic=${encodeURIComponent(cleanBusinessName)}&city=${encodeURIComponent(cityText)}&rating=${ratingVal}&reviews=${reviewVal}${cleanPhone ? `&phone=${encodeURIComponent(cleanPhone)}` : ""}` 
                   }
                 ]
               }
