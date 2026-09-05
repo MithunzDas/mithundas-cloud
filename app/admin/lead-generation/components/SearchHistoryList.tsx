@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Layers,
   Flame,
@@ -12,7 +12,9 @@ import {
   Clock,
   Calendar,
   MapPin,
-  RotateCcw
+  RotateCcw,
+  LayoutGrid,
+  Rows3
 } from "lucide-react";
 
 interface BatchItem {
@@ -108,6 +110,26 @@ export function SearchHistoryList({
   const [selectedLocation, setSelectedLocation] = useState("all");
   const [selectedDate, setSelectedDate] = useState("all");
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  // Desktop view toggle: "ribbon" (horizontal single row) vs "grid" (multi-row vertical grid)
+  const [viewMode, setViewMode] = useState<"ribbon" | "grid">("ribbon");
+
+  // Load saved view mode from localStorage on mount (desktop only)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("leadgen_feed_view_mode");
+      if (saved === "grid" || saved === "ribbon") {
+        setViewMode(saved);
+      }
+    } catch {}
+  }, []);
+
+  const handleToggleViewMode = (mode: "ribbon" | "grid") => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem("leadgen_feed_view_mode", mode);
+    } catch {}
+  };
 
   // Compute unique categories, locations, and dates dynamically from active batches
   const uniqueCategories = useMemo(() => {
@@ -286,7 +308,7 @@ export function SearchHistoryList({
             </h3>
           </div>
 
-          {/* Red Marked Space: Search Categories (Date, Locations, Business Categories) */}
+          {/* Search Categories (Date, Locations, Business Categories) */}
           <div className="flex flex-wrap items-center gap-2 flex-1 justify-start xl:justify-center px-1">
             {/* 1. Business Category Selector */}
             <div className="relative flex items-center">
@@ -367,9 +389,43 @@ export function SearchHistoryList({
             )}
           </div>
 
-          {/* Right Controls: Filter feeds input & All Leads count button */}
+          {/* Right Controls: View Switcher, Filter input & All Leads count button */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="relative min-w-[150px] sm:min-w-[180px]">
+            {/* Desktop Only: Horizontal Single-Row vs Multi-Row Grid View Toggle */}
+            <div
+              className="hidden md:flex items-center bg-[#0b0f17] border border-border-app rounded-lg p-0.5"
+              title="Switch Layout: Single Row vs Multi-Row Grid (Desktop only)"
+            >
+              <button
+                type="button"
+                onClick={() => handleToggleViewMode("ribbon")}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-mono transition-all cursor-pointer ${
+                  viewMode === "ribbon"
+                    ? "bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/40 shadow-sm font-bold"
+                    : "text-text-secondary hover:text-white"
+                }`}
+                title="Single Row Horizontal View"
+              >
+                <Rows3 className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline text-[10px]">Row</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleToggleViewMode("grid")}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-mono transition-all cursor-pointer ${
+                  viewMode === "grid"
+                    ? "bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/40 shadow-sm font-bold"
+                    : "text-text-secondary hover:text-white"
+                }`}
+                title="Multi-Row Multi-Column Grid View"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline text-[10px]">Grid</span>
+              </button>
+            </div>
+
+            <div className="relative min-w-[140px] sm:min-w-[170px]">
               <input
                 type="text"
                 value={filterQuery}
@@ -393,8 +449,17 @@ export function SearchHistoryList({
           </div>
         </div>
 
-        {/* Horizontal Chips Feed - Each search batch has its own distinct card */}
-        <div className="flex items-center gap-2.5 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-gray-800">
+        {/* Feeds Card Container: 
+            - Mobile: Strictly single-row horizontal scroll (unchanged)
+            - Desktop: Toggles between single horizontal row vs multi-row responsive multi-column grid
+        */}
+        <div
+          className={
+            viewMode === "grid"
+              ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2.5 max-h-[440px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-800"
+              : "flex items-center gap-2.5 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-gray-800"
+          }
+        >
           {filteredBatches.length === 0 ? (
             <div className="text-xs text-text-secondary font-mono py-2 flex items-center gap-2">
               <span>No saved batches found matching the selected filters.</span>
@@ -418,23 +483,25 @@ export function SearchHistoryList({
                 <div
                   key={batch.batchId}
                   onClick={() => onSelectBatch(batch.batchId)}
-                  className={`flex-shrink-0 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all cursor-pointer group ${
+                  className={`${
+                    viewMode === "grid" ? "w-full" : "flex-shrink-0"
+                  } flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all cursor-pointer group ${
                     isSelected
                       ? "bg-gradient-to-r from-brand-cyan/20 to-brand-indigo/20 border-brand-cyan shadow-md ring-1 ring-brand-cyan/40"
                       : "bg-[#0b0f17] border-border-app hover:border-brand-cyan/40 hover:bg-[#121824]"
                   }`}
                 >
-                  <div className="space-y-1">
+                  <div className="space-y-1 min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-text-primary group-hover:text-brand-cyan transition-colors truncate max-w-[200px]">
+                      <span className="text-xs font-bold text-text-primary group-hover:text-brand-cyan transition-colors truncate">
                         {batch.category}
                       </span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/5 border border-border-app text-brand-cyan font-bold">
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/5 border border-border-app text-brand-cyan font-bold flex-shrink-0">
                         {count}
                       </span>
                     </div>
 
-                    <span className="text-[10px] text-text-secondary font-mono block truncate max-w-[220px]">
+                    <span className="text-[10px] text-text-secondary font-mono block truncate">
                       {batch.city}
                     </span>
 
@@ -449,7 +516,7 @@ export function SearchHistoryList({
                     onClick={(e) => handleDeleteBatch(e, batch)}
                     disabled={isThisDeleting}
                     title="Delete this entire category from DB"
-                    className="p-1 rounded-lg text-gray-500 hover:text-rose-400 hover:bg-rose-500/15 transition-colors opacity-60 group-hover:opacity-100"
+                    className="p-1 rounded-lg text-gray-500 hover:text-rose-400 hover:bg-rose-500/15 transition-colors opacity-60 group-hover:opacity-100 flex-shrink-0"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
