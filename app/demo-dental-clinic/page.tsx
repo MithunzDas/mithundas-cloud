@@ -206,6 +206,11 @@ function DentalClinicDemoContent() {
     return d.toISOString().split("T")[0];
   });
   const [selectedSlot, setSelectedSlot] = useState(TIME_SLOTS[2]);
+  
+  // Before & After Interactive Showcase State
+  const [case1View, setCase1View] = useState<"before" | "after">("after");
+  const [case2View, setCase2View] = useState<"before" | "after">("after");
+  const [case3View, setCase3View] = useState<"before" | "after">("after");
 
   const dateInputRef = useRef<HTMLInputElement>(null);
 
@@ -802,6 +807,345 @@ function DentalClinicDemoContent() {
         </div>
       </section>
 
+
+      {/* ✨ INTERACTIVE BEFORE & AFTER SMILE MAKEOVER GALLERY */}
+      <section className="px-3 sm:px-6 py-10 sm:py-16 max-w-7xl mx-auto border-t border-slate-900">
+        <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12 space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-[11px] sm:text-xs font-mono font-medium">
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Aesthetic Smile Transformations</span>
+          </div>
+          <h3 className="text-xl sm:text-3xl font-black text-white tracking-tight">
+            Real Clinical Before &amp; After Cases
+          </h3>
+          <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">
+            High-precision digital smile design delivering life-changing aesthetic transformations in single or multi-sitting procedures.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
+          
+          {/* CASE 1: LASER TEETH WHITENING */}
+          <div className="bg-[#080d1a] border border-slate-800 hover:border-cyan-500/40 rounded-3xl p-4 sm:p-5 flex flex-col justify-between transition-all shadow-lg hover:shadow-cyan-500/10 group">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] sm:text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                  Case 01 • Instant Whitening
+                </span>
+                <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-cyan-400" />
+                  <span>45 Mins</span>
+                </span>
+              </div>
+
+              <div>
+                <h4 className="text-base sm:text-lg font-bold text-white group-hover:text-cyan-300 transition-colors">
+                  Laser Teeth Whitening &amp; Enamel Polish
+                </h4>
+                <p className="text-xs text-slate-400 mt-1">
+                  8-shade brightness elevation using advanced cold-light laser without tooth sensitivity.
+                </p>
+              </div>
+
+              {/* Interactive Visual Comparison Display */}
+              <div className="relative rounded-2xl bg-[#040711] border border-slate-800 p-4 overflow-hidden text-center">
+                {/* Mode Switcher Toggle */}
+                <div className="inline-flex rounded-xl bg-slate-900 border border-slate-800 p-1 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setCase1View("before")}
+                    className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-all ${
+                      case1View === "before"
+                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    Before
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCase1View("after")}
+                    className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-all ${
+                      case1View === "after"
+                        ? "bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 shadow-sm"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    After Result ✨
+                  </button>
+                </div>
+
+                {case1View === "before" ? (
+                  <div className="space-y-2 py-2 animate-fadeIn">
+                    <div className="h-20 sm:h-24 rounded-xl bg-gradient-to-r from-amber-950/40 via-yellow-900/30 to-amber-950/40 border border-amber-500/20 flex items-center justify-center p-3">
+                      <div className="text-center space-y-1">
+                        <div className="text-2xl sm:text-3xl">☕ 🚬 🦷</div>
+                        <p className="text-[11px] font-mono text-amber-300 font-semibold">
+                          Severe Yellow &amp; Nicotine Stains (Shade A3.5)
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1">
+                      <span>Condition: Deep Enamel Staining</span>
+                      <span className="text-amber-400 font-bold">Pre-Op</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2 py-2 animate-fadeIn">
+                    <div className="h-20 sm:h-24 rounded-xl bg-gradient-to-r from-cyan-950/50 via-teal-900/40 to-blue-950/50 border border-cyan-500/40 flex items-center justify-center p-3 shadow-inner">
+                      <div className="text-center space-y-1">
+                        <div className="text-2xl sm:text-3xl">✨ 💎 🦷</div>
+                        <p className="text-[11px] font-mono text-cyan-200 font-bold">
+                          Translucent Pearl Diamond White (Shade B1)
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1">
+                      <span>Result: +8 Shades Lighter</span>
+                      <span className="text-cyan-400 font-bold">100% Painless</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Treatment Specs */}
+              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                <div className="bg-slate-900/60 p-2 rounded-xl border border-slate-800/80">
+                  <p className="text-slate-500 text-[10px]">Procedure</p>
+                  <p className="text-white font-semibold">Cold Laser Tech</p>
+                </div>
+                <div className="bg-slate-900/60 p-2 rounded-xl border border-slate-800/80">
+                  <p className="text-slate-500 text-[10px]">Longevity</p>
+                  <p className="text-emerald-400 font-semibold">Up to 24 Months</p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleSelectServiceQuickBook("✨ Laser Teeth Whitening & Polishing")}
+              className="mt-4 w-full py-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 font-mono text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+            >
+              <span>Book Whitening Session</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* CASE 2: CLEAR INVISIBLE ALIGNERS */}
+          <div className="bg-[#080d1a] border border-slate-800 hover:border-indigo-500/40 rounded-3xl p-4 sm:p-5 flex flex-col justify-between transition-all shadow-lg hover:shadow-indigo-500/10 group">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] sm:text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                  Case 02 • Clear Aligners
+                </span>
+                <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-indigo-400" />
+                  <span>6 Months</span>
+                </span>
+              </div>
+
+              <div>
+                <h4 className="text-base sm:text-lg font-bold text-white group-hover:text-indigo-300 transition-colors">
+                  Invisible Orthodontic Realignment
+                </h4>
+                <p className="text-xs text-slate-400 mt-1">
+                  US FDA-cleared transparent removable trays. Zero metal brackets, zero wire wounds.
+                </p>
+              </div>
+
+              {/* Interactive Visual Comparison Display */}
+              <div className="relative rounded-2xl bg-[#040711] border border-slate-800 p-4 overflow-hidden text-center">
+                {/* Mode Switcher Toggle */}
+                <div className="inline-flex rounded-xl bg-slate-900 border border-slate-800 p-1 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setCase2View("before")}
+                    className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-all ${
+                      case2View === "before"
+                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    Before
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCase2View("after")}
+                    className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-all ${
+                      case2View === "after"
+                        ? "bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 shadow-sm"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    After Result ✨
+                  </button>
+                </div>
+
+                {case2View === "before" ? (
+                  <div className="space-y-2 py-2 animate-fadeIn">
+                    <div className="h-20 sm:h-24 rounded-xl bg-gradient-to-r from-amber-950/40 via-purple-950/30 to-amber-950/40 border border-amber-500/20 flex items-center justify-center p-3">
+                      <div className="text-center space-y-1">
+                        <div className="text-2xl sm:text-3xl">📐 ⚡ 🦷</div>
+                        <p className="text-[11px] font-mono text-amber-300 font-semibold">
+                          Overcrowding, Crossbite &amp; Crooked Gap
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1">
+                      <span>Condition: Class II Malocclusion</span>
+                      <span className="text-amber-400 font-bold">Pre-Op</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2 py-2 animate-fadeIn">
+                    <div className="h-20 sm:h-24 rounded-xl bg-gradient-to-r from-indigo-950/50 via-purple-900/40 to-blue-950/50 border border-indigo-500/40 flex items-center justify-center p-3 shadow-inner">
+                      <div className="text-center space-y-1">
+                        <div className="text-2xl sm:text-3xl">🛡️ ✨ 🦷</div>
+                        <p className="text-[11px] font-mono text-indigo-200 font-bold">
+                          Symmetrical Dental Arch &amp; Ideal Smile Arc
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1">
+                      <span>Result: 100% Straight Teeth</span>
+                      <span className="text-indigo-400 font-bold">Discreet Trays</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Treatment Specs */}
+              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                <div className="bg-slate-900/60 p-2 rounded-xl border border-slate-800/80">
+                  <p className="text-slate-500 text-[10px]">Technology</p>
+                  <p className="text-white font-semibold">3D Digital Scan</p>
+                </div>
+                <div className="bg-slate-900/60 p-2 rounded-xl border border-slate-800/80">
+                  <p className="text-slate-500 text-[10px]">Wear Style</p>
+                  <p className="text-indigo-400 font-semibold">Removable Trays</p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleSelectServiceQuickBook("🛡️ Invisible Braces & Clear Aligners")}
+              className="mt-4 w-full py-2.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 font-mono text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+            >
+              <span>Book Free 3D Aligner Scan</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* CASE 3: TITANIUM IMPLANT REPLACEMENT */}
+          <div className="bg-[#080d1a] border border-slate-800 hover:border-amber-500/40 rounded-3xl p-4 sm:p-5 flex flex-col justify-between transition-all shadow-lg hover:shadow-amber-500/10 group">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] sm:text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                  Case 03 • Permanent Implant
+                </span>
+                <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
+                  <Award className="w-3 h-3 text-amber-400" />
+                  <span>Lifelong</span>
+                </span>
+              </div>
+
+              <div>
+                <h4 className="text-base sm:text-lg font-bold text-white group-hover:text-amber-300 transition-colors">
+                  Single-Tooth Titanium Implant
+                </h4>
+                <p className="text-xs text-slate-400 mt-1">
+                  Computer-guided surgical titanium root with monolithic zirconia crown. Zero bridge grinding.
+                </p>
+              </div>
+
+              {/* Interactive Visual Comparison Display */}
+              <div className="relative rounded-2xl bg-[#040711] border border-slate-800 p-4 overflow-hidden text-center">
+                {/* Mode Switcher Toggle */}
+                <div className="inline-flex rounded-xl bg-slate-900 border border-slate-800 p-1 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setCase3View("before")}
+                    className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-all ${
+                      case3View === "before"
+                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    Before
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCase3View("after")}
+                    className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-all ${
+                      case3View === "after"
+                        ? "bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow-sm"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    After Result ✨
+                  </button>
+                </div>
+
+                {case3View === "before" ? (
+                  <div className="space-y-2 py-2 animate-fadeIn">
+                    <div className="h-20 sm:h-24 rounded-xl bg-gradient-to-r from-red-950/40 via-amber-950/30 to-red-950/40 border border-red-500/20 flex items-center justify-center p-3">
+                      <div className="text-center space-y-1">
+                        <div className="text-2xl sm:text-3xl">🕳️ 🩸 🦷</div>
+                        <p className="text-[11px] font-mono text-rose-300 font-semibold">
+                          Missing Front Premolar Tooth &amp; Bone Recession
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1">
+                      <span>Condition: Traumatic Extraction</span>
+                      <span className="text-rose-400 font-bold">Pre-Op</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2 py-2 animate-fadeIn">
+                    <div className="h-20 sm:h-24 rounded-xl bg-gradient-to-r from-amber-950/50 via-yellow-900/30 to-orange-950/50 border border-amber-500/40 flex items-center justify-center p-3 shadow-inner">
+                      <div className="text-center space-y-1">
+                        <div className="text-2xl sm:text-3xl">👑 💎 🦷</div>
+                        <p className="text-[11px] font-mono text-amber-200 font-bold">
+                          Lifelong Titanium Root + Zirconia Crown
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1">
+                      <span>Result: 100% Natural Chewing</span>
+                      <span className="text-amber-400 font-bold">Lifelong Warranty</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Treatment Specs */}
+              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                <div className="bg-slate-900/60 p-2 rounded-xl border border-slate-800/80">
+                  <p className="text-slate-500 text-[10px]">Implant Origin</p>
+                  <p className="text-white font-semibold">Swiss Grade 5 Ti</p>
+                </div>
+                <div className="bg-slate-900/60 p-2 rounded-xl border border-slate-800/80">
+                  <p className="text-slate-500 text-[10px]">Warranty</p>
+                  <p className="text-amber-400 font-semibold">Lifelong Certificate</p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleSelectServiceQuickBook("💎 Titanium Dental Implants")}
+              className="mt-4 w-full py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-mono text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+            >
+              <span>Consult Implant Specialist</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+        </div>
+      </section>
+
       {/* DOCTORS & SPECIALISTS */}
       <section className="px-3 sm:px-6 py-10 sm:py-16 max-w-7xl mx-auto border-t border-slate-900 bg-slate-950/40 rounded-3xl my-6">
         <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12 space-y-2">
@@ -844,46 +1188,103 @@ function DentalClinicDemoContent() {
         </div>
       </section>
 
-      {/* PATIENT REVIEWS */}
+            {/* 🌟 GOOGLE MAPS VERIFIED REPUTATION HUB */}
       <section className="px-3 sm:px-6 py-10 sm:py-16 max-w-7xl mx-auto border-t border-slate-900">
-        <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12 space-y-2">
-          <span className="text-emerald-400 text-xs font-mono uppercase tracking-widest font-bold">
-            Verified Reviews
-          </span>
-          <h3 className="text-xl sm:text-3xl font-black text-white tracking-tight">
-            Loved By Over 15,000+ Happy Patients
-          </h3>
-          <p className="text-xs sm:text-sm text-slate-400">
-            Real Google Maps &amp; Practo verified reviews from Barasat, Habra &amp; Kolkata.
-          </p>
+        
+        {/* Google Maps Authenticated Reputation Badge Header */}
+        <div className="max-w-4xl mx-auto mb-8 sm:mb-12">
+          <div className="bg-gradient-to-r from-slate-950 via-[#0c1424] to-slate-950 border border-slate-800/90 hover:border-cyan-500/30 rounded-3xl p-4 sm:p-7 shadow-2xl relative overflow-hidden">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-8">
+              
+              {/* Left: Google Icon + Rating Score */}
+              <div className="flex items-center gap-3.5 text-center md:text-left">
+                {/* Official Google G SVG */}
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white flex items-center justify-center p-2.5 shadow-md flex-shrink-0">
+                  <svg viewBox="0 0 24 24" className="w-full h-full">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/>
+                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.97 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                  </svg>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
+                    <span className="text-2xl sm:text-3xl font-black text-white font-mono">
+                      {displayRating}
+                    </span>
+                    <div className="flex text-amber-400 text-lg">
+                      {"★★★★★"}
+                    </div>
+                    <span className="text-xs font-mono font-bold text-slate-300">
+                      ({displayReviews}+ Reviews)
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm font-semibold text-slate-200">
+                    Google Maps Verified Business Rating for <span className="text-cyan-300 font-bold">{displayClinicName}</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Right: Verified Badges */}
+              <div className="flex flex-wrap items-center justify-center md:justify-end gap-2 text-[10px] font-mono flex-shrink-0">
+                <span className="px-3 py-1 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>100% Real Patients</span>
+                </span>
+                <span className="px-3 py-1 rounded-xl bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>{displayCity}</span>
+                </span>
+              </div>
+
+            </div>
+          </div>
         </div>
 
+        {/* 3 Real Patient Review Cards with Google Badges */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-6">
           {REVIEWS.map((rev, idx) => (
             <div
               key={idx}
-              className="bg-[#090e1a] border border-slate-800 rounded-3xl p-4 sm:p-6 flex flex-col justify-between"
+              className="bg-[#090e1a] border border-slate-800 hover:border-slate-700 rounded-3xl p-4 sm:p-6 flex flex-col justify-between transition-all shadow-lg hover:shadow-cyan-500/5 group"
             >
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex text-amber-400 text-sm">
                     {"★".repeat(rev.rating)}
                   </div>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                    {rev.treatment}
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 flex items-center gap-1">
+                    <Check className="w-2.5 h-2.5" />
+                    <span>{rev.treatment}</span>
                   </span>
                 </div>
-                <p className="text-xs text-slate-300 italic leading-relaxed">
+
+                <p className="text-xs text-slate-300 leading-relaxed italic">
                   "{rev.text}"
                 </p>
               </div>
 
               <div className="pt-4 mt-4 border-t border-slate-800/60 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-bold text-white">{rev.author}</p>
-                  <p className="text-[10px] text-slate-500 font-mono">{rev.location}</p>
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-xs font-bold text-black font-mono">
+                    {rev.author.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors">
+                      {rev.author}
+                    </p>
+                    <p className="text-[10px] text-slate-500 font-mono">
+                      {rev.location || displayCity}
+                    </p>
+                  </div>
                 </div>
-                <span className="text-[10px] font-mono text-cyan-400">Verified Patient</span>
+
+                {/* Google Verified Reviewer Pin */}
+                <div className="flex items-center gap-1 text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
+                  <ShieldCheck className="w-3 h-3 text-cyan-400" />
+                  <span>Google Review</span>
+                </div>
               </div>
             </div>
           ))}
