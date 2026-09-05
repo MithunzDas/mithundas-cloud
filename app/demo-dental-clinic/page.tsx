@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Calendar,
@@ -170,7 +171,26 @@ function formatToDDMMYYYY(isoDate: string): string {
   return isoDate;
 }
 
-export default function DentalClinicDemoPage() {
+function DentalClinicDemoContent() {
+  const searchParams = useSearchParams();
+
+  // Dynamic URL Personalization
+  const rawClinicName = searchParams.get("clinic") || searchParams.get("name") || "";
+  const isPersonalized = Boolean(rawClinicName && rawClinicName.trim().length > 0);
+  const displayClinicName = isPersonalized ? rawClinicName.trim() : "Apex Dental & Aesthetic Clinic";
+  const shortClinicName = isPersonalized
+    ? displayClinicName.split(/[-–|]/)[0].trim().slice(0, 26)
+    : "Apex Dental";
+
+  const rawCity = searchParams.get("city") || searchParams.get("location") || "";
+  const displayCity = rawCity ? rawCity.trim() : "Habra • Kolkata";
+
+  const rawRating = searchParams.get("rating");
+  const displayRating = rawRating ? Number(rawRating).toFixed(1) : "4.9";
+
+  const rawReviews = searchParams.get("reviews");
+  const displayReviews = rawReviews ? rawReviews.trim() : "150";
+
   // Clinical Demographics State
   const [activeTab, setActiveTab] = useState<"form" | "ai">("form");
   const [patientName, setPatientName] = useState("");
@@ -229,7 +249,7 @@ export default function DentalClinicDemoPage() {
       "🩺 *Dental Concern:* " + problem + "\n" +
       "📅 *Preferred Date:* " + formattedDate + " (DD-MM-YYYY)\n" +
       "⏰ *Preferred Slot:* " + selectedSlot + "\n" +
-      "🏥 *Clinic:* Apex Dental & Aesthetic Center\n" +
+      "🏥 *Clinic:* " + displayClinicName + " (" + displayCity + ")\n" +
       "━━━━━━━━━━━━━━━━━━━━\n" +
       "_Please confirm my appointment slot with doctor. Thank you!_";
 
@@ -315,7 +335,9 @@ export default function DentalClinicDemoPage() {
             <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
           </span>
           <p className="text-[11px] sm:text-xs font-mono text-cyan-200 truncate">
-            <span className="font-bold text-white">Live Showcase:</span> Apex Dental Clinic &amp; WhatsApp Booking Engine
+            <span className="font-bold text-white">{isPersonalized ? "Demo for:" : "Live Showcase:"}</span>{" "}
+            <span className="text-cyan-300 font-semibold">{displayClinicName}</span>
+            {rawCity && <span className="text-slate-400 hidden md:inline"> ({displayCity})</span>}
           </p>
         </div>
         <Link
@@ -337,16 +359,16 @@ export default function DentalClinicDemoPage() {
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <h1 className="text-xs sm:text-base font-black tracking-tight text-white truncate">
-                APEX DENTAL
+              <h1 className="text-xs sm:text-sm md:text-base font-black tracking-tight text-white truncate max-w-[130px] xs:max-w-[180px] sm:max-w-xs md:max-w-md">
+                {displayClinicName.toUpperCase()}
               </h1>
-              <span className="hidden xs:inline-flex text-[9px] sm:text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 whitespace-nowrap">
-                IMPLANT &amp; LASER
+              <span className="hidden sm:inline-flex text-[9px] sm:text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 whitespace-nowrap">
+                VERIFIED CLINIC
               </span>
             </div>
             <p className="text-[10px] sm:text-xs text-slate-400 font-mono flex items-center gap-1 truncate">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></span>
-              <span className="truncate">Barasat • Habra • Kolkata</span>
+              <span className="truncate">{displayCity}</span>
             </p>
           </div>
         </div>
@@ -382,29 +404,32 @@ export default function DentalClinicDemoPage() {
               <span>Advanced Laser &amp; Painless Micro-Dentistry</span>
             </div>
 
-            <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-[1.15]">
-              Smile With Confidence.{" "}
-              <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-400 bg-clip-text text-transparent">
-                100% Painless Care.
+            <h2 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight leading-[1.2] break-words">
+              Smile With Confidence at{" "}
+              <span className="block mt-1 sm:mt-1.5 bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-400 bg-clip-text text-transparent break-words">
+                {displayClinicName}
               </span>
             </h2>
 
             <p className="text-xs sm:text-sm md:text-base text-slate-300 max-w-xl mx-auto lg:mx-0 font-normal leading-relaxed">
-              Experience Kolkata’s premier dental clinic. Instant 1-tap WhatsApp doctor appointment booking, zero waiting time, and 3D digital smile imaging.
+              Experience {displayCity}&apos;s trusted dental practice. Instant 1-tap WhatsApp doctor appointment booking, zero waiting time, and 3D digital smile imaging.
             </p>
 
             <div className="grid grid-cols-3 gap-2 sm:gap-3.5 pt-1 max-w-lg mx-auto lg:mx-0">
-              <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-2.5 sm:p-3 text-center">
-                <p className="text-base sm:text-xl font-black text-cyan-400 font-mono">15,000+</p>
-                <p className="text-[10px] sm:text-xs text-slate-400 font-mono">Smiles Fixed</p>
+              <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-2 sm:p-3 text-center">
+                <p className="text-sm sm:text-xl font-black text-cyan-400 font-mono">15,000+</p>
+                <p className="text-[9px] sm:text-xs text-slate-400 font-mono">Smiles Fixed</p>
               </div>
-              <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-2.5 sm:p-3 text-center">
-                <p className="text-base sm:text-xl font-black text-emerald-400 font-mono">4.9 ★</p>
-                <p className="text-[10px] sm:text-xs text-slate-400 font-mono">Google Rating</p>
+              <div className="bg-slate-900/70 border border-emerald-500/40 rounded-2xl p-2 sm:p-3 text-center shadow-lg shadow-emerald-500/5">
+                <p className="text-sm sm:text-xl font-black text-emerald-400 font-mono flex items-center justify-center gap-0.5">
+                  <span>{displayRating}</span>
+                  <span className="text-amber-400">★</span>
+                </p>
+                <p className="text-[9px] sm:text-xs text-slate-400 font-mono truncate">{displayReviews}+ Reviews</p>
               </div>
-              <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-2.5 sm:p-3 text-center">
-                <p className="text-base sm:text-xl font-black text-indigo-400 font-mono">20 Sec</p>
-                <p className="text-[10px] sm:text-xs text-slate-400 font-mono">WA Booking</p>
+              <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-2 sm:p-3 text-center">
+                <p className="text-sm sm:text-xl font-black text-indigo-400 font-mono">20 Sec</p>
+                <p className="text-[9px] sm:text-xs text-slate-400 font-mono">WA Booking</p>
               </div>
             </div>
 
@@ -605,7 +630,7 @@ export default function DentalClinicDemoPage() {
                     </div>
 
                     <div className="bg-[#040711] border border-slate-800 rounded-xl p-2.5 text-[11px] font-mono text-slate-300 whitespace-pre-line leading-relaxed">
-                      {"🦷 *APEX DENTAL CLINIC APPOINTMENT*\n" +
+                      {"🦷 *" + displayClinicName.toUpperCase().slice(0, 36) + " APPOINTMENT*\n" +
                         "👤 Patient: " + (patientName || "[Patient Name]") + " (" + patientGender + ", " + (patientAge ? patientAge + " Yrs" : "Adult") + ")\n" +
                         "🩺 Concern: " + selectedProblem + "\n" +
                         "📅 Date: " + displayDateDDMMYYYY + " (DD-MM-YYYY)\n" +
@@ -867,20 +892,21 @@ export default function DentalClinicDemoPage() {
             <span className="text-[10px] sm:text-xs font-mono font-bold px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
               ⚡ GROW YOUR CLINIC WITH WHATSAPP APPOINTMENT AUTOMATION
             </span>
-            <h3 className="text-lg sm:text-2xl md:text-3xl font-black text-white max-w-2xl mx-auto leading-tight">
-              Want this kind of customized high-speed mobile website + automated WhatsApp booking receptionist starting at ₹2,999/-?
+            <h3 className="text-base sm:text-2xl md:text-3xl font-black text-white max-w-2xl mx-auto leading-tight break-words">
+              Want this exact customized website + automated WhatsApp booking for{" "}
+              <span className="text-cyan-300 underline decoration-cyan-500/50">{displayClinicName}</span> starting at ₹2,999/-?
             </h3>
             <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto font-normal">
-              Built and delivered in 24 hours. Includes custom domain, 13-service WhatsApp booking form, 24/7 AI chat widget &amp; Google Maps SEO ranker.
+              Built and delivered in 24 hours for your clinic in {displayCity}. Includes custom domain, 13-service WhatsApp booking form, 24/7 AI chat widget &amp; Google Maps SEO ranker.
             </p>
             <div className="pt-3">
               <Link
-                href="https://wa.me/918768138086?text=Hi%20Mithun,%20I%20want%20this%20exact%20customized%20Dental/Clinic%20website%20starting%20at%20₹2,999/-!"
+                href={`https://wa.me/918768138086?text=${encodeURIComponent(`Hi Mithun, I want this website customized for ${displayClinicName} in ${displayCity} starting at ₹2,999/-!`)}`}
                 target="_blank"
-                className="inline-flex items-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 text-black font-extrabold text-xs sm:text-sm font-mono tracking-wide shadow-xl shadow-cyan-500/30 hover:scale-105 transition-transform"
+                className="inline-flex items-center gap-2 px-5 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 text-black font-extrabold text-xs sm:text-sm font-mono tracking-wide shadow-xl shadow-cyan-500/30 hover:scale-105 transition-transform"
               >
                 <MessageSquare className="w-4 h-4 fill-black" />
-                <span>Claim Your Website on WhatsApp (+91 87681 38086)</span>
+                <span>Claim Website for {shortClinicName}</span>
               </Link>
             </div>
           </div>
@@ -907,11 +933,27 @@ export default function DentalClinicDemoPage() {
 
       {/* FOOTER */}
       <footer className="pb-24 sm:pb-12 pt-8 text-center text-slate-500 text-xs font-mono border-t border-slate-900 px-4">
-        <p>© 2026 Apex Dental &amp; Aesthetic Clinic. All rights reserved.</p>
+        <p>© 2026 {displayClinicName}. All rights reserved.</p>
         <p className="text-[10px] text-slate-600 mt-1">
           Designed &amp; Powered by Mithun Das Agency Automation Platform
         </p>
       </footer>
     </div>
+  );
+}
+
+
+export default function DentalClinicDemoPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#030712] flex items-center justify-center text-cyan-400 font-mono text-xs">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          <span>Loading Clinic Showcase...</span>
+        </div>
+      </div>
+    }>
+      <DentalClinicDemoContent />
+    </Suspense>
   );
 }

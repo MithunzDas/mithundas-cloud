@@ -425,6 +425,10 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
     const city = lead.city || "West Bengal";
 
     let text = "";
+    const personalizedUrl = demoUrl.includes("demo-dental-clinic")
+      ? `${demoUrl}?clinic=${encodeURIComponent(cleanName)}&city=${encodeURIComponent(city)}&rating=${rating}&reviews=${reviews}`
+      : demoUrl;
+
     if (templateType === "dental_clinic_demo_outreach_v1") {
       text =
         `Namaste ${cleanName} team! 👋\n\n` +
@@ -435,7 +439,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
         `• Allow new patients to book appointments online 24/7\n` +
         `• Send *instant booking alerts* directly to the *doctor or receptionist's WhatsApp 📲*\n\n` +
         `Worth a quick 30-second look? Tap the link below to preview it 👇\n` +
-        `${demoUrl}`;
+        `${personalizedUrl}`;
     } else if (templateType === "client_followup_checkin") {
       text =
         `Namaste ${cleanName} team! 👋\n\n` +
@@ -1060,6 +1064,10 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
         const ratingNum = previewModalLead.rating ? Number(previewModalLead.rating).toFixed(1) : "4.8";
         const reviewNum = previewModalLead.reviewCount || 45;
 
+        const personalizedModalUrl = modalDemo.url.includes("demo-dental-clinic")
+          ? `${modalDemo.url}?clinic=${encodeURIComponent(cleanName)}&city=${encodeURIComponent(cityStr)}&rating=${ratingNum}&reviews=${reviewNum}`
+          : modalDemo.url;
+
         let previewText = "";
         if (selectedTemplate === "dental_clinic_demo_outreach_v1") {
           previewText =
@@ -1071,7 +1079,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
             `• Allow new patients to book appointments online 24/7\n` +
             `• Send *instant booking alerts* directly to the *doctor or receptionist's WhatsApp 📲*\n\n` +
             `Worth a quick 30-second look? Tap the button below to preview it 👇\n\n` +
-            `👉 View Demo: ${modalDemo.url}`;
+            `👉 View Demo: ${personalizedModalUrl}`;
         } else if (selectedTemplate === "client_followup_checkin") {
           previewText =
             `Namaste ${cleanName} team! 👋\n\n` +
@@ -1182,7 +1190,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
 
                   {/* Dynamic CTA Button inside WhatsApp bubble */}
                   <a
-                    href={modalDemo.url}
+                    href={personalizedModalUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-extrabold text-xs font-mono tracking-wide shadow-md flex items-center justify-center gap-2 transition-transform hover:scale-[1.02]"
