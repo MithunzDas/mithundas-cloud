@@ -183,7 +183,38 @@ export async function POST(req: NextRequest) {
 
       let templatePayload: any;
 
-      if (templateName === "client_followup_checkin") {
+      if (templateName === "dental_clinic_demo_outreach_v1") {
+        const ratingVal = lead.rating ? Number(lead.rating).toFixed(1) : "4.8";
+        const reviewVal = String(lead.reviewCount || 45);
+        templatePayload = {
+          messaging_product: "whatsapp",
+          to: cleanPhone,
+          type: "template",
+          template: {
+            name: "dental_clinic_demo_outreach_v1",
+            language: { code: "en" },
+            components: [
+              {
+                type: "body",
+                parameters: [
+                  { type: "text", text: cleanBusinessName },
+                  { type: "text", text: ratingVal },
+                  { type: "text", text: reviewVal },
+                  { type: "text", text: cityText }
+                ]
+              },
+              {
+                type: "button",
+                sub_type: "url",
+                index: "0",
+                parameters: [
+                  { type: "text", text: demoInfo.slug }
+                ]
+              }
+            ]
+          }
+        };
+      } else if (templateName === "client_followup_checkin") {
         templatePayload = {
           messaging_product: "whatsapp",
           to: cleanPhone,

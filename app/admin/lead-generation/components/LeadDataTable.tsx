@@ -213,7 +213,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
   const [previewModalLead, setPreviewModalLead] = useState<LeadItem | null>(null);
   const [activeChatLeadId, setActiveChatLeadId] = useState<string | null>(null);
   const [copiedModalText, setCopiedModalText] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<"client_followup_checkin" | "local_business_starter">("client_followup_checkin");
+  const [selectedTemplate, setSelectedTemplate] = useState<"dental_clinic_demo_outreach_v1" | "client_followup_checkin" | "local_business_starter">("dental_clinic_demo_outreach_v1");
 
   // Filter Leads
   const filteredLeads = leads.filter((lead) => {
@@ -416,10 +416,42 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
   };
 
   // Build WhatsApp Web link with pre-filled pitch
-  const getWhatsAppWebUrl = (lead: LeadItem, demoUrl: string) => {
+  const getWhatsAppWebUrl = (lead: LeadItem, demoUrl: string, templateType: string = selectedTemplate) => {
     const phone = (lead.whatsappNumber || lead.phone || "").replace(/\D/g, "");
     const cleanPhone = phone.length === 10 ? `91${phone}` : phone;
-    const text = `Hi ${lead.businessName},\n\nWe noticed your business has a great ${lead.rating ? Number(lead.rating).toFixed(1) : "4.8"}★ reputation in ${lead.city || "West Bengal"}!\n\nWe noticed your business is currently missing an automated 24/7 WhatsApp booking receptionist and modern website.\n\nWe built an interactive live mobile demo for your business: ${demoUrl}\n\nWould you like to see how this captures appointments directly on WhatsApp?`;
+    const cleanName = lead.businessName || "Business Owner";
+    const rating = lead.rating ? Number(lead.rating).toFixed(1) : "4.8";
+    const reviews = lead.reviewCount || 45;
+    const city = lead.city || "West Bengal";
+
+    let text = "";
+    if (templateType === "dental_clinic_demo_outreach_v1") {
+      text =
+        `Namaste ${cleanName} team! 👋\n\n` +
+        `Noticed you have a strong ${rating}★ rating (${reviews}+ reviews) on Google in ${city} — congratulations on the great patient reputation!\n\n` +
+        `However, when new patients search online, there is no official website showing your treatments, timings, or verified reviews.\n\n` +
+        `We created a sample clinic demo to show how easy it is to:\n` +
+        `• Showcase your dental treatments & clinic timings\n` +
+        `• Allow new patients to book appointments online 24/7\n` +
+        `• Send *instant booking alerts* directly to the *doctor or receptionist's WhatsApp 📲*\n\n` +
+        `Worth a quick 30-second look? Tap the link below to preview it 👇\n` +
+        `${demoUrl}`;
+    } else if (templateType === "client_followup_checkin") {
+      text =
+        `Namaste ${cleanName} team! 👋\n\n` +
+        `Following up on the custom website and online booking demo we shared for your business in ${city}.\n\n` +
+        `Would you like a quick 5-minute walkthrough call today, or should we prepare a tailored design preview for ${cleanName}?\n\n` +
+        `💬 Feel free to reply directly to this message.\n` +
+        `Mithun Das | AI Automation • mithundas.cloud`;
+    } else {
+      text =
+        `Hi ${cleanName},\n\n` +
+        `We noticed your business has a great ${rating}★ reputation in ${city}!\n\n` +
+        `We noticed your business is currently missing an automated 24/7 WhatsApp booking receptionist and modern website.\n\n` +
+        `We built an interactive live mobile demo for your business: ${demoUrl}\n\n` +
+        `Would you like to see how this captures appointments directly on WhatsApp?`;
+    }
+
     return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
   };
 
@@ -587,6 +619,9 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
               className="bg-transparent text-xs text-slate-200 focus:outline-none font-medium cursor-pointer"
               title="Choose approved Meta WhatsApp template to dispatch"
             >
+              <option value="dental_clinic_demo_outreach_v1" className="bg-slate-900 text-slate-100">
+                🦷 Dental Clinic Demo (WhatsApp Booking Alerts)
+              </option>
               <option value="client_followup_checkin" className="bg-slate-900 text-slate-100">
                 💬 Follow-Up Check-in (3 Quick Replies)
               </option>
@@ -1021,13 +1056,38 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
         const phone = previewModalLead.whatsappNumber || previewModalLead.phone || "";
         const cleanPhone = phone.replace(/\D/g, "");
 
-        const previewText =
-          `Hi ${previewModalLead.businessName},\n\n` +
-          `We noticed your business has an exceptional ${ratingStr} reputation in ${cityStr}!\n\n` +
-          `Most customers today prefer booking consultations directly through WhatsApp without waiting on phone calls. We noticed your business does not yet have an automated 24/7 WhatsApp appointment booking system.\n\n` +
-          `We created an interactive live mobile demo to show you how it works:\n\n` +
-          `👉 View Demo: ${modalDemo.url}\n\n` +
-          `Would you like to see how this captures 3x more appointments automatically starting at ₹2,999/-?`;
+        const cleanName = previewModalLead.businessName || "Business Owner";
+        const ratingNum = previewModalLead.rating ? Number(previewModalLead.rating).toFixed(1) : "4.8";
+        const reviewNum = previewModalLead.reviewCount || 45;
+
+        let previewText = "";
+        if (selectedTemplate === "dental_clinic_demo_outreach_v1") {
+          previewText =
+            `Namaste ${cleanName} team! 👋\n\n` +
+            `Noticed you have a strong ${ratingNum}★ rating (${reviewNum}+ reviews) on Google in ${cityStr} — congratulations on the great patient reputation!\n\n` +
+            `However, when new patients search online, there is no official website showing your treatments, timings, or verified reviews.\n\n` +
+            `We created a sample clinic demo to show how easy it is to:\n` +
+            `• Showcase your dental treatments & clinic timings\n` +
+            `• Allow new patients to book appointments online 24/7\n` +
+            `• Send *instant booking alerts* directly to the *doctor or receptionist's WhatsApp 📲*\n\n` +
+            `Worth a quick 30-second look? Tap the button below to preview it 👇\n\n` +
+            `👉 View Demo: ${modalDemo.url}`;
+        } else if (selectedTemplate === "client_followup_checkin") {
+          previewText =
+            `Namaste ${cleanName} team! 👋\n\n` +
+            `Following up on the custom website and online booking demo we shared for your business in ${cityStr}.\n\n` +
+            `Would you like a quick 5-minute walkthrough call today, or should we prepare a tailored design preview for ${cleanName}?\n\n` +
+            `💬 Feel free to reply directly to this message.\n` +
+            `Mithun Das | AI Automation • mithundas.cloud`;
+        } else {
+          previewText =
+            `Hi ${cleanName},\n\n` +
+            `We noticed your business has an exceptional ${ratingStr} reputation in ${cityStr}!\n\n` +
+            `Most customers today prefer booking consultations directly through WhatsApp without waiting on phone calls. We noticed your business does not yet have an automated 24/7 WhatsApp appointment booking system.\n\n` +
+            `We created an interactive live mobile demo to show you how it works:\n\n` +
+            `👉 View Demo: ${modalDemo.url}\n\n` +
+            `Would you like to see how this captures 3x more appointments automatically starting at ₹2,999/-?`;
+        }
 
         return (
           <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
@@ -1068,15 +1128,57 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
 
                 {/* WhatsApp Message Bubble */}
                 <div className="bg-[#121c2c] border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
-                  <p className="text-xs sm:text-sm text-slate-200 whitespace-pre-line leading-relaxed">
-                    <span className="font-bold text-white">Hi {previewModalLead.businessName}</span>,
-                    {"\n\n"}
-                    We noticed your business has an exceptional <span className="text-amber-400 font-bold">{ratingStr}</span> reputation in <span className="text-cyan-300 font-semibold">{cityStr}</span>!
-                    {"\n\n"}
-                    Most customers today prefer booking consultations directly through WhatsApp without waiting on phone calls. We noticed your business does not yet have an automated 24/7 WhatsApp appointment booking system.
-                    {"\n\n"}
-                    We created an interactive live mobile demo to show you how it works:
-                  </p>
+                  {selectedTemplate === "dental_clinic_demo_outreach_v1" ? (
+                    <div className="text-xs sm:text-sm text-slate-200 leading-relaxed space-y-2.5">
+                      <p>
+                        Namaste <span className="font-bold text-white">{previewModalLead.businessName}</span> team! 👋
+                      </p>
+                      <p>
+                        Noticed you have a strong <span className="text-amber-400 font-bold">{previewModalLead.rating ? Number(previewModalLead.rating).toFixed(1) : "4.8"}★</span> rating ({previewModalLead.reviewCount || 45}+ reviews) on Google in <span className="text-cyan-300 font-semibold">{cityStr}</span> — congratulations on the great patient reputation!
+                      </p>
+                      <p>
+                        However, when new patients search online, there is no official website showing your treatments, timings, or verified reviews.
+                      </p>
+                      <div className="bg-[#0b1322] p-3 rounded-xl border border-emerald-500/30 space-y-1.5 text-xs">
+                        <p className="font-semibold text-slate-300">We created a sample clinic demo to show how easy it is to:</p>
+                        <p className="text-slate-300">• Showcase your dental treatments &amp; clinic timings</p>
+                        <p className="text-slate-300">• Allow new patients to book appointments online 24/7</p>
+                        <p className="text-emerald-300 leading-normal">
+                          • Send <strong className="font-extrabold text-white bg-emerald-500/30 px-1 py-0.5 rounded border border-emerald-500/50">instant booking alerts</strong> directly to the <strong className="font-extrabold text-white bg-emerald-500/30 px-1 py-0.5 rounded border border-emerald-500/50">doctor or receptionist's WhatsApp 📲</strong>
+                        </p>
+                      </div>
+                      <p className="text-slate-300">
+                        Worth a quick 30-second look? Tap the button below to preview it 👇
+                      </p>
+                    </div>
+                  ) : selectedTemplate === "client_followup_checkin" ? (
+                    <div className="text-xs sm:text-sm text-slate-200 leading-relaxed space-y-2.5">
+                      <p>
+                        Namaste <span className="font-bold text-white">{previewModalLead.businessName}</span> team! 👋
+                      </p>
+                      <p>
+                        Following up on the custom website and online booking demo we shared for your business in <span className="text-cyan-300 font-semibold">{cityStr}</span>.
+                      </p>
+                      <p>
+                        Would you like a quick 5-minute walkthrough call today, or should we prepare a tailored design preview for <span className="text-white font-semibold">{previewModalLead.businessName}</span>?
+                      </p>
+                      <p className="text-[11px] text-slate-400 border-t border-slate-800/80 pt-2 font-mono">
+                        💬 Feel free to reply directly to this message.
+                        <br />
+                        Mithun Das | AI Automation • mithundas.cloud
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-xs sm:text-sm text-slate-200 whitespace-pre-line leading-relaxed">
+                      <span className="font-bold text-white">Hi {previewModalLead.businessName}</span>,
+                      {"\n\n"}
+                      We noticed your business has an exceptional <span className="text-amber-400 font-bold">{ratingStr}</span> reputation in <span className="text-cyan-300 font-semibold">{cityStr}</span>!
+                      {"\n\n"}
+                      Most customers today prefer booking consultations directly through WhatsApp without waiting on phone calls. We noticed your business does not yet have an automated 24/7 WhatsApp appointment booking system.
+                      {"\n\n"}
+                      We created an interactive live mobile demo to show you how it works:
+                    </p>
+                  )}
 
                   {/* Dynamic CTA Button inside WhatsApp bubble */}
                   <a
