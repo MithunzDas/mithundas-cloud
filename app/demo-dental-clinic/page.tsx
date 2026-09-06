@@ -191,6 +191,11 @@ function DentalClinicDemoContent() {
   const rawReviews = searchParams.get("reviews");
   const displayReviews = rawReviews ? rawReviews.trim() : "150";
 
+  // Dynamic Lead Doctor Name calculation
+  const derivedDoctorName = isPersonalized && displayClinicName.toLowerCase().startsWith("dr.")
+    ? displayClinicName.split(/clinic|care|centre|center|hospital/i)[0].trim()
+    : "Dr. Benjamin Carter, BDS, MDS";
+
   // Dynamic Clinic Phone Personalization
   const rawPhone = searchParams.get("phone") || searchParams.get("wa") || "";
   const cleanPhoneDigits = rawPhone.replace(/\D/g, "");
@@ -228,6 +233,9 @@ function DentalClinicDemoContent() {
   const [case1View, setCase1View] = useState<"before" | "after">("after");
   const [case2View, setCase2View] = useState<"before" | "after">("after");
   const [case3View, setCase3View] = useState<"before" | "after">("after");
+  
+  // Interactive Left-Right Before/After Comparison Slider Position (0-100%)
+  const [sliderPos, setSliderPos] = useState(50);
 
   const dateInputRef = useRef<HTMLInputElement>(null);
 
@@ -830,16 +838,121 @@ function DentalClinicDemoContent() {
         <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12 space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-[11px] sm:text-xs font-mono font-medium">
             <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Aesthetic Smile Transformations</span>
+            <span>Interactive Aesthetic Smile Makeover</span>
           </div>
-          <h3 className="text-xl sm:text-3xl font-black text-white tracking-tight">
-            Real Clinical Before &amp; After Cases
+          <h3 className="text-xl sm:text-3xl md:text-4xl font-black text-white tracking-tight">
+            See the Real Transformation Live
           </h3>
-          <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">
-            High-precision digital smile design delivering life-changing aesthetic transformations in single or multi-sitting procedures.
+          <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto leading-relaxed">
+            Drag the vertical divider left &amp; right to inspect genuine patient teeth before treatment versus the polished cosmetic laser whitening result.
           </p>
         </div>
 
+        {/* 🎚️ INTERACTIVE LEFT-RIGHT VERTICAL COMPARISON DRAG SLIDER */}
+        <div className="max-w-4xl mx-auto mb-12 sm:mb-16">
+          <div className="relative rounded-3xl overflow-hidden border-2 border-cyan-500/40 shadow-2xl shadow-cyan-500/10 bg-slate-950 aspect-[16/9] select-none group">
+            
+            {/* Layer 1: AFTER Image (Underneath) */}
+            <img
+              src="/images/dental/teeth_after.jpg"
+              alt="After Dental Laser Whitening &amp; Smile Makeover"
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+            />
+
+            {/* Layer 2: BEFORE Image (Clipped dynamically by slider position) */}
+            <div
+              className="absolute inset-0 overflow-hidden pointer-events-none"
+              style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
+            >
+              <img
+                src="/images/dental/teeth_before.jpg"
+                alt="Before Dental Treatment - Enamel Stains"
+                className="absolute inset-0 w-full h-full object-cover max-w-none"
+              />
+            </div>
+
+            {/* Layer 3: Vertical Slider Divider Line & Glowing Drag Handle */}
+            <div
+              className="absolute top-0 bottom-0 w-1 bg-gradient-to-b from-cyan-400 via-white to-teal-400 pointer-events-none z-20 shadow-[0_0_16px_rgba(6,182,212,0.9)]"
+              style={{ left: `${sliderPos}%` }}
+            >
+              <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-950/90 border-2 border-cyan-400 text-white flex items-center justify-center shadow-2xl backdrop-blur-md text-xs sm:text-sm font-bold font-mono transition-transform group-hover:scale-110">
+                <span className="text-cyan-300 text-sm">◂</span>
+                <span className="text-white text-[10px] font-black px-0.5">|</span>
+                <span className="text-cyan-300 text-sm">▸</span>
+              </div>
+            </div>
+
+            {/* Layer 4: Floating Case Badges */}
+            <div className="absolute top-3 sm:top-4 left-3 sm:left-4 z-20 pointer-events-none">
+              <span className="px-3 py-1 sm:py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-amber-500/50 text-amber-300 font-mono text-[10px] sm:text-xs font-bold shadow-lg">
+                BEFORE: Severe Enamel Stains
+              </span>
+            </div>
+            <div className="absolute top-3 sm:top-4 right-3 sm:right-4 z-20 pointer-events-none">
+              <span className="px-3 py-1 sm:py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-cyan-400/60 text-cyan-300 font-mono text-[10px] sm:text-xs font-bold shadow-lg">
+                AFTER: Diamond Laser Whitened ✨
+              </span>
+            </div>
+
+            {/* Helper Tag */}
+            <div className="absolute bottom-3 inset-x-0 z-20 flex justify-center pointer-events-none">
+              <span className="px-3.5 py-1 rounded-full bg-black/75 backdrop-blur-md border border-slate-700/80 text-slate-300 font-mono text-[10px] sm:text-xs flex items-center gap-1.5 shadow-md">
+                <span>👈 Drag or tap to move comparison divider 👉</span>
+              </span>
+            </div>
+
+            {/* Layer 5: Native Touch & Mouse Range Slider (Invisible Overlay) */}
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={sliderPos}
+              onChange={(e) => setSliderPos(Number(e.target.value))}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-30 touch-none"
+              aria-label="Before and after teeth comparison slider"
+            />
+          </div>
+
+          {/* Quick Slider Preset Buttons & CTA */}
+          <div className="flex items-center justify-between gap-2 pt-3 flex-wrap">
+            <div className="flex items-center gap-1.5 text-xs font-mono">
+              <span className="text-slate-500 hidden sm:inline">Presets:</span>
+              <button
+                type="button"
+                onClick={() => setSliderPos(15)}
+                className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 hover:border-cyan-500/40 text-slate-400 hover:text-cyan-300 transition-colors"
+              >
+                Before Focus (15%)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSliderPos(50)}
+                className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 hover:border-cyan-500/40 text-slate-300 hover:text-cyan-300 transition-colors font-bold"
+              >
+                50/50 Split
+              </button>
+              <button
+                type="button"
+                onClick={() => setSliderPos(85)}
+                className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 hover:border-cyan-500/40 text-slate-400 hover:text-cyan-300 transition-colors"
+              >
+                After Focus (85%)
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleSelectServiceQuickBook("✨ Laser Teeth Whitening & Polishing")}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 text-black font-extrabold text-xs font-mono flex items-center gap-1.5 shadow-lg shadow-cyan-500/20 hover:scale-105 transition-all"
+            >
+              <span>Get This Smile Makeover</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* 3 Clinical Treatment Procedure Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
           
           {/* CASE 1: LASER TEETH WHITENING */}
@@ -864,9 +977,7 @@ function DentalClinicDemoContent() {
                 </p>
               </div>
 
-              {/* Interactive Visual Comparison Display */}
               <div className="relative rounded-2xl bg-[#040711] border border-slate-800 p-4 overflow-hidden text-center">
-                {/* Mode Switcher Toggle */}
                 <div className="inline-flex rounded-xl bg-slate-900 border border-slate-800 p-1 mb-4">
                   <button
                     type="button"
@@ -893,7 +1004,7 @@ function DentalClinicDemoContent() {
                 </div>
 
                 {case1View === "before" ? (
-                  <div className="space-y-2 py-2 animate-fadeIn">
+                  <div className="space-y-2 py-2">
                     <div className="h-20 sm:h-24 rounded-xl bg-gradient-to-r from-amber-950/40 via-yellow-900/30 to-amber-950/40 border border-amber-500/20 flex items-center justify-center p-3">
                       <div className="text-center space-y-1">
                         <div className="text-2xl sm:text-3xl">☕ 🚬 🦷</div>
@@ -908,7 +1019,7 @@ function DentalClinicDemoContent() {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-2 py-2 animate-fadeIn">
+                  <div className="space-y-2 py-2">
                     <div className="h-20 sm:h-24 rounded-xl bg-gradient-to-r from-cyan-950/50 via-teal-900/40 to-blue-950/50 border border-cyan-500/40 flex items-center justify-center p-3 shadow-inner">
                       <div className="text-center space-y-1">
                         <div className="text-2xl sm:text-3xl">✨ 💎 🦷</div>
@@ -925,7 +1036,6 @@ function DentalClinicDemoContent() {
                 )}
               </div>
 
-              {/* Treatment Specs */}
               <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
                 <div className="bg-slate-900/60 p-2 rounded-xl border border-slate-800/80">
                   <p className="text-slate-500 text-[10px]">Procedure</p>
@@ -970,9 +1080,7 @@ function DentalClinicDemoContent() {
                 </p>
               </div>
 
-              {/* Interactive Visual Comparison Display */}
               <div className="relative rounded-2xl bg-[#040711] border border-slate-800 p-4 overflow-hidden text-center">
-                {/* Mode Switcher Toggle */}
                 <div className="inline-flex rounded-xl bg-slate-900 border border-slate-800 p-1 mb-4">
                   <button
                     type="button"
@@ -999,7 +1107,7 @@ function DentalClinicDemoContent() {
                 </div>
 
                 {case2View === "before" ? (
-                  <div className="space-y-2 py-2 animate-fadeIn">
+                  <div className="space-y-2 py-2">
                     <div className="h-20 sm:h-24 rounded-xl bg-gradient-to-r from-amber-950/40 via-purple-950/30 to-amber-950/40 border border-amber-500/20 flex items-center justify-center p-3">
                       <div className="text-center space-y-1">
                         <div className="text-2xl sm:text-3xl">📐 ⚡ 🦷</div>
@@ -1014,7 +1122,7 @@ function DentalClinicDemoContent() {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-2 py-2 animate-fadeIn">
+                  <div className="space-y-2 py-2">
                     <div className="h-20 sm:h-24 rounded-xl bg-gradient-to-r from-indigo-950/50 via-purple-900/40 to-blue-950/50 border border-indigo-500/40 flex items-center justify-center p-3 shadow-inner">
                       <div className="text-center space-y-1">
                         <div className="text-2xl sm:text-3xl">🛡️ ✨ 🦷</div>
@@ -1031,7 +1139,6 @@ function DentalClinicDemoContent() {
                 )}
               </div>
 
-              {/* Treatment Specs */}
               <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
                 <div className="bg-slate-900/60 p-2 rounded-xl border border-slate-800/80">
                   <p className="text-slate-500 text-[10px]">Technology</p>
@@ -1076,9 +1183,7 @@ function DentalClinicDemoContent() {
                 </p>
               </div>
 
-              {/* Interactive Visual Comparison Display */}
               <div className="relative rounded-2xl bg-[#040711] border border-slate-800 p-4 overflow-hidden text-center">
-                {/* Mode Switcher Toggle */}
                 <div className="inline-flex rounded-xl bg-slate-900 border border-slate-800 p-1 mb-4">
                   <button
                     type="button"
@@ -1105,7 +1210,7 @@ function DentalClinicDemoContent() {
                 </div>
 
                 {case3View === "before" ? (
-                  <div className="space-y-2 py-2 animate-fadeIn">
+                  <div className="space-y-2 py-2">
                     <div className="h-20 sm:h-24 rounded-xl bg-gradient-to-r from-red-950/40 via-amber-950/30 to-red-950/40 border border-red-500/20 flex items-center justify-center p-3">
                       <div className="text-center space-y-1">
                         <div className="text-2xl sm:text-3xl">🕳️ 🩸 🦷</div>
@@ -1120,7 +1225,7 @@ function DentalClinicDemoContent() {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-2 py-2 animate-fadeIn">
+                  <div className="space-y-2 py-2">
                     <div className="h-20 sm:h-24 rounded-xl bg-gradient-to-r from-amber-950/50 via-yellow-900/30 to-orange-950/50 border border-amber-500/40 flex items-center justify-center p-3 shadow-inner">
                       <div className="text-center space-y-1">
                         <div className="text-2xl sm:text-3xl">👑 💎 🦷</div>
@@ -1137,7 +1242,6 @@ function DentalClinicDemoContent() {
                 )}
               </div>
 
-              {/* Treatment Specs */}
               <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
                 <div className="bg-slate-900/60 p-2 rounded-xl border border-slate-800/80">
                   <p className="text-slate-500 text-[10px]">Implant Origin</p>
@@ -1163,45 +1267,175 @@ function DentalClinicDemoContent() {
         </div>
       </section>
 
-      {/* DOCTORS & SPECIALISTS */}
-      <section className="px-3 sm:px-6 py-10 sm:py-16 max-w-7xl mx-auto border-t border-slate-900 bg-slate-950/40 rounded-3xl my-6">
+      {/* 🏥 CLINIC CHAMBERS & SURGICAL SUITE SHOWCASE */}
+      <section className="px-3 sm:px-6 py-10 sm:py-16 max-w-7xl mx-auto border-t border-slate-900">
         <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12 space-y-2">
-          <span className="text-cyan-400 text-xs font-mono uppercase tracking-widest font-bold">
-            Certified Doctors
-          </span>
-          <h3 className="text-xl sm:text-3xl font-black text-white tracking-tight">
-            Meet Our Senior Specialists
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-[11px] sm:text-xs font-mono font-medium">
+            <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+            <span>World-Class Facility</span>
+          </div>
+          <h3 className="text-xl sm:text-3xl md:text-4xl font-black text-white tracking-tight">
+            High-Tech Chamber &amp; Surgical Excellence
           </h3>
-          <p className="text-xs sm:text-sm text-slate-400">
-            Over 25+ combined years of clinical excellence in dental surgery and aesthetics.
+          <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto">
+            Engineered for maximum patient comfort, 100% Class-B sterile hygiene, and painless micro-dentistry.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 max-w-4xl mx-auto">
-          {DOCTORS.map((doc, idx) => (
-            <div
-              key={idx}
-              className="bg-[#0b101e] border border-slate-800 rounded-3xl p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 hover:border-cyan-500/30 transition-all"
-            >
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-white font-bold text-2xl flex-shrink-0 shadow-lg">
-                👨‍⚕️
-              </div>
-              <div className="space-y-1 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <h4 className="text-sm sm:text-base font-bold text-white">{doc.name}</h4>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
-                    {doc.badge}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-300">{doc.title}</p>
-                <p className="text-[11px] text-slate-400 font-mono">{doc.exp}</p>
-                <p className="text-[11px] text-amber-400 font-mono font-bold flex items-center gap-1 pt-0.5">
-                  <span>★</span>
-                  <span>{doc.rating}</span>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+          {/* Card 1: Luxury Operatory Chamber */}
+          <div className="bg-[#080d1a] border border-slate-800 hover:border-cyan-500/40 rounded-3xl overflow-hidden transition-all shadow-xl group flex flex-col">
+            <div className="relative aspect-[16/9] overflow-hidden">
+              <img
+                src="/images/dental/clinic_chamber.jpg"
+                alt="Modern Luxury Dental Clinic Operatory Suite"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#080d1a] via-transparent to-transparent"></div>
+              <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border border-cyan-500/40 text-cyan-300 font-mono text-[10px] sm:text-xs font-bold shadow-md">
+                Digital Operatory Suite
+              </span>
+            </div>
+            <div className="p-5 sm:p-6 space-y-3 flex-1 flex flex-col justify-between">
+              <div>
+                <h4 className="text-base sm:text-lg font-bold text-white group-hover:text-cyan-300 transition-colors">
+                  Ergonomic Digital Treatment Suites
+                </h4>
+                <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+                  Equipped with 3D digital intraoral scanners, computerized Apex locators, and overhead LED surgical lamps for anxiety-free dental visits.
                 </p>
               </div>
+              <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-800/80 text-[10px] font-mono text-slate-300">
+                <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-cyan-400">✓ Class-B Autoclave</span>
+                <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-emerald-400">✓ 100% Sterile Protocol</span>
+                <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-indigo-400">✓ Soft Leather Loungers</span>
+              </div>
             </div>
-          ))}
+          </div>
+
+          {/* Card 2: Treatment Procedure in Progress */}
+          <div className="bg-[#080d1a] border border-slate-800 hover:border-emerald-500/40 rounded-3xl overflow-hidden transition-all shadow-xl group flex flex-col">
+            <div className="relative aspect-[16/9] overflow-hidden">
+              <img
+                src="/images/dental/treatment_procedure.jpg"
+                alt="Painless Dental Laser Procedure in Progress"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#080d1a] via-transparent to-transparent"></div>
+              <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border border-emerald-500/40 text-emerald-300 font-mono text-[10px] sm:text-xs font-bold shadow-md">
+                Painless Procedure In Progress
+              </span>
+            </div>
+            <div className="p-5 sm:p-6 space-y-3 flex-1 flex flex-col justify-between">
+              <div>
+                <h4 className="text-base sm:text-lg font-bold text-white group-hover:text-emerald-300 transition-colors">
+                  Micro-Invasive Gentle Dental Procedures
+                </h4>
+                <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+                  Our certified specialists utilize precision cold lasers and computer-guided implant systems to eliminate drilling noise, pain, and recovery downtime.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-800/80 text-[10px] font-mono text-slate-300">
+                <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-emerald-400">✓ 0/10 Pain Rating</span>
+                <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-cyan-400">✓ Cold Laser Tech</span>
+                <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-amber-400">✓ Same-Day Recovery</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+{/* 👨‍⚕️ DOCTORS & CLINICAL SPECIALISTS */}
+      <section className="px-3 sm:px-6 py-10 sm:py-16 max-w-7xl mx-auto border-t border-slate-900 bg-slate-950/40 rounded-3xl my-6">
+        <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12 space-y-2">
+          <span className="text-cyan-400 text-xs font-mono uppercase tracking-widest font-bold">
+            Certified Clinical Leadership
+          </span>
+          <h3 className="text-xl sm:text-3xl md:text-4xl font-black text-white tracking-tight">
+            Meet Your Chief Dental Surgeon
+          </h3>
+          <p className="text-xs sm:text-sm text-slate-400">
+            Over 15+ years of clinical excellence in complex implantology, digital smile design, and painless laser dentistry.
+          </p>
+        </div>
+
+        <div className="max-w-4xl mx-auto">
+          {/* Main Featured Lead Doctor Showcase Card */}
+          <div className="bg-[#0b101e] border-2 border-cyan-500/30 hover:border-cyan-500/60 rounded-3xl p-5 sm:p-8 shadow-2xl transition-all flex flex-col md:flex-row items-center gap-6 sm:gap-8">
+            <div className="relative flex-shrink-0">
+              <img
+                src="/images/dental/dentist_portrait.jpg"
+                alt={derivedDoctorName}
+                className="w-32 h-32 sm:w-40 sm:h-40 md:w-44 md:h-44 rounded-3xl object-cover border-2 border-cyan-400/50 shadow-2xl shadow-cyan-500/20"
+              />
+              <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-emerald-500 text-black font-mono font-extrabold text-[10px] whitespace-nowrap shadow-md">
+                ✓ Available Today
+              </span>
+            </div>
+
+            <div className="space-y-3 text-center md:text-left flex-1">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-1.5">
+                <div>
+                  <h4 className="text-lg sm:text-2xl font-black text-white tracking-tight">
+                    {derivedDoctorName}
+                  </h4>
+                  <p className="text-xs sm:text-sm font-semibold text-cyan-300 font-mono">
+                    Chief Dental Surgeon &amp; Aesthetic Implantologist
+                  </p>
+                </div>
+                <div className="flex items-center justify-center md:justify-end gap-1.5 pt-1 md:pt-0">
+                  <span className="text-xs font-mono px-2.5 py-1 rounded-xl bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-bold">
+                    15+ Yrs Exp
+                  </span>
+                  <span className="text-xs font-mono px-2.5 py-1 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-emerald-400 text-emerald-400" />
+                    <span>4.9 ★</span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 text-xs text-slate-300 leading-relaxed pt-1">
+                <p className="flex items-center justify-center md:justify-start gap-2">
+                  <span className="text-cyan-400">🎓</span>
+                  <span><strong>BDS, MDS</strong> — Oral &amp; Maxillofacial Surgery and Endodontics</span>
+                </p>
+                <p className="flex items-center justify-center md:justify-start gap-2">
+                  <span className="text-cyan-400">💎</span>
+                  <span><strong>Fellow (FICOI, USA)</strong> — International Congress of Oral Implantologists</span>
+                </p>
+                <p className="flex items-center justify-center md:justify-start gap-2">
+                  <span className="text-cyan-400">🛡️</span>
+                  <span><strong>Certified DSD</strong> — Digital Smile Design &amp; Laser Dentistry Specialist</span>
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-2 text-[10px] font-mono text-slate-400">
+                <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
+                  IDA Life Member
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
+                  14,000+ Completed Cases
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-cyan-400">
+                  {displayCity}
+                </span>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("form");
+                    const el = document.getElementById("booking-engine");
+                    if (el) el.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-extrabold text-xs font-mono shadow-lg shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95 flex items-center justify-center md:justify-start gap-2 mx-auto md:mx-0 cursor-pointer"
+                >
+                  <Calendar className="w-3.5 h-3.5 fill-current" />
+                  <span>Book 1-on-1 Consultation With Doctor</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
