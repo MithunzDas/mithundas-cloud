@@ -177,7 +177,7 @@ function DentalClinicDemoContent() {
   // Dynamic URL Personalization
   const rawClinicName = searchParams.get("clinic") || searchParams.get("name") || "";
   const isPersonalized = Boolean(rawClinicName && rawClinicName.trim().length > 0);
-  const displayClinicName = isPersonalized ? rawClinicName.trim() : "Apex Dental & Aesthetic Clinic";
+  const displayClinicName = isPersonalized ? rawClinicName.trim() : "Apex Dental Clinic";
   const shortClinicName = isPersonalized
     ? displayClinicName.split(/[-–|]/)[0].trim().slice(0, 26)
     : "Apex Dental";

@@ -229,7 +229,7 @@ export default function DentalClinicDemoPage() {
       "🩺 *Dental Concern:* " + problem + "\n" +
       "📅 *Preferred Date:* " + formattedDate + " (DD-MM-YYYY)\n" +
       "⏰ *Preferred Slot:* " + selectedSlot + "\n" +
-      "🏥 *Clinic:* Apex Dental & Aesthetic Center\n" +
+      "🏥 *Clinic:* Apex Dental Clinic\n" +
       "━━━━━━━━━━━━━━━━━━━━\n" +
       "_Please confirm my appointment slot with doctor. Thank you!_";
 
@@ -907,7 +907,7 @@ export default function DentalClinicDemoPage() {
 
       {/* FOOTER */}
       <footer className="pb-24 sm:pb-12 pt-8 text-center text-slate-500 text-xs font-mono border-t border-slate-900 px-4">
-        <p>© 2026 Apex Dental &amp; Aesthetic Clinic. All rights reserved.</p>
+        <p>© 2026 Apex Dental Clinic. All rights reserved.</p>
         <p className="text-[10px] text-slate-600 mt-1">
           Designed &amp; Powered by Mithun Das Agency Automation Platform
         </p>
