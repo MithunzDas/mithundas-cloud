@@ -55,10 +55,10 @@ const DENTAL_PROBLEMS = [
 ];
 
 const TIME_SLOTS = [
-  "🌅 10:00 AM – 11:30 AM IST (Morning)",
-  "☀️ 12:30 PM – 02:00 PM IST (Afternoon)",
-  "🌇 04:30 PM – 06:00 PM IST (Evening)",
-  "🌙 07:00 PM – 08:30 PM IST (Night)"
+  "🌅 10:00 AM – 11:30 AM (Morning)",
+  "☀️ 12:30 PM – 02:00 PM (Afternoon)",
+  "🌇 04:30 PM – 06:00 PM (Evening)",
+  "🌙 07:00 PM – 08:30 PM (Night)"
 ];
 
 const SERVICES = [
@@ -66,7 +66,7 @@ const SERVICES = [
     icon: Smile,
     title: "Painless Root Canal (RCT)",
     desc: "Single-sitting rotary endodontics with 3D digital apex locator precision.",
-    price: "From ₹2,499",
+    price: "Custom Quote",
     tag: "Most Popular",
     color: "from-cyan-500 to-blue-500",
     problemKey: "⚡ Painless Root Canal Treatment (RCT)"
@@ -75,7 +75,7 @@ const SERVICES = [
     icon: Sparkles,
     title: "Laser Teeth Whitening",
     desc: "Instant 6-8 shade brightening in 45 minutes with advanced cold-light laser.",
-    price: "From ₹1,999",
+    price: "Specialist Care",
     tag: "Instant Glow",
     color: "from-emerald-400 to-teal-500",
     problemKey: "✨ Laser Teeth Whitening & Polishing"
@@ -102,7 +102,7 @@ const SERVICES = [
     icon: HeartPulse,
     title: "Kids Dental Care (Pediatric)",
     desc: "Child-friendly clinic environment with painless cavity filling & fluoride therapy.",
-    price: "From ₹799",
+    price: "Gentle Care",
     tag: "Gentle Care",
     color: "from-pink-500 to-rose-500",
     problemKey: "🧒 Kids Dental Cavity & Fluoride Care"
@@ -273,13 +273,13 @@ export default function DentalClinicDemoPage() {
         botReply = "Great! Dr. Ananya Roy is available for consultation. Fill in your name on the Booking Form tab or click below to WhatsApp immediately!";
         replies = ["✅ Open 1-Tap Form", "💬 WhatsApp Doctor Directly"];
       } else if (lower.includes("price") || lower.includes("cost") || lower.includes("offer")) {
-        botReply = "Special Clinic Offers:\n• Single-Sitting RCT: ₹2,499 (Save ₹1,000)\n• Laser Teeth Whitening: ₹1,999\n• Full 3D Digital Smile Scan: 100% FREE this week!";
+        botReply = "Special Clinic Consultation Benefits:\n• Full 3D Digital Smile Scan: Included with first visit\n• Single-Sitting Painless RCT: Custom plan based on 3D scan\n• Laser Teeth Whitening: Same-day shade upgrade\n• Transparent pricing & flexible budget plans discussed during your consultation!";
         replies = ["📅 Claim Free 3D Scan", "🦷 Book RCT Offer"];
       } else if (lower.includes("toothache") || lower.includes("pain") || lower.includes("emergency")) {
         botReply = "🚨 Emergency Case Flagged! Please rinse with lukewarm salt water. Our emergency duty dentist can attend you in 30 minutes. Click below to call immediately!";
         replies = ["📞 Call Clinic Directly", "📍 Get Instant GPS Route"];
       } else if (lower.includes("location") || lower.includes("timing") || lower.includes("address")) {
-        botReply = "📍 Address: 2nd Floor, Apex Health City, Barasat-Habra Road (Opp. City Mall).\n⏰ Timings: Mon-Sun, 9:00 AM – 9:00 PM IST (Open all 7 days).";
+        botReply = "📍 Address: 2nd Floor, Apex Health City, Barasat-Habra Road (Opp. City Mall).\n⏰ Timings: Mon-Sun, 9:00 AM – 9:00 PM (Open all 7 days).";
         replies = ["📅 Book Visit", "💬 Open in WhatsApp"];
       } else {
         botReply = "Thank you! I have registered your inquiry. Our senior consultant will WhatsApp you shortly with personalized details!";
@@ -323,7 +323,7 @@ export default function DentalClinicDemoPage() {
           target="_blank"
           className="flex-shrink-0 px-2.5 sm:px-3 py-1 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-extrabold text-[10px] sm:text-xs font-mono hover:scale-105 transition-transform flex items-center gap-1 shadow-lg shadow-cyan-500/20"
         >
-          <span>Get Yours ₹2,999/-</span>
+          <span>Get Custom Quote</span>
           <ArrowRight className="w-3 h-3" />
         </Link>
       </div>
@@ -868,14 +868,14 @@ export default function DentalClinicDemoPage() {
               ⚡ GROW YOUR CLINIC WITH WHATSAPP APPOINTMENT AUTOMATION
             </span>
             <h3 className="text-lg sm:text-2xl md:text-3xl font-black text-white max-w-2xl mx-auto leading-tight">
-              Want this kind of customized high-speed mobile website + automated WhatsApp booking receptionist starting at ₹2,999/-?
+              Want this kind of customized high-speed mobile website + automated WhatsApp booking receptionist?
             </h3>
             <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto font-normal">
               Built and delivered in 24 hours. Includes custom domain, 13-service WhatsApp booking form, 24/7 AI chat widget &amp; Google Maps SEO ranker.
             </p>
             <div className="pt-3">
               <Link
-                href="https://wa.me/918768138086?text=Hi%20Mithun,%20I%20want%20this%20exact%20customized%20Dental/Clinic%20website%20starting%20at%20₹2,999/-!"
+                href="https://wa.me/918768138086?text=Hi%20Mithun,%20I%20want%20to%20discuss%20customizing%20this%20Dental/Clinic%20website%20for%20my%20business%20based%20on%20our%20budget!"
                 target="_blank"
                 className="inline-flex items-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 text-black font-extrabold text-xs sm:text-sm font-mono tracking-wide shadow-xl shadow-cyan-500/30 hover:scale-105 transition-transform"
               >

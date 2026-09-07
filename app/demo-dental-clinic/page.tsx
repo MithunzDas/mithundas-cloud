@@ -56,10 +56,10 @@ const DENTAL_PROBLEMS = [
 ];
 
 const TIME_SLOTS = [
-  "🌅 10:00 AM – 11:30 AM IST (Morning)",
-  "☀️ 12:30 PM – 02:00 PM IST (Afternoon)",
-  "🌇 04:30 PM – 06:00 PM IST (Evening)",
-  "🌙 07:00 PM – 08:30 PM IST (Night)"
+  "🌅 10:00 AM – 11:30 AM (Morning)",
+  "☀️ 12:30 PM – 02:00 PM (Afternoon)",
+  "🌇 04:30 PM – 06:00 PM (Evening)",
+  "🌙 07:00 PM – 08:30 PM (Night)"
 ];
 
 const SERVICES = [
@@ -67,7 +67,7 @@ const SERVICES = [
     icon: Smile,
     title: "Painless Root Canal (RCT)",
     desc: "Single-sitting rotary endodontics with 3D digital apex locator precision.",
-    price: "From ₹2,499",
+    price: "Custom Quote",
     tag: "Most Popular",
     color: "from-cyan-500 to-blue-500",
     problemKey: "⚡ Painless Root Canal Treatment (RCT)"
@@ -76,7 +76,7 @@ const SERVICES = [
     icon: Sparkles,
     title: "Laser Teeth Whitening",
     desc: "Instant 6-8 shade brightening in 45 minutes with advanced cold-light laser.",
-    price: "From ₹1,999",
+    price: "Specialist Care",
     tag: "Instant Glow",
     color: "from-emerald-400 to-teal-500",
     problemKey: "✨ Laser Teeth Whitening & Polishing"
@@ -103,7 +103,7 @@ const SERVICES = [
     icon: HeartPulse,
     title: "Kids Dental Care (Pediatric)",
     desc: "Child-friendly clinic environment with painless cavity filling & fluoride therapy.",
-    price: "From ₹799",
+    price: "Gentle Care",
     tag: "Gentle Care",
     color: "from-pink-500 to-rose-500",
     problemKey: "🧒 Kids Dental Cavity & Fluoride Care"
@@ -323,7 +323,7 @@ function DentalClinicDemoContent() {
         botReply = "Great! Dr. Ananya Roy is available for consultation. Fill in your name on the Booking Form tab or click below to WhatsApp immediately!";
         replies = ["✅ Open 1-Tap Form", "💬 WhatsApp Doctor Directly"];
       } else if (lower.includes("price") || lower.includes("cost") || lower.includes("offer")) {
-        botReply = "Special Clinic Offers:\n• Single-Sitting RCT: ₹2,499 (Save ₹1,000)\n• Laser Teeth Whitening: ₹1,999\n• Full 3D Digital Smile Scan: 100% FREE this week!";
+        botReply = "Special Clinic Consultation Benefits:\n• Full 3D Digital Smile Scan: Included with first visit\n• Single-Sitting Painless RCT: Custom treatment plan based on 3D scan\n• Laser Teeth Whitening: Same-day shade upgrade\n• Transparent pricing & flexible budget plans discussed during your consultation!";
         replies = ["📅 Claim Free 3D Scan", "🦷 Book RCT Offer"];
       } else if (lower.includes("toothache") || lower.includes("pain") || lower.includes("emergency")) {
         botReply = "🚨 Emergency Case Flagged! Please rinse with lukewarm salt water. Our emergency duty dentist can attend you in 30 minutes. Click below to call immediately!";
@@ -371,11 +371,11 @@ function DentalClinicDemoContent() {
           </p>
         </div>
         <Link
-          href="https://wa.me/918768138086?text=Hi%20Mithun,%20I%20want%20a%20website%20like%20Apex%20Dental%20Clinic%20for%20my%20business!"
+          href={`https://wa.me/918768138086?text=${encodeURIComponent(`Hi Mithun, I saw the dental clinic demo for ${displayClinicName}. I want to discuss getting a custom website for my clinic based on our budget!`)}`}
           target="_blank"
           className="flex-shrink-0 px-2.5 sm:px-3 py-1 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-extrabold text-[10px] sm:text-xs font-mono hover:scale-105 transition-transform flex items-center gap-1 shadow-lg shadow-cyan-500/20"
         >
-          <span>Get Yours ₹2,999/-</span>
+          <span>Get Custom Quote</span>
           <ArrowRight className="w-3 h-3" />
         </Link>
       </div>
@@ -695,7 +695,7 @@ function DentalClinicDemoContent() {
                       </div>
                       <div>
                         <h4 className="text-xs font-bold text-white">Apex AI Receptionist</h4>
-                        <p className="text-[9px] text-slate-400 font-mono">Answers pricing, slots &amp; emergency care (IST)</p>
+                        <p className="text-[9px] text-slate-400 font-mono">Answers treatments, booking slots &amp; emergency care</p>
                       </div>
                     </div>
                     <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
@@ -1551,19 +1551,19 @@ function DentalClinicDemoContent() {
             </span>
             <h3 className="text-base sm:text-2xl md:text-3xl font-black text-white max-w-2xl mx-auto leading-tight break-words">
               Want this exact customized website + automated WhatsApp booking for{" "}
-              <span className="text-cyan-300 underline decoration-cyan-500/50">{displayClinicName}</span> starting at ₹2,999/-?
+              <span className="text-cyan-300 underline decoration-cyan-500/50">{displayClinicName}</span>?
             </h3>
             <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto font-normal">
-              Built and delivered in 24 hours for your clinic in {displayCity}. Includes custom domain, 13-service WhatsApp booking form, 24/7 AI chat widget &amp; Google Maps SEO ranker.
+              Tailored to your clinic brand &amp; budget. Delivered in 24 hours for your clinic in {displayCity} with custom domain, 13-service WhatsApp booking form, 24/7 AI chat widget &amp; SEO optimization.
             </p>
             <div className="pt-3">
               <Link
-                href={`https://wa.me/918768138086?text=${encodeURIComponent(`Hi Mithun, I want this website customized for ${displayClinicName} in ${displayCity} starting at ₹2,999/-!`)}`}
+                href={`https://wa.me/918768138086?text=${encodeURIComponent(`Hi Mithun, I want this website customized for ${displayClinicName} in ${displayCity}. Let's discuss pricing and custom requirements based on our budget!`)}`}
                 target="_blank"
                 className="inline-flex items-center gap-2 px-5 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 text-black font-extrabold text-xs sm:text-sm font-mono tracking-wide shadow-xl shadow-cyan-500/30 hover:scale-105 transition-transform"
               >
                 <MessageSquare className="w-4 h-4 fill-black" />
-                <span>Claim Website for {shortClinicName}</span>
+                <span>Discuss Custom Quote for {shortClinicName}</span>
               </Link>
             </div>
           </div>

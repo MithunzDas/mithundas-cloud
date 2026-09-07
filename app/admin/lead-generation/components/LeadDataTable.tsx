@@ -1111,7 +1111,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
             `Most customers today prefer booking consultations directly through WhatsApp without waiting on phone calls. We noticed your business does not yet have an automated 24/7 WhatsApp appointment booking system.\n\n` +
             `We created an interactive live mobile demo to show you how it works:\n\n` +
             `👉 View Demo: ${modalDemo.url}\n\n` +
-            `Would you like to see how this captures 3x more appointments automatically starting at ₹2,999/-?`;
+            `Would you like to see how this captures 3x more appointments automatically for your business? We can customize everything to your requirements and budget.`;
         }
 
         return (
