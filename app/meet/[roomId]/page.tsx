@@ -155,6 +155,7 @@ export default function CustomVideoRoomPage() {
         toolbarButtons: [
           "microphone",
           "camera",
+          "hangup",
           "desktop",
           "chat",
           "raisehand",
@@ -408,45 +409,48 @@ export default function CustomVideoRoomPage() {
       />
 
       {/* Top Header Bar */}
-      <header className="flex h-14 w-full items-center justify-between border-b border-sky-500/20 bg-[#0f172a]/95 px-3 sm:px-4 backdrop-blur-md z-50">
-        <div className="flex items-center gap-3">
+      <header className="flex h-12 sm:h-14 w-full items-center justify-between border-b border-sky-500/20 bg-[#0f172a]/95 px-2.5 sm:px-4 backdrop-blur-md z-50 shrink-0">
+        {/* Left Side: Clean, uncongested branding */}
+        <div className="flex items-center gap-2 min-w-0">
           <img
             src="https://mithundas.cloud/logo.png"
             alt="Mithun Das AI"
-            className="h-8 w-8 rounded-lg border border-sky-500/30"
+            className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg border border-sky-500/30 shrink-0"
           />
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-sm tracking-tight text-slate-100">Mithun Das AI</span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/30 font-semibold uppercase">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="font-extrabold text-xs sm:text-sm tracking-tight text-slate-100 whitespace-nowrap">
+                Mithun Das AI
+              </span>
+              <span className="hidden md:inline-flex text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/30 font-semibold uppercase shrink-0">
                 Room #{roomId.slice(0, 10)}
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 hidden sm:block">High-Ticket Automation Architecture Session</p>
+            <p className="text-[10px] text-slate-400 hidden lg:block">High-Ticket Automation Architecture Session</p>
           </div>
         </div>
 
         {/* Right Status & Action Badges */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Role Indicator */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Participant count */}
+          {hasJoined && (
+            <div className="flex items-center gap-1 rounded-full bg-slate-800/90 px-2 py-1 text-[11px] sm:text-xs text-slate-300 border border-slate-700 font-mono shrink-0">
+              <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-sky-400" />
+              <span>{participantCount}</span>
+            </div>
+          )}
+
+          {/* Role Indicator - hidden on mobile to prevent congestion, visible on sm+ */}
           {hasJoined && (
             <div
-              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-mono border ${
+              className={`hidden sm:flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-mono border shrink-0 ${
                 isHost
                   ? "bg-sky-500/15 text-sky-300 border-sky-500/40 font-semibold"
                   : "bg-slate-800 text-slate-400 border-slate-700"
               }`}
             >
               {isHost ? <ShieldCheck className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
-              <span className="max-w-[120px] truncate">{isHost ? "Host: Mithun" : userName}</span>
-            </div>
-          )}
-
-          {/* Participant count */}
-          {hasJoined && (
-            <div className="flex items-center gap-1.5 rounded-full bg-slate-800/80 px-2.5 py-1 text-xs text-slate-300 border border-slate-700 font-mono">
-              <Users className="h-3.5 w-3.5 text-sky-400" />
-              <span>{participantCount}</span>
+              <span className="max-w-[100px] truncate">{isHost ? "Host: Mithun" : userName}</span>
             </div>
           )}
 
@@ -454,14 +458,14 @@ export default function CustomVideoRoomPage() {
           {isHost && hasJoined && (
             <>
               {isRecording ? (
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 rounded-full bg-red-500/15 px-3 py-1 text-xs text-red-400 border border-red-500/40 font-mono animate-pulse">
-                    <Radio className="h-3.5 w-3.5 text-red-400" />
+                <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 rounded-full bg-red-500/15 px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs text-red-400 border border-red-500/40 font-mono animate-pulse shrink-0">
+                    <Radio className="h-3 w-3 text-red-400" />
                     <span>REC {formatTimer(recordingSeconds)}</span>
                   </div>
                   <button
                     onClick={stopRecordingStreams}
-                    className="hidden sm:inline-flex text-[11px] font-mono text-slate-400 hover:text-slate-200 underline"
+                    className="hidden md:inline-flex text-[10px] font-mono text-slate-400 hover:text-slate-200 underline shrink-0"
                   >
                     Stop
                   </button>
@@ -469,27 +473,30 @@ export default function CustomVideoRoomPage() {
               ) : (
                 <button
                   onClick={() => setShowRecordModal(true)}
-                  className="flex items-center gap-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 px-3 py-1.5 text-xs font-bold font-mono transition-all shadow-sm"
+                  className="flex items-center gap-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 px-2 sm:px-2.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold font-mono transition-all shadow-sm shrink-0"
+                  title="Start AI Notetaker"
                 >
-                  <Disc className="h-3.5 w-3.5 text-emerald-400 animate-spin" style={{ animationDuration: "4s" }} />
+                  <Disc className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-emerald-400 animate-spin" style={{ animationDuration: "4s" }} />
                   <span className="hidden sm:inline">Start AI Notetaker</span>
                   <span className="sm:hidden">AI Rec</span>
                 </button>
               )}
 
+              {/* Host End Call Button - ALWAYS VISIBLE */}
               <button
                 onClick={handleEndCallAndProcess}
                 disabled={isProcessing}
-                className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-red-600 to-rose-700 px-3 py-1.5 text-xs font-bold text-white shadow-md shadow-red-900/30 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
+                className="flex items-center gap-1 sm:gap-1.5 rounded-lg bg-gradient-to-r from-red-600 to-rose-700 px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold text-white shadow-md shadow-red-900/30 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 shrink-0"
               >
                 {isProcessing ? (
                   <>
-                    <Sparkles className="h-3.5 w-3.5 animate-spin text-amber-300" />
+                    <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin text-amber-300" />
                     <span className="hidden sm:inline">Generating SOW...</span>
+                    <span className="sm:hidden">Ending...</span>
                   </>
                 ) : (
                   <>
-                    <PhoneOff className="h-3.5 w-3.5" />
+                    <PhoneOff className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     <span className="hidden sm:inline">End &amp; Generate SOW</span>
                     <span className="sm:hidden">End</span>
                   </>
@@ -498,13 +505,20 @@ export default function CustomVideoRoomPage() {
             </>
           )}
 
-          {/* GUEST: Leave Call */}
+          {/* GUEST: Leave Call Button - ALWAYS VISIBLE */}
           {!isHost && hasJoined && (
             <button
-              onClick={() => router.push("/")}
-              className="flex items-center gap-1.5 rounded-lg bg-red-600/80 hover:bg-red-600 px-3 py-1.5 text-xs font-bold text-white transition-all"
+              onClick={() => {
+                if (jitsiApiRef.current) {
+                  try {
+                    jitsiApiRef.current.dispose();
+                  } catch (e) {}
+                }
+                router.push("/");
+              }}
+              className="flex items-center gap-1 sm:gap-1.5 rounded-lg bg-red-600 hover:bg-red-500 px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold text-white shadow-md shadow-red-900/40 active:scale-95 transition-all shrink-0"
             >
-              <PhoneOff className="h-3.5 w-3.5" />
+              <PhoneOff className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               <span>Leave</span>
             </button>
           )}
