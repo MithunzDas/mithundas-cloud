@@ -18,7 +18,10 @@ import {
   ChevronRight,
   Volume2,
   LogIn,
-  ShieldCheck
+  ShieldCheck,
+  Lock,
+  Eye,
+  EyeOff
 } from "lucide-react";
 
 declare global {
@@ -27,6 +30,9 @@ declare global {
     webkitAudioContext: typeof AudioContext;
   }
 }
+
+// Host access password (hashed comparison in production, simple check here)
+const HOST_ACCESS_KEY = "Mithun@01";
 
 export default function CustomVideoRoomPage() {
   const params = useParams();
@@ -38,13 +44,17 @@ export default function CustomVideoRoomPage() {
   const queryName = searchParams?.get("name") || "";
 
   // Identity & Role states
-  const [isHost, setIsHost] = useState(urlIsHost);
-  const [userName, setUserName] = useState(urlIsHost ? "Mithun Das (Host - AI Architect)" : (queryName || "Client Guest"));
+  const [isHost, setIsHost] = useState(false); // Start as false, must authenticate
+  const [wantsHost, setWantsHost] = useState(urlIsHost);
+  const [hostPassword, setHostPassword] = useState("");
+  const [hostAuthError, setHostAuthError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [userName, setUserName] = useState(queryName || "Client Guest");
   const [hasJoined, setHasJoined] = useState(false);
   const [clientInfo, setClientInfo] = useState<{ name?: string; company?: string; email?: string } | null>(null);
 
-  // Jitsi server selection
-  const [jitsiServer, setJitsiServer] = useState<"meet.jit.si" | "meet.ffmuc.net">("meet.jit.si");
+  // Use meet.ffmuc.net — open community Jitsi server with NO lobby/moderator requirement
+  const JITSI_SERVER = "meet.ffmuc.net";
 
   const jitsiContainerRef = useRef<HTMLDivElement>(null);
   const jitsiApiRef = useRef<any>(null);
@@ -68,7 +78,7 @@ export default function CustomVideoRoomPage() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch booking details for this roomId if available
+  // Fetch booking details for this roomId
   useEffect(() => {
     async function loadBookingInfo() {
       try {
@@ -90,22 +100,21 @@ export default function CustomVideoRoomPage() {
     loadBookingInfo();
   }, [roomId, urlIsHost, queryName]);
 
-  // Update userName whenever role toggles
-  useEffect(() => {
-    if (isHost) {
+  // Host authentication handler
+  const handleHostAuth = () => {
+    if (hostPassword === HOST_ACCESS_KEY) {
+      setIsHost(true);
+      setHostAuthError("");
       setUserName("Mithun Das (Host - AI Architect)");
-    } else if (clientInfo?.name) {
-      setUserName(clientInfo.name + (clientInfo.company ? ` (${clientInfo.company})` : ""));
-    } else if (!queryName) {
-      setUserName("Client Guest");
+    } else {
+      setHostAuthError("Incorrect host access key. Please try again.");
     }
-  }, [isHost, clientInfo, queryName]);
+  };
 
   // Initialize Jitsi Meet Embed
   const initJitsi = () => {
     if (!jitsiContainerRef.current || !window.JitsiMeetExternalAPI) return;
 
-    // Clean up existing instance if any
     if (jitsiApiRef.current) {
       try {
         jitsiApiRef.current.dispose();
@@ -114,7 +123,6 @@ export default function CustomVideoRoomPage() {
       }
     }
 
-    const domain = jitsiServer;
     const roomIdentifier = `mithundas-cloud-${roomId}`.toLowerCase().replace(/[^a-z0-9_-]/g, "");
 
     const options = {
@@ -135,7 +143,7 @@ export default function CustomVideoRoomPage() {
         enableClosePage: false,
         theme: "dark",
 
-        // Force Direct P2P WebRTC for 2-participant calls (bypasses media server lobby restrictions)
+        // Direct P2P WebRTC for 2-participant calls
         p2p: {
           enabled: true,
           preferH264: true,
@@ -143,7 +151,6 @@ export default function CustomVideoRoomPage() {
           useStunTurn: true,
         },
 
-        // Toolbar controls
         toolbarButtons: [
           "microphone",
           "camera",
@@ -166,10 +173,9 @@ export default function CustomVideoRoomPage() {
     };
 
     try {
-      const api = new window.JitsiMeetExternalAPI(domain, options);
+      const api = new window.JitsiMeetExternalAPI(JITSI_SERVER, options);
       jitsiApiRef.current = api;
 
-      // Event listeners
       api.addEventListener("participantJoined", () => {
         setParticipantCount((prev) => prev + 1);
       });
@@ -214,7 +220,7 @@ export default function CustomVideoRoomPage() {
         } catch (e) {}
       }
     };
-  }, [jitsiLoaded, hasJoined, jitsiServer]);
+  }, [jitsiLoaded, hasJoined]);
 
   // Recording Timer
   useEffect(() => {
@@ -237,11 +243,6 @@ export default function CustomVideoRoomPage() {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  /**
-   * Start AI Notetaker:
-   * Mixes Tab Audio (Client's voice) + Host Mic (Mithun's voice) into a single stereo stream.
-   * Does NOT disrupt or mute Jitsi call audio.
-   */
   const startTwoWayRecording = async (mode: "both" | "mic") => {
     setShowRecordModal(false);
     audioChunksRef.current = [];
@@ -251,7 +252,6 @@ export default function CustomVideoRoomPage() {
       let combinedAudioStream: MediaStream;
 
       if (mode === "both" && navigator.mediaDevices.getDisplayMedia) {
-        // Step 1: Capture Tab Audio (Contains the client speaking via WebRTC)
         const displayStream = await navigator.mediaDevices.getDisplayMedia({
           video: true,
           audio: {
@@ -262,7 +262,6 @@ export default function CustomVideoRoomPage() {
 
         displayStream.getTracks().forEach((track) => audioStreamTracksRef.current.push(track));
 
-        // Step 2: Capture Host Microphone
         const micStream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: true,
@@ -271,7 +270,6 @@ export default function CustomVideoRoomPage() {
         });
         micStream.getTracks().forEach((track) => audioStreamTracksRef.current.push(track));
 
-        // Step 3: Mix both audio sources using Web Audio API
         const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioCtxClass();
         audioContextRef.current = audioCtx;
@@ -394,11 +392,11 @@ export default function CustomVideoRoomPage() {
   return (
     <div className="flex h-screen w-screen flex-col bg-[#080b11] text-white font-sans overflow-hidden select-none">
       <Script
-        src={`https://${jitsiServer}/external_api.js`}
+        src={`https://${JITSI_SERVER}/external_api.js`}
         onLoad={() => setJitsiLoaded(true)}
       />
 
-      {/* Top Cyberpunk Header Bar */}
+      {/* Top Header Bar */}
       <header className="flex h-14 w-full items-center justify-between border-b border-sky-500/20 bg-[#0f172a]/95 px-3 sm:px-4 backdrop-blur-md z-50">
         <div className="flex items-center gap-3">
           <img
@@ -417,39 +415,21 @@ export default function CustomVideoRoomPage() {
           </div>
         </div>
 
-        {/* Center/Right Status & Action Badges */}
+        {/* Right Status & Action Badges */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Server Selector Fallback */}
-          <div className="hidden md:flex items-center gap-1.5 rounded-lg bg-slate-900 border border-slate-700/60 px-2 py-1 text-[11px] font-mono">
-            <Server className="h-3 w-3 text-sky-400" />
-            <select
-              value={jitsiServer}
-              onChange={(e) => setJitsiServer(e.target.value as any)}
-              className="bg-transparent text-slate-300 focus:outline-none cursor-pointer"
-              title="Change WebRTC Bridge Server if you experience any connection delays"
+          {/* Role Indicator */}
+          {hasJoined && (
+            <div
+              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-mono border ${
+                isHost
+                  ? "bg-sky-500/15 text-sky-300 border-sky-500/40 font-semibold"
+                  : "bg-slate-800 text-slate-400 border-slate-700"
+              }`}
             >
-              <option value="meet.jit.si" className="bg-slate-900 text-slate-200">
-                meet.jit.si (Direct P2P)
-              </option>
-              <option value="meet.ffmuc.net" className="bg-slate-900 text-slate-200">
-                meet.ffmuc.net (Open WebRTC)
-              </option>
-            </select>
-          </div>
-
-          {/* Role Indicator / Switcher */}
-          <button
-            onClick={() => setIsHost(!isHost)}
-            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-mono border transition-all ${
-              isHost
-                ? "bg-sky-500/15 text-sky-300 border-sky-500/40 font-semibold"
-                : "bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200"
-            }`}
-            title="Click to toggle Host / Client mode"
-          >
-            <UserCheck className="h-3 w-3" />
-            <span className="max-w-[120px] truncate">{isHost ? "Host: Mithun" : userName}</span>
-          </button>
+              {isHost ? <ShieldCheck className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
+              <span className="max-w-[120px] truncate">{isHost ? "Host: Mithun" : userName}</span>
+            </div>
+          )}
 
           {/* Participant count */}
           {hasJoined && (
@@ -472,7 +452,7 @@ export default function CustomVideoRoomPage() {
                     onClick={stopRecordingStreams}
                     className="hidden sm:inline-flex text-[11px] font-mono text-slate-400 hover:text-slate-200 underline"
                   >
-                    Pause
+                    Stop
                   </button>
                 </div>
               ) : (
@@ -522,7 +502,7 @@ export default function CustomVideoRoomPage() {
 
       {/* Main Content */}
       <main className="relative flex-1 w-full h-full bg-[#080b11]">
-        {/* PRE-JOIN SCREEN (Crucial for Mobile & Audio Autoplay permissions) */}
+        {/* PRE-JOIN SCREEN */}
         {!hasJoined ? (
           <div className="absolute inset-0 z-30 flex items-center justify-center p-4 bg-gradient-to-b from-[#0b0f19] to-[#07090e]">
             <div className="max-w-md w-full rounded-2xl bg-slate-900/90 border border-sky-500/30 p-6 sm:p-8 shadow-2xl backdrop-blur-md space-y-6 text-center">
@@ -539,47 +519,100 @@ export default function CustomVideoRoomPage() {
                 </p>
               </div>
 
-              {/* Display Name Input */}
-              <div className="text-left space-y-1.5">
-                <label className="text-xs font-mono text-slate-300 font-semibold uppercase tracking-wider">
-                  Your Display Name:
-                </label>
-                <input
-                  type="text"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                  placeholder="Enter your name"
-                  className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3.5 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none"
-                />
-              </div>
+              {/* HOST AUTH: Password Gate */}
+              {wantsHost && !isHost ? (
+                <div className="space-y-4 text-left">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-sky-300">
+                    <Lock className="h-4 w-4" />
+                    <span>Host Authentication Required</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-mono text-slate-400 uppercase tracking-wider">
+                      Enter Host Access Key:
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={hostPassword}
+                        onChange={(e) => { setHostPassword(e.target.value); setHostAuthError(""); }}
+                        onKeyDown={(e) => e.key === "Enter" && handleHostAuth()}
+                        placeholder="Enter host password"
+                        className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3.5 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none pr-10"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {hostAuthError && (
+                      <p className="text-xs text-red-400 font-medium">{hostAuthError}</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleHostAuth}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-slate-950 font-bold py-3 text-sm shadow-lg shadow-sky-500/25 active:scale-[0.98] transition-all"
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    <span>Authenticate as Host</span>
+                  </button>
+                  <button
+                    onClick={() => { setWantsHost(false); setHostAuthError(""); }}
+                    className="w-full text-xs text-slate-500 hover:text-slate-300 font-mono underline"
+                  >
+                    ← Join as Client Guest instead
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {/* Display Name Input */}
+                  <div className="text-left space-y-1.5">
+                    <label className="text-xs font-mono text-slate-300 font-semibold uppercase tracking-wider">
+                      Your Display Name:
+                    </label>
+                    <input
+                      type="text"
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
+                      placeholder="Enter your name"
+                      className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3.5 py-2.5 text-sm text-white focus:border-sky-500 focus:outline-none"
+                    />
+                  </div>
 
-              {/* Role Toggle Link */}
-              <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-800">
-                <span className="text-slate-400">
-                  Role: <strong className={isHost ? "text-sky-400" : "text-emerald-400"}>{isHost ? "Host (Mithun Das)" : "Client Guest"}</strong>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setIsHost(!isHost)}
-                  className="text-sky-400 hover:text-sky-300 underline font-mono text-[11px]"
-                >
-                  {isHost ? "Switch to Client Guest" : "I am Mithun (Host)"}
-                </button>
-              </div>
+                  {/* Role Info */}
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-800">
+                    <span className="text-slate-400">
+                      Role: <strong className={isHost ? "text-sky-400" : "text-emerald-400"}>{isHost ? "Host (Mithun Das)" : "Client Guest"}</strong>
+                    </span>
+                    {!isHost && (
+                      <button
+                        type="button"
+                        onClick={() => setWantsHost(true)}
+                        className="text-sky-400 hover:text-sky-300 underline font-mono text-[11px]"
+                      >
+                        I am Mithun (Host)
+                      </button>
+                    )}
+                  </div>
 
-              {/* Join Button (Unlocks audio autoplay on iOS/Android & desktop) */}
-              <button
-                onClick={() => setHasJoined(true)}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-slate-950 font-bold py-3.5 text-sm shadow-lg shadow-sky-500/25 active:scale-[0.98] transition-all"
-              >
-                <LogIn className="h-4 w-4" />
-                <span>Enter Video Meeting Room</span>
-              </button>
+                  {/* Join Button */}
+                  <button
+                    onClick={() => setHasJoined(true)}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-slate-950 font-bold py-3.5 text-sm shadow-lg shadow-sky-500/25 active:scale-[0.98] transition-all"
+                  >
+                    <LogIn className="h-4 w-4" />
+                    <span>Enter Video Meeting Room</span>
+                  </button>
 
-              <div className="flex items-center justify-center gap-2 text-[10px] text-slate-500 font-mono">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-                <span>Direct P2P Encrypted WebRTC Session</span>
-              </div>
+                  <div className="flex items-center justify-center gap-2 text-[10px] text-slate-500 font-mono">
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                    <span>Direct P2P Encrypted WebRTC Session</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         ) : (
@@ -587,19 +620,19 @@ export default function CustomVideoRoomPage() {
             {/* Jitsi Meet Container */}
             <div ref={jitsiContainerRef} className="w-full h-full" />
 
-            {/* Loading Spinner overlay before Jitsi loads */}
+            {/* Loading Spinner */}
             {!jitsiLoaded && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#080b11] text-slate-400 space-y-3 z-20">
                 <div className="h-10 w-10 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
                 <p className="font-mono text-xs text-sky-400 tracking-wider">
-                  CONNECTING TO VIDEO ROOM AS {userName.toUpperCase()}...
+                  CONNECTING AS {userName.toUpperCase()}...
                 </p>
               </div>
             )}
           </>
         )}
 
-        {/* Modal: Start AI Notetaker Options (Host only) */}
+        {/* Modal: Start AI Notetaker Options */}
         {showRecordModal && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
             <div className="max-w-md w-full rounded-xl bg-slate-900 border border-sky-500/40 p-6 shadow-2xl space-y-5">
@@ -627,8 +660,7 @@ export default function CustomVideoRoomPage() {
                       </span>
                     </div>
                     <p className="text-xs text-slate-400 mt-1">
-                      Mixes client&apos;s speech from the meeting with your microphone. In the browser popup, select{" "}
-                      <strong className="text-slate-200">&quot;This Tab&quot;</strong> and keep{" "}
+                      Select <strong className="text-slate-200">&quot;This Tab&quot;</strong> and keep{" "}
                       <strong className="text-slate-200">&quot;Share tab audio&quot;</strong> checked.
                     </p>
                   </div>
@@ -642,13 +674,13 @@ export default function CustomVideoRoomPage() {
                   <div>
                     <span className="text-sm font-bold text-slate-200">Record My Microphone Only</span>
                     <p className="text-xs text-slate-400 mt-1">
-                      Quick start without tab prompt. Only records what you speak into your microphone.
+                      Quick start. Only records your microphone.
                     </p>
                   </div>
                 </button>
               </div>
 
-              <div className="pt-2 flex justify-end gap-3">
+              <div className="pt-2 flex justify-end">
                 <button
                   onClick={() => setShowRecordModal(false)}
                   className="px-4 py-2 text-xs text-slate-400 hover:text-slate-200"
@@ -660,7 +692,7 @@ export default function CustomVideoRoomPage() {
           </div>
         )}
 
-        {/* Post-Meeting Completion Modal Notification */}
+        {/* Post-Meeting Completion Modal */}
         {completedNotification && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 overflow-y-auto">
             <div className="max-w-xl w-full rounded-xl bg-slate-900 border border-sky-500/40 p-6 shadow-2xl space-y-4 my-8">
