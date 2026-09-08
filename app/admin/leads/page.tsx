@@ -779,7 +779,7 @@ export default function AdminLeadsPage() {
                   </p>
                   <div className="flex gap-2">
                     <a
-                      href={`/meet/INV-${selectedLead.leadId.slice(0, 6)}`}
+                      href={`/meet/INV-${selectedLead.leadId.slice(0, 6)}?host=true`}
                       target="_blank"
                       rel="noreferrer"
                       className="flex-1 flex justify-center items-center gap-1.5 rounded bg-accent-cyan hover:bg-accent-cyan/90 text-background-app font-mono text-[10px] font-bold py-2 shadow-sm"
