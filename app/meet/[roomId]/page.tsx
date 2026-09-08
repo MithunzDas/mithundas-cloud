@@ -53,8 +53,8 @@ export default function CustomVideoRoomPage() {
   const [hasJoined, setHasJoined] = useState(false);
   const [clientInfo, setClientInfo] = useState<{ name?: string; company?: string; email?: string } | null>(null);
 
-  // Use meet.ffmuc.net — open community Jitsi server with NO lobby/moderator requirement
-  const JITSI_SERVER = "meet.ffmuc.net";
+  // Use meet.element.io — high-availability community Jitsi server with full iframe embedding support and NO mandatory lobby
+  const JITSI_SERVER = "meet.element.io";
 
   const jitsiContainerRef = useRef<HTMLDivElement>(null);
   const jitsiApiRef = useRef<any>(null);
@@ -131,23 +131,24 @@ export default function CustomVideoRoomPage() {
       height: "100%",
       parentNode: jitsiContainerRef.current,
       userInfo: {
-        displayName: userName || (isHost ? "Mithun Das (Host)" : "Client Guest"),
-        email: isHost ? "mithun.here01@gmail.com" : clientInfo?.email,
+        displayName: isHost ? "Mithun Das (Host - AI Architect)" : (userName || "Client Guest"),
+        email: isHost ? "mithun.here01@gmail.com" : (clientInfo?.email || "guest@client.com"),
       },
       configOverwrite: {
         startWithAudioMuted: false,
         startWithVideoMuted: false,
         prejoinPageEnabled: false,
+        prejoinConfig: {
+          enabled: false,
+        },
         disableDeepLinking: true,
         enableLobby: false,
         enableClosePage: false,
         theme: "dark",
 
-        // Direct P2P WebRTC for 2-participant calls
+        // WebRTC P2P + Bridge support
         p2p: {
           enabled: true,
-          preferH264: true,
-          disableH264: false,
           useStunTurn: true,
         },
 
@@ -192,8 +193,8 @@ export default function CustomVideoRoomPage() {
         }
       });
 
-      // Inject enhanced iframe permissions for Chrome/Edge/Safari mobile
-      setTimeout(() => {
+      // Inject enhanced iframe permissions immediately and observe DOM changes
+      const applyPermissions = () => {
         const iframe = jitsiContainerRef.current?.querySelector("iframe");
         if (iframe) {
           iframe.setAttribute(
@@ -202,7 +203,17 @@ export default function CustomVideoRoomPage() {
           );
           iframe.setAttribute("allowfullscreen", "true");
         }
-      }, 800);
+      };
+
+      applyPermissions();
+      const observer = new MutationObserver(() => {
+        applyPermissions();
+      });
+      if (jitsiContainerRef.current) {
+        observer.observe(jitsiContainerRef.current, { childList: true, subtree: true });
+      }
+      setTimeout(applyPermissions, 500);
+      setTimeout(applyPermissions, 1500);
     } catch (err) {
       console.error("Failed to initialize Jitsi Meet", err);
     }
