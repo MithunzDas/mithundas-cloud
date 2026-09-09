@@ -605,3 +605,191 @@ export async function sendPaymentReceiptEmail(data: {
   }
 }
 
+/* ────────────────────────────────────────────────────── *
+ *  6. Post-Meeting Discovery Dossier (Host Email Only)   *
+ * ────────────────────────────────────────────────────── */
+
+export interface PostMeetingDossierData {
+  clientName?: string;
+  clientCompany?: string;
+  clientEmail?: string;
+  roomId: string;
+  meetingDate?: string;
+  suggestedSOW: string;
+  budgetAndTimeline?: string;
+  paymentClarification?: {
+    totalFee?: string;
+    depositPercentage?: string;
+    milestones?: string;
+    currency?: string;
+  };
+  clientPainPoints: string[];
+  requiredWorkflows: string[];
+  technicalImplementationPlan: string;
+}
+
+export async function sendPostMeetingDossierEmail(data: PostMeetingDossierData): Promise<boolean> {
+  const hostEmail = env.ADMIN_EMAIL || "mithun.here01@gmail.com";
+  const fromEmail = env.EMAIL_FROM || "Mithun Das AI <no-reply@mithundas.cloud>";
+
+  if (!resend) {
+    logger.warn(
+      "Resend API key not configured — Post-meeting dossier generated but email dispatch skipped",
+      "email_skip",
+      { recipient: hostEmail, client: data.clientCompany || data.clientName }
+    );
+    return false;
+  }
+
+  const clientTitle = data.clientCompany 
+    ? `${data.clientCompany}${data.clientName ? ` (${data.clientName})` : ""}`
+    : data.clientName || "Discovery Client";
+
+  const painPointsHtml = data.clientPainPoints && data.clientPainPoints.length > 0
+    ? data.clientPainPoints.map(pt => `<li style="padding:4px 0;color:#e0e0e8;">${pt}</li>`).join("")
+    : "<li style=\"color:#888;\">No specific pain points explicitly recorded.</li>";
+
+  const workflowsHtml = data.requiredWorkflows && data.requiredWorkflows.length > 0
+    ? data.requiredWorkflows.map(wf => `<li style="padding:4px 0;color:#38bdf8;"><strong>${wf}</strong></li>`).join("")
+    : "<li style=\"color:#888;\">Standard automation workflows to be defined in formal SOW.</li>";
+
+  const formattedPlan = data.technicalImplementationPlan
+    ? data.technicalImplementationPlan.replace(/\n/g, "<br/>").replace(/###/g, "<br/><strong>").replace(/##/g, "<br/><strong>")
+    : "Technical architecture plan to be finalized.";
+
+  try {
+    const { error } = await resend.emails.send({
+      from: fromEmail,
+      to: hostEmail,
+      subject: `🎯 Post-Call Discovery Dossier: ${clientTitle} — Statement of Work & Payment Terms`,
+      html: `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#080b11;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#f1f5f9;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#080b11;padding:40px 16px;">
+<tr><td align="center">
+<table width="640" cellpadding="0" cellspacing="0" style="max-width:640px;background:#0f172a;border-radius:14px;border:1px solid #1e293b;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+
+  <!-- Header Banner -->
+  <tr><td style="background:linear-gradient(135deg,#0284c7 0%,#4f46e5 100%);padding:28px 36px;">
+    <div style="font-size:11px;font-family:monospace;letter-spacing:1.5px;color:rgba(255,255,255,0.8);text-transform:uppercase;margin-bottom:6px;">MITHUN DAS • AI AUTOMATION ARCHITECT</div>
+    <h1 style="margin:0;font-size:22px;font-weight:800;color:#ffffff;line-height:1.3;">🎯 Discovery Session Executive Dossier</h1>
+    <p style="margin:6px 0 0;font-size:13px;color:rgba(255,255,255,0.9);">Complete Post-Call Statement of Work, Payment Scope &amp; Implementation Plan</p>
+  </td></tr>
+
+  <!-- Client Snapshot Bar -->
+  <tr><td style="padding:20px 36px;background:#131d33;border-bottom:1px solid #1e293b;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="font-size:12px;font-family:monospace;">
+      <tr>
+        <td style="color:#94a3b8;padding:4px 0;">CLIENT: <strong style="color:#f8fafc;font-family:sans-serif;">${data.clientName || "Direct Guest"}</strong></td>
+        <td style="color:#94a3b8;padding:4px 0;">COMPANY: <strong style="color:#38bdf8;font-family:sans-serif;">${data.clientCompany || "Client Business"}</strong></td>
+      </tr>
+      <tr>
+        <td style="color:#94a3b8;padding:4px 0;">EMAIL: <strong style="color:#f8fafc;">${data.clientEmail || "Not provided"}</strong></td>
+        <td style="color:#94a3b8;padding:4px 0;">ROOM REF: <span style="color:#a5b4fc;">#${data.roomId.slice(0, 16)}</span></td>
+      </tr>
+    </table>
+  </td></tr>
+
+  <!-- Main Body Content -->
+  <tr><td style="padding:32px 36px;">
+
+    <!-- 1. SOW Section -->
+    <div style="margin-bottom:28px;background:#080b11;border:1px solid #0284c7;border-left:4px solid #0ea5e9;border-radius:10px;padding:20px;">
+      <div style="font-size:11px;font-family:monospace;text-transform:uppercase;color:#38bdf8;font-weight:700;letter-spacing:1px;margin-bottom:8px;">📋 Executive Statement of Work (SOW)</div>
+      <p style="margin:0;font-size:15px;line-height:1.6;color:#ffffff;font-weight:600;">
+        ${data.suggestedSOW || "Executive scope to be finalized based on call discussion."}
+      </p>
+    </div>
+
+    <!-- 2. Financial Terms & Payment Received -->
+    <div style="margin-bottom:28px;background:#080b11;border:1px solid #10b981;border-left:4px solid #10b981;border-radius:10px;padding:20px;">
+      <div style="font-size:11px;font-family:monospace;text-transform:uppercase;color:#34d399;font-weight:700;letter-spacing:1px;margin-bottom:12px;">💰 Financial &amp; Payment Clarification</div>
+      
+      <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;line-height:1.6;">
+        <tr>
+          <td style="padding:6px 0;color:#94a3b8;width:160px;">Total Fee / Pricing:</td>
+          <td style="padding:6px 0;color:#f8fafc;font-weight:700;font-size:15px;">${data.paymentClarification?.totalFee || data.budgetAndTimeline || "Discussed on call"}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0;color:#94a3b8;">Deposit Required:</td>
+          <td style="padding:6px 0;color:#34d399;font-weight:700;">${data.paymentClarification?.depositPercentage || "50% upfront to initiate sprint"}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0;color:#94a3b8;">Kickoff &amp; Delivery:</td>
+          <td style="padding:6px 0;color:#f8fafc;">${data.paymentClarification?.milestones || "Immediate upon deposit receipt"}</td>
+        </tr>
+      </table>
+      
+      ${data.budgetAndTimeline ? `
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid #1e293b;font-size:12px;color:#94a3b8;">
+        <span style="font-family:monospace;color:#64748b;">Raw Financial Notes:</span> ${data.budgetAndTimeline}
+      </div>` : ""}
+    </div>
+
+    <!-- 3. What Needs to Be Done (Required Workflows) -->
+    <div style="margin-bottom:28px;">
+      <div style="font-size:11px;font-family:monospace;text-transform:uppercase;color:#38bdf8;font-weight:700;letter-spacing:1px;margin-bottom:10px;">⚙️ What Needs to Be Done (Workflows to Build)</div>
+      <div style="background:#080b11;border:1px solid #1e293b;border-radius:10px;padding:18px 22px;">
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.7;">
+          ${workflowsHtml}
+        </ul>
+      </div>
+    </div>
+
+    <!-- 4. Client Pain Points & Bottlenecks -->
+    <div style="margin-bottom:28px;">
+      <div style="font-size:11px;font-family:monospace;text-transform:uppercase;color:#f59e0b;font-weight:700;letter-spacing:1px;margin-bottom:10px;">⚠️ Client Pain Points &amp; Operational Bottlenecks</div>
+      <div style="background:#080b11;border:1px solid #1e293b;border-radius:10px;padding:18px 22px;">
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.7;">
+          ${painPointsHtml}
+        </ul>
+      </div>
+    </div>
+
+    <!-- 5. Technical Implementation Architecture Plan -->
+    <div style="margin-bottom:32px;">
+      <div style="font-size:11px;font-family:monospace;text-transform:uppercase;color:#a855f7;font-weight:700;letter-spacing:1px;margin-bottom:10px;">🏗️ Step-by-Step Technical Implementation Plan</div>
+      <div style="background:#080b11;border:1px solid #1e293b;border-radius:10px;padding:20px;font-size:12px;line-height:1.8;color:#cbd5e1;">
+        ${formattedPlan}
+      </div>
+    </div>
+
+    <!-- Next Action CTA Button -->
+    <div style="text-align:center;padding:10px 0 16px;">
+      <a href="https://mithundas.cloud/admin/finance" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;padding:14px 34px;border-radius:10px;box-shadow:0 4px 15px rgba(14,165,233,0.35);">
+        🚀 Open Admin Invoicing to Issue Deposit Invoice ➔
+      </a>
+      <p style="margin:12px 0 0;font-size:11px;color:#64748b;">Or review lead details at <a href="https://mithundas.cloud/admin/leads" style="color:#38bdf8;text-decoration:none;">mithundas.cloud/admin/leads</a></p>
+    </div>
+
+  </td></tr>
+
+  <!-- Footer -->
+  <tr><td style="padding:20px 36px;border-top:1px solid #1e293b;background:#080b11;text-align:center;">
+    <p style="margin:0;font-size:11px;color:#475569;font-family:monospace;">
+      Direct Host Notification • Delivered straight to ${hostEmail} • Telegram alerts suppressed
+    </p>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body></html>
+      `,
+    });
+
+    if (error) {
+      logger.error("Failed to send post-meeting dossier email", "post_meeting_email_error", error);
+      return false;
+    }
+
+    logger.info(`Post-meeting dossier email successfully sent to ${hostEmail} for ${clientTitle}`, "post_meeting_email_sent");
+    return true;
+  } catch (error) {
+    logger.error("Resend API exception during post-meeting dossier email", "post_meeting_email_exception", error);
+    return false;
+  }
+}
+

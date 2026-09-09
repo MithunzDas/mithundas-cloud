@@ -116,7 +116,7 @@ export function HeroSection() {
           {/* Left: Content (5 cols) - Responsive Center-Alignment */}
           <div className="flex flex-col justify-center items-center text-center lg:items-start lg:text-left lg:col-span-5">
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
               className="flex flex-col items-center lg:items-start"
@@ -158,9 +158,9 @@ export function HeroSection() {
           {/* Right: Animated Infrastructure Visual (7 cols) */}
           <div className="lg:col-span-7 flex flex-col gap-4 min-w-0 overflow-hidden">
             <motion.div
-              initial={{ opacity: 0 }}
+              initial={false}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.6 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
               className="rounded-xl border border-border-subtle bg-background-surface/40 p-3 sm:p-4 shadow-panel lg:p-6 overflow-hidden"
             >
               {/* Panel Header */}
@@ -192,7 +192,7 @@ export function HeroSection() {
                         return (
                           <motion.div
                             key={node.label}
-                            initial={{ opacity: 0, scale: 0.92 }}
+                            initial={false}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{
                               delay: node.delay,

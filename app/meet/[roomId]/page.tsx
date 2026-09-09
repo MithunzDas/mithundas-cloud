@@ -12,7 +12,6 @@ import {
   Users,
   Radio,
   Disc,
-  Server,
   UserCheck,
   Copy,
   ChevronRight,
@@ -26,6 +25,7 @@ import {
 
 declare global {
   interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     JitsiMeetExternalAPI: any;
     webkitAudioContext: typeof AudioContext;
   }
@@ -57,12 +57,15 @@ export default function CustomVideoRoomPage() {
   const JITSI_SERVER = "meet.element.io";
 
   const jitsiContainerRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const jitsiApiRef = useRef<any>(null);
+  const handleEndCallAndProcessRef = useRef<() => void>(() => {});
 
   const [jitsiLoaded, setJitsiLoaded] = useState(false);
   const [participantCount, setParticipantCount] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [completedNotification, setCompletedNotification] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [aiInsights, setAiInsights] = useState<any>(null);
 
   // AI Notetaker / Two-Way Audio Recording States
@@ -78,19 +81,43 @@ export default function CustomVideoRoomPage() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch booking details for this roomId
+  // Fetch booking or invoice details for this roomId
   useEffect(() => {
     async function loadBookingInfo() {
       try {
+        let foundData: { name: string; company?: string; email?: string } | null = null;
+
+        // 1. Check /api/book/details
         const res = await fetch(`/api/book/details?bookingId=${encodeURIComponent(roomId)}`);
         if (res.ok) {
           const data = await res.json();
-          if (data.found) {
-            setClientInfo(data);
-            if (!urlIsHost && !queryName) {
-              const formattedName = data.name + (data.company ? ` (${data.company})` : "");
-              setUserName(formattedName);
+          if (data.found && data.name) {
+            foundData = data;
+          }
+        }
+
+        // 2. If not found or if roomId is an Invoice ID, check /api/invoices/[id]
+        if (!foundData && (roomId.startsWith("INV-") || roomId.startsWith("inv-"))) {
+          try {
+            const invRes = await fetch(`/api/invoices/${encodeURIComponent(roomId)}`);
+            if (invRes.ok) {
+              const invData = await invRes.json();
+              if (invData.success && invData.invoice && invData.invoice.clientName) {
+                foundData = {
+                  name: invData.invoice.clientName,
+                  company: invData.invoice.companyName,
+                  email: invData.invoice.clientEmail,
+                };
+              }
             }
+          } catch (e) {}
+        }
+
+        if (foundData) {
+          setClientInfo(foundData);
+          if (!urlIsHost && !queryName) {
+            const formattedName = foundData.name + (foundData.company ? ` (${foundData.company})` : "");
+            setUserName(formattedName);
           }
         }
       } catch (err) {
@@ -188,7 +215,7 @@ export default function CustomVideoRoomPage() {
 
       api.addEventListener("readyToClose", () => {
         if (isHost) {
-          handleEndCallAndProcess();
+          handleEndCallAndProcessRef.current();
         } else {
           router.push("/");
         }
@@ -242,7 +269,6 @@ export default function CustomVideoRoomPage() {
       }, 1000);
     } else {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-      setRecordingSeconds(0);
     }
     return () => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
@@ -331,9 +357,10 @@ export default function CustomVideoRoomPage() {
       recorder.start(1000);
       mediaRecorderRef.current = recorder;
       setIsRecording(true);
-    } catch (err: any) {
-      console.warn("AI recording setup was cancelled or unavailable", err);
-      if (err.name !== "AbortError" && mode === "both") {
+    } catch (err: unknown) {
+      const errorObj = err as Error;
+      console.warn("AI recording setup was cancelled or unavailable", errorObj);
+      if (errorObj?.name !== "AbortError" && mode === "both") {
         alert("Tab audio capture was cancelled. You can also choose 'Record My Mic Only' if preferred.");
       }
     }
@@ -371,6 +398,9 @@ export default function CustomVideoRoomPage() {
           formData.append("audio", audioBlob, `meeting-${roomId}.webm`);
           formData.append("roomId", roomId);
           formData.append("leadId", roomId);
+          if (clientInfo?.name) formData.append("clientName", clientInfo.name);
+          if (clientInfo?.company) formData.append("clientCompany", clientInfo.company);
+          if (clientInfo?.email) formData.append("clientEmail", clientInfo.email);
 
           const response = await fetch("/api/admin/leads/transcribe-meeting", {
             method: "POST",
@@ -380,7 +410,7 @@ export default function CustomVideoRoomPage() {
           if (response.ok) {
             const data = await response.json();
             setAiInsights(data.insights || null);
-            setCompletedNotification("✨ AI Meeting Insights & Technical Execution Plan Generated!");
+            setCompletedNotification("✨ AI Meeting Insights & SOW Generated!");
           } else {
             setCompletedNotification("Session Ended. Call audio recorded successfully.");
           }
@@ -400,6 +430,10 @@ export default function CustomVideoRoomPage() {
       }
     }, 600);
   };
+
+  useEffect(() => {
+    handleEndCallAndProcessRef.current = handleEndCallAndProcess;
+  });
 
   return (
     <div className="flex h-screen w-screen flex-col bg-[#080b11] text-white font-sans overflow-hidden select-none">
@@ -727,23 +761,86 @@ export default function CustomVideoRoomPage() {
               <div className="text-center space-y-1">
                 <h3 className="text-lg font-extrabold text-white">{completedNotification}</h3>
                 <p className="text-xs text-slate-400">
-                  Meeting audio was compiled into executive insights and technical deliverables.
+                  Full AI meeting dossier, SOW &amp; payment scope saved to <strong className="text-cyan-400">Admin Panel &gt; AI Summaries</strong>
                 </p>
               </div>
 
               {aiInsights && (
                 <div className="space-y-3 bg-slate-950/70 border border-slate-800 rounded-lg p-4 text-xs">
+                  {aiInsights.keyDiscussionPoints?.length > 0 && (
+                    <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-lg p-3">
+                      <span className="text-[11px] font-mono text-indigo-400 font-bold uppercase tracking-wider block mb-1">
+                        🎯 Key Discussion Points (Critical Takeaways)
+                      </span>
+                      <ul className="list-disc list-inside text-slate-200 space-y-1 text-[11px]">
+                        {aiInsights.keyDiscussionPoints.map((pt: string, idx: number) => (
+                          <li key={idx}>{pt}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {aiInsights.criticalObjectives?.length > 0 && (
+                    <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3">
+                      <span className="text-[11px] font-mono text-cyan-400 font-bold uppercase tracking-wider block mb-1">
+                        🚀 Critical Objectives
+                      </span>
+                      <ul className="list-disc list-inside text-slate-200 space-y-1 text-[11px]">
+                        {aiInsights.criticalObjectives.map((obj: string, idx: number) => (
+                          <li key={idx}>{obj}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
                   {aiInsights.suggestedSOW && (
+                    <div className="bg-sky-500/10 border border-sky-500/30 rounded-lg p-3">
+                      <span className="text-[11px] font-mono text-sky-400 font-bold uppercase tracking-wider block mb-1">
+                        📋 Executive Statement of Work (SOW)
+                      </span>
+                      <p className="text-slate-100 font-semibold leading-relaxed">{aiInsights.suggestedSOW}</p>
+                    </div>
+                  )}
+
+                  {aiInsights.paymentClarification && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
+                      <span className="text-[11px] font-mono text-emerald-400 font-bold uppercase tracking-wider block mb-1.5">
+                        💰 Payment &amp; Financial Scope
+                      </span>
+                      <div className="grid grid-cols-2 gap-3 text-[12px]">
+                        <div>
+                          <span className="text-slate-400 block text-[11px]">Fee / Pricing:</span>
+                          <span className="text-white font-bold">{aiInsights.paymentClarification.totalFee || "Discussed on call"}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[11px]">Deposit Required:</span>
+                          <span className="text-emerald-400 font-bold">{aiInsights.paymentClarification.depositPercentage || "50% upfront"}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {aiInsights.requiredWorkflows?.length > 0 && (
                     <div>
-                      <span className="text-[11px] font-mono text-sky-400 font-bold uppercase">Executive SOW</span>
-                      <p className="text-slate-200 mt-0.5 font-medium">{aiInsights.suggestedSOW}</p>
+                      <span className="text-[11px] font-mono text-cyan-400 font-bold uppercase block mb-1">
+                        ⚙️ Workflows to Build
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {aiInsights.requiredWorkflows.map((wf: string, idx: number) => (
+                          <span key={idx} className="bg-cyan-500/15 border border-cyan-500/30 text-cyan-200 px-2 py-0.5 rounded text-[11px]">
+                            {wf}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
 
                   {aiInsights.clientPainPoints?.length > 0 && (
                     <div>
-                      <span className="text-[11px] font-mono text-amber-400 font-bold uppercase">Client Pain Points</span>
-                      <ul className="list-disc list-inside text-slate-300 mt-1 space-y-0.5">
+                      <span className="text-[11px] font-mono text-amber-400 font-bold uppercase block mb-1">
+                        ⚠️ Client Pain Points
+                      </span>
+                      <ul className="list-disc list-inside text-slate-300 space-y-0.5 text-[11px]">
                         {aiInsights.clientPainPoints.map((pt: string, idx: number) => (
                           <li key={idx}>{pt}</li>
                         ))}
@@ -754,8 +851,8 @@ export default function CustomVideoRoomPage() {
                   {aiInsights.technicalImplementationPlan && (
                     <div className="pt-2 border-t border-slate-800">
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[11px] font-mono text-emerald-400 font-bold uppercase">
-                          Technical Implementation Plan
+                        <span className="text-[11px] font-mono text-purple-400 font-bold uppercase">
+                          Technical Implementation Architecture
                         </span>
                         <button
                           onClick={() => {
@@ -769,7 +866,7 @@ export default function CustomVideoRoomPage() {
                           <span>{copiedPlan ? "Copied!" : "Copy Plan"}</span>
                         </button>
                       </div>
-                      <div className="max-h-40 overflow-y-auto bg-slate-900/90 rounded p-2 text-slate-300 font-mono text-[11px] whitespace-pre-wrap">
+                      <div className="max-h-36 overflow-y-auto bg-slate-900/90 rounded p-2.5 text-slate-300 font-mono text-[11px] whitespace-pre-wrap">
                         {aiInsights.technicalImplementationPlan}
                       </div>
                     </div>
@@ -777,17 +874,31 @@ export default function CustomVideoRoomPage() {
                 </div>
               )}
 
-              <div className="pt-2 flex justify-center gap-3">
+              <div className="pt-2 flex flex-wrap justify-center gap-2.5">
+                <button
+                  onClick={() => router.push("/admin/meeting-summaries")}
+                  className="rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-4 py-2 text-xs shadow-md shadow-cyan-500/20 flex items-center gap-1.5"
+                >
+                  <span>View in AI Summaries</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => router.push("/admin/finance")}
+                  className="rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2 text-xs shadow-md shadow-emerald-500/20 flex items-center gap-1.5"
+                >
+                  <span>Create Deposit Invoice</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
                 <button
                   onClick={() => router.push("/admin/leads")}
-                  className="rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-5 py-2.5 text-xs shadow-md shadow-sky-500/20 flex items-center gap-2"
+                  className="rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2 text-xs flex items-center gap-1.5"
                 >
-                  <span>Go to Admin Leads Dashboard</span>
-                  <ChevronRight className="h-4 w-4" />
+                  <span>Leads Intake</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={() => setCompletedNotification(null)}
-                  className="rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 text-xs font-semibold"
+                  className="rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 px-3 py-2 text-xs font-semibold"
                 >
                   Close
                 </button>

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import LinkNext from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, Calendar, ShieldCheck, Cpu, DollarSign, Sparkles, Menu, X } from "lucide-react";
+import { Users, Calendar, ShieldCheck, Cpu, DollarSign, Sparkles, FileText, Menu, X } from "lucide-react";
 
 export function AdminNav() {
   const pathname = usePathname();
@@ -11,6 +11,7 @@ export function AdminNav() {
 
   const isLeads = pathname?.includes("/admin/leads");
   const isBookings = pathname?.includes("/admin/bookings");
+  const isMeetingSummaries = pathname?.includes("/admin/meeting-summaries");
   const isFinance = pathname?.includes("/admin/finance");
   const isLeadGen = pathname?.includes("/admin/lead-generation") || pathname?.includes("/admin/lead-genaration");
 
@@ -36,6 +37,13 @@ export function AdminNav() {
       shortLabel: "Meetings",
       icon: Calendar,
       active: isBookings
+    },
+    {
+      href: "/admin/meeting-summaries",
+      label: "AI Summaries",
+      shortLabel: "AI Dossiers",
+      icon: FileText,
+      active: isMeetingSummaries
     },
     {
       href: "/admin/finance",

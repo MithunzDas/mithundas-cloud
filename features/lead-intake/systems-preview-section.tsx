@@ -78,7 +78,7 @@ export function SystemsPreviewSection() {
     <section className="border-b border-border-subtle bg-background-app py-20 md:py-24">
       <div className="mx-auto max-w-[1200px] px-6">
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}

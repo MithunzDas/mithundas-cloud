@@ -419,6 +419,24 @@ export async function getBookingDetails(bookingId: string): Promise<BookingPaylo
     }
   } catch (e) {}
 
+  // 3. Try Invoice records (for invoice meeting links like INV-590250)
+  try {
+    const invoice = await getInvoiceFromDB(bookingId);
+    if (invoice && (invoice.clientName || invoice.companyName)) {
+      return {
+        bookingId: invoice.invoiceId,
+        name: invoice.clientName || "Client",
+        email: invoice.clientEmail || "",
+        company: invoice.companyName || "Client Business",
+        businessType: "Client Invoice",
+        projectRequirement: invoice.projectScope || "Discovery & Invoice Session",
+        date: invoice.issueDate || "",
+        time: "",
+        meetUrl: `https://mithundas.cloud/meet/${invoice.invoiceId}`,
+      };
+    }
+  } catch (e) {}
+
   return null;
 }
 
@@ -504,6 +522,32 @@ export async function getAllBookingsFromDB(): Promise<BookingPayload[]> {
           status: "confirmed",
           createdAt: new Date().toISOString(),
         });
+      }
+    }
+  } catch (e) {}
+
+  // 4. Include Invoices so client list displays invoice meeting references (e.g. Deepankar Vishves)
+  try {
+    const invoices = await getAllInvoicesFromDB();
+    if (Array.isArray(invoices)) {
+      for (const inv of invoices) {
+        if (inv.invoiceId && !map.has(inv.invoiceId)) {
+          map.set(inv.invoiceId, {
+            id: inv.id || inv.invoiceId,
+            bookingId: inv.invoiceId,
+            name: inv.clientName || "Client",
+            email: inv.clientEmail || "",
+            company: inv.companyName || "Client Business",
+            businessType: "Client Invoice",
+            projectRequirement: inv.projectScope || "Discovery / Project Agreement",
+            date: inv.issueDate || "",
+            time: "",
+            timeZone: "Asia/Kolkata",
+            meetUrl: `https://mithundas.cloud/meet/${inv.invoiceId}`,
+            status: inv.paymentStatus === "paid" ? "confirmed" : "pending",
+            createdAt: inv.issueDate ? new Date(inv.issueDate).toISOString() : new Date().toISOString(),
+          });
+        }
       }
     }
   } catch (e) {}
@@ -1070,5 +1114,133 @@ export async function getFinancialLedger(): Promise<{
   };
 }
 
+/* ────────────────────────────────────────────────────── *
+ *  Meeting Summaries & Intelligence Storage               *
+ * ────────────────────────────────────────────────────── */
 
+export interface MeetingSummaryRecord {
+  id: string;
+  roomId: string;
+  leadId?: string;
+  bookingId?: string;
+  clientName: string;
+  clientEmail: string;
+  companyName: string;
+  meetingDate: string;
+  criticalObjectives: string[];
+  keyDiscussionPoints: string[];
+  paymentInfo: {
+    totalFee: string;
+    depositPercentage: string;
+    milestones: string;
+  };
+  suggestedSOW: string;
+  clientPainPoints: string[];
+  requiredWorkflows: string[];
+  technicalImplementationPlan: string;
+  transcript?: string;
+  createdAt: string;
+}
 
+const LOCAL_SUMMARIES_FILE = path.join(process.cwd(), ".meeting_summaries.json");
+const TMP_SUMMARIES_FILE = "/tmp/meeting_summaries.json";
+
+export function getLocalMeetingSummaries(): MeetingSummaryRecord[] {
+  try {
+    const fileToRead = fs.existsSync(LOCAL_SUMMARIES_FILE)
+      ? LOCAL_SUMMARIES_FILE
+      : fs.existsSync(TMP_SUMMARIES_FILE)
+      ? TMP_SUMMARIES_FILE
+      : null;
+    if (fileToRead) {
+      const data = fs.readFileSync(fileToRead, "utf-8");
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {
+    // Ignore read error
+  }
+  return [];
+}
+
+export function saveLocalMeetingSummary(record: MeetingSummaryRecord): void {
+  try {
+    const current = getLocalMeetingSummaries().filter(
+      (s) => s.id !== record.id && s.roomId !== record.roomId
+    );
+    current.unshift(record);
+    const data = JSON.stringify(current, null, 2);
+    try {
+      fs.writeFileSync(LOCAL_SUMMARIES_FILE, data);
+    } catch (e) {}
+    try {
+      fs.writeFileSync(TMP_SUMMARIES_FILE, data);
+    } catch (e) {}
+  } catch (e) {
+    // Ignore write error
+  }
+}
+
+export async function saveMeetingSummary(summary: MeetingSummaryRecord): Promise<void> {
+  // 1. Always save locally to resilient file cache
+  saveLocalMeetingSummary(summary);
+
+  // 2. Format a rich text summary to store in client profile (Lead or Booking)
+  const fullSummaryText = [
+    `🎯 CRITICAL OBJECTIVES:\n${summary.criticalObjectives.map((o) => `• ${o}`).join("\n")}`,
+    `💬 KEY DISCUSSION POINTS:\n${summary.keyDiscussionPoints.map((p) => `• ${p}`).join("\n")}`,
+    `💰 PAYMENT & FINANCIAL SCOPE:\n• Fee: ${summary.paymentInfo.totalFee}\n• Deposit: ${summary.paymentInfo.depositPercentage}\n• Milestones: ${summary.paymentInfo.milestones}`,
+    `📋 STATEMENT OF WORK:\n${summary.suggestedSOW}`,
+  ].join("\n\n");
+
+  // 3. Update Lead profile if leadId or matching email exists
+  try {
+    const leadTarget = summary.leadId
+      ? await prisma.lead.findUnique({ where: { leadId: summary.leadId } })
+      : summary.clientEmail
+      ? await prisma.lead.findFirst({ where: { email: summary.clientEmail } })
+      : null;
+
+    if (leadTarget) {
+      await prisma.lead.update({
+        where: { leadId: leadTarget.leadId },
+        data: {
+          aiSummary: fullSummaryText,
+          status: leadTarget.status === "intake" ? "contacted" : leadTarget.status,
+        },
+      });
+      logger.info(
+        `Updated lead profile ${leadTarget.leadId} with AI meeting summary`,
+        "lead_ai_summary_updated"
+      );
+    }
+  } catch (leadErr) {
+    logger.warn("Could not update Lead profile with meeting summary", "db_lead_summary_warn", { error: String(leadErr) });
+  }
+
+  // 4. Update Booking record if bookingId exists
+  try {
+    const targetBookingId = summary.bookingId || summary.roomId;
+    const bookingTarget = await prisma.booking.findUnique({
+      where: { bookingId: targetBookingId },
+    });
+    if (bookingTarget) {
+      await prisma.booking.update({
+        where: { bookingId: targetBookingId },
+        data: {
+          projectRequirement: `[AI Meeting Summary - ${summary.meetingDate}]\n${fullSummaryText}\n\n[Original Specification]:\n${bookingTarget.projectRequirement || ""}`,
+        },
+      });
+      logger.info(
+        `Updated booking record ${targetBookingId} with AI meeting summary`,
+        "booking_ai_summary_updated"
+      );
+    }
+  } catch (bookingErr) {
+    logger.warn("Could not update Booking record with meeting summary", "db_booking_summary_warn", { error: String(bookingErr) });
+  }
+}
+
+export async function getMeetingSummaries(): Promise<MeetingSummaryRecord[]> {
+  return getLocalMeetingSummaries();
+}
