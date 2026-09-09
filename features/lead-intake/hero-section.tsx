@@ -119,7 +119,7 @@ export function HeroSection() {
               initial={false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-col items-center lg:items-start"
+              className="flex flex-col items-center lg:items-start animate-hero-entrance"
             >
               <div className="mb-6 flex flex-wrap gap-2 justify-center lg:justify-start">
                 <StatusPill status="operational" label="API Gateway: Operational" />
@@ -161,7 +161,7 @@ export function HeroSection() {
               initial={false}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="rounded-xl border border-border-subtle bg-background-surface/40 p-3 sm:p-4 shadow-panel lg:p-6 overflow-hidden"
+              className="rounded-xl border border-border-subtle bg-background-surface/40 p-3 sm:p-4 shadow-panel lg:p-6 overflow-hidden animate-hero-visual"
             >
               {/* Panel Header */}
               <div className="mb-4 flex items-center justify-between">
