@@ -16,7 +16,7 @@ interface MetricTileProps {
 export function MetricTile({ label, value, description, icon: Icon, className }: MetricTileProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={false}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={transitionBase}

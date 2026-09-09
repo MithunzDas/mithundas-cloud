@@ -262,11 +262,11 @@ export function LeadAssessmentForm() {
         {/* Hidden Honeypot */}
         <input type="text" {...register("honeypot")} className="hidden" tabIndex={-1} />
 
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" initial={false}>
           {currentStep === 0 && (
             <motion.div
               key="step-0"
-              initial={{ opacity: 0, x: 10 }}
+              initial={false}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -10 }}
               transition={{ duration: 0.2 }}
