@@ -60,6 +60,8 @@ interface ProductItem {
   status: "live" | "coming_soon";
   pricingSnippet: string;
   highlights: string[];
+  modulesTitle?: string;
+  modulesBadge?: string;
   modules?: ProductModule[];
 }
 
@@ -89,6 +91,30 @@ const PRODUCTS: ProductItem[] = [
       "FTC-compliant 1–3 star private feedback capture to protect public ratings",
       "Live analytics dashboard tracking QR scans, conversion rates, and feedback",
     ],
+    modulesTitle: "System Components & Deliverables",
+    modulesBadge: "All Included",
+    modules: [
+      {
+        name: "10-Second 4-Tap Customer Review Flow",
+        status: "live",
+        description: "Mobile web app (/r/[slug]): 4-tap visual chips, humanized AI drafting, and 1-tap Google Maps review opening.",
+      },
+      {
+        name: "Printable Counter Standees & Staff Script",
+        status: "live",
+        description: "Ready-to-print A5 acrylic standees & 4x6\" table tent cards with reception staff 7-word cheat-sheet script.",
+      },
+      {
+        name: "Smart Google Maps Deep-Link Redirector",
+        status: "live",
+        description: "Direct write-review deep linking with auto-clipboard copy so customer only taps 'Paste' and 'Post' in Google Maps.",
+      },
+      {
+        name: "Live Scan Analytics & FTC Feedback Shield",
+        status: "live",
+        description: "Real-time scan counter and rating tracking with private resolution routing for 1–3 star complaints.",
+      },
+    ],
   },
   {
     id: "legal-tech-suite",
@@ -115,6 +141,8 @@ const PRODUCTS: ProductItem[] = [
       "Razorpay instant payment verification with automated credit delivery",
       "Extensible modular architecture ready for additional practice workflows",
     ],
+    modulesTitle: "Suite Modules & Roadmap",
+    modulesBadge: "Multi-Product Hub",
     modules: [
       {
         name: "CAA & Court Affidavit Generator",
@@ -243,16 +271,16 @@ export default function ProductsCatalogPage() {
                       </ul>
                     </div>
 
-                    {/* Modular Suite Architecture (For Legal Suite) */}
+                    {/* Modular Suite Architecture */}
                     {product.modules && product.modules.length > 0 && (
                       <div className="space-y-2.5 pt-4 border-t border-slate-800/80">
                         <div className="flex items-center justify-between">
                           <p className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                            <Layers className="w-3.5 h-3.5 text-amber-400" />
-                            Suite Modules & Roadmap:
+                            <Layers className={`w-3.5 h-3.5 ${isBlue ? "text-blue-400" : "text-amber-400"}`} />
+                            {product.modulesTitle || "System Modules & Architecture:"}
                           </p>
                           <span className="text-[10px] text-slate-400 font-mono">
-                            Multi-Product Hub
+                            {product.modulesBadge || "Included"}
                           </span>
                         </div>
 
@@ -262,7 +290,9 @@ export default function ProductsCatalogPage() {
                               key={mIdx}
                               className={`p-2.5 rounded-xl border text-xs flex items-start justify-between gap-2 ${
                                 module.status === "live"
-                                  ? "bg-slate-950/80 border-emerald-500/30 text-slate-200"
+                                  ? isBlue
+                                    ? "bg-slate-950/80 border-blue-500/30 text-slate-200"
+                                    : "bg-slate-950/80 border-emerald-500/30 text-slate-200"
                                   : "bg-slate-950/40 border-slate-800 text-slate-400"
                               }`}
                             >
@@ -272,7 +302,13 @@ export default function ProductsCatalogPage() {
                                     {module.name}
                                   </span>
                                   {module.status === "live" ? (
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                    <span
+                                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
+                                        isBlue
+                                          ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
+                                          : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                                      }`}
+                                    >
                                       LIVE NOW
                                     </span>
                                   ) : (
