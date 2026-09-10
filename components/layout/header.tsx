@@ -10,18 +10,18 @@ import { cn } from "@/lib/utils";
 
 const navLinks = [
   { href: "/systems", label: "Systems" },
+  { href: "/products", label: "Products" },
   { href: "/demo", label: "Demo" },
   { href: "/case-studies", label: "Case Studies" },
   { href: "/process", label: "Process" },
-  { href: "/products/affidavit-generator", label: "Products" },
   { href: "/insights", label: "Insights" },
 ];
 
 const mobileNavLinks = [
   { href: "/systems", label: "Systems" },
+  { href: "/products", label: "Products" },
   { href: "/demo", label: "Demo" },
   { href: "/process", label: "Process" },
-  { href: "/products/affidavit-generator", label: "Products" },
   { href: "/contact", label: "Contact" },
 ];
 

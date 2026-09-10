@@ -4,6 +4,7 @@ import { Mail, ExternalLink } from "lucide-react";
 const footerLinks = {
   platform: [
     { href: "/systems", label: "Operational Systems" },
+    { href: "/products", label: "SaaS Products" },
     { href: "/demo", label: "Workflow Demo" },
     { href: "/case-studies", label: "Case Studies" },
     { href: "/process", label: "Engagement Process" },
