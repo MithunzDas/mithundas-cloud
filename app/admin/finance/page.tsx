@@ -646,7 +646,7 @@ export default function AdminFinancePage() {
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 font-mono text-xs [&-::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex flex-wrap items-center gap-2 font-mono text-xs no-scrollbar">
             <span className="text-[10px] uppercase tracking-wider text-text-secondary/70 shrink-0 font-semibold mr-1">Status:</span>
             {[
               { key: "all", label: `All Invoices (${deduplicatedInvoices.filter((i) => !isWonDeal(i)).length})` },

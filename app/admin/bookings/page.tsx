@@ -333,7 +333,7 @@ export default function AdminBookingsPage() {
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 [&-::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex flex-wrap items-center gap-2 no-scrollbar">
             <span className="text-xs font-mono text-text-secondary shrink-0 mr-1 flex items-center gap-1">
               <Filter className="w-3.5 h-3.5" /> Status:
             </span>

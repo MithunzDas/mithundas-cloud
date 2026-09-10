@@ -595,7 +595,7 @@ export default function AdminLeadsPage() {
             </div>
 
             {/* Status Filters */}
-            <div className="flex flex-wrap items-center gap-2 [&-::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="flex flex-wrap items-center gap-2 no-scrollbar">
               <Filter className="h-3.5 w-3.5 text-text-muted shrink-0" />
               {["all", "intake", "contacted", "qualified", "silent", "won", "lost"].map((st) => (
                 <button

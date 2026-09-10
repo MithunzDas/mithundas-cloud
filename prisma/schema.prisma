@@ -258,3 +258,72 @@ model LeadChatMessage {
   @@index([wamid])
   @@index([createdAt])
 }
+
+// ===== QR-Based AI Google Review SaaS Models =====
+
+model ReviewBusiness {
+  id                 String            @id @default(cuid())
+  slug               String            @unique
+  businessName       String
+  ownerName          String?
+  ownerEmail         String
+  ownerPhone         String?
+  category           String            @default("DENTIST") // "DENTIST", "GYM", "SALON_SPA", "RESTAURANT_CAFE", "AUTO_REPAIR", "CLINIC_HEALTHCARE", "GENERAL_SERVICES"
+  city               String?
+  country            String?           @default("US")
+  placeId            String?
+  googleReviewUrl    String            @db.Text
+  logoUrl            String?
+  primaryColor       String?           @default("#2563eb")
+  trialStatus        String            @default("TRIAL_ACTIVE") // "TRIAL_ACTIVE", "SUBSCRIBED", "EXPIRED", "CANCELLED"
+  trialEndsAt        DateTime
+  subscriptionPlan   String?           // "MONTHLY_30", "ANNUAL_249"
+  subscriptionMethod String?           // "PAYPAL", "LEMON_SQUEEZY", "STRIPE", "RAZORPAY"
+  subscriptionId     String?
+  customQuestions    String?           @db.Text // JSON override of question bank
+  activationToken    String?           @unique
+  totalScans         Int               @default(0)
+  totalReviewsCopied Int               @default(0)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  sessions           ReviewSession[]
+  privateFeedbacks   PrivateFeedback[]
+
+  @@index([slug])
+  @@index([ownerEmail])
+  @@index([trialStatus])
+}
+
+model ReviewSession {
+  id                 String         @id @default(cuid())
+  businessId         String
+  business           ReviewBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  selectedQuestions  String         @db.Text // JSON: array of { question: string, answer: string }
+  generatedReview    String?        @db.Text
+  ratingScore        Int?           @default(5)
+  sentiment          String?        @default("POSITIVE") // "POSITIVE", "NEUTRAL", "NEGATIVE"
+  copiedToClipboard  Boolean        @default(false)
+  redirectedToGoogle Boolean        @default(false)
+  deviceType         String?        @default("mobile") // "mobile", "desktop", "tablet"
+  userAgent          String?        @db.Text
+  createdAt          DateTime       @default(now())
+
+  @@index([businessId])
+  @@index([createdAt])
+}
+
+model PrivateFeedback {
+  id            String         @id @default(cuid())
+  businessId    String
+  business      ReviewBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customerName  String?
+  customerPhone String?
+  customerEmail String?
+  feedbackText  String         @db.Text
+  ratingScore   Int            @default(2)
+  resolved      Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+
+  @@index([businessId])
+  @@index([resolved])
+}
