@@ -47,7 +47,9 @@ export const QR_REVIEW_PLANS: Record<"monthly" | "annual", PricingPlanConfig> = 
       process.env.NEXT_PUBLIC_PAYPAL_ANNUAL_URL ||
       "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-9XX50897WW0998235NKSD4LY",
     // Lemon Squeezy annual product checkout
-    lemonSqueezyUrl: process.env.NEXT_PUBLIC_LEMON_SQUEEZY_ANNUAL_URL || "https://mithundas.lemonsqueezy.com/buy/annual-249",
+    lemonSqueezyUrl:
+      process.env.NEXT_PUBLIC_LEMON_SQUEEZY_ANNUAL_URL ||
+      "https://mithundas.lemonsqueezy.com/checkout/buy/00dd862d-71eb-44e0-ab7b-d524afca1443",
     stripeUrl: process.env.NEXT_PUBLIC_STRIPE_ANNUAL_URL || "https://buy.stripe.com/test_qr_review_annual"
   }
 };
