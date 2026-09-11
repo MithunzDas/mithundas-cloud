@@ -74,11 +74,14 @@ export function getCheckoutUrl(
 
   if (provider === "lemonsqueezy") {
     const base = planConfig.lemonSqueezyUrl;
-    if (businessSlug && !base.includes("checkout[custom]")) {
-      const sep = base.includes("?") ? "&" : "?";
-      return `${base}${sep}checkout[custom][business_slug]=${encodeURIComponent(businessSlug)}`;
+    const hasEmbed = base.includes("embed=1");
+    const sep = base.includes("?") ? "&" : "?";
+    let url = hasEmbed ? base : `${base}${sep}embed=1`;
+    if (businessSlug && !url.includes("checkout[custom]")) {
+      const s = url.includes("?") ? "&" : "?";
+      url = `${url}${s}checkout[custom][business_slug]=${encodeURIComponent(businessSlug)}`;
     }
-    return base;
+    return url;
   }
 
   return planConfig.stripeUrl || "#";

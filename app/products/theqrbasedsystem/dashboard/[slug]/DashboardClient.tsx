@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Script from "next/script";
 import {
   QrCode,
   Printer,
@@ -52,6 +53,13 @@ export default function DashboardClient({ business }: DashboardClientProps) {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "annual">("monthly");
   const [copiedLink, setCopiedLink] = useState(false);
+
+  useEffect(() => {
+    if (showPaymentModal && typeof window !== "undefined") {
+      // @ts-expect-error LemonSqueezy global
+      window.createLemonSqueezy?.();
+    }
+  }, [showPaymentModal]);
 
   const reviewUrl = typeof window !== "undefined"
     ? `${window.location.origin}/r/${business.slug}`
@@ -337,7 +345,7 @@ export default function DashboardClient({ business }: DashboardClientProps) {
                 href={getCheckoutUrl(selectedPlan, "lemonsqueezy", business.slug)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full p-4 rounded-2xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white font-bold flex items-center justify-between text-xs transition-transform active:scale-[0.98] group"
+                className="lemonsqueezy-button w-full p-4 rounded-2xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white font-bold flex items-center justify-between text-xs transition-transform active:scale-[0.98] group"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-yellow-500/20 text-yellow-400 flex items-center justify-center font-black text-sm">
@@ -398,6 +406,9 @@ export default function DashboardClient({ business }: DashboardClientProps) {
           </div>
         </div>
       )}
+
+      {/* LEMON SQUEEZY OVERLAY CHECKOUT SCRIPT */}
+      <Script src="https://assets.lemonsqueezy.com/lemon.js" strategy="lazyOnload" />
     </div>
   );
 }
