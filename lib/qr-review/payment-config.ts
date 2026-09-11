@@ -40,8 +40,10 @@ export const QR_REVIEW_PLANS: Record<"monthly" | "annual", PricingPlanConfig> = 
     currency: "USD",
     interval: "year",
     savingsBadge: "Save 30% ($111 Off)",
-    // Configurable via NEXT_PUBLIC_PAYPAL_ANNUAL_URL
-    paypalUrl: process.env.NEXT_PUBLIC_PAYPAL_ANNUAL_URL || "https://www.paypal.com/ncp/payment/QR_ANNUAL_249",
+    // Configurable via NEXT_PUBLIC_PAYPAL_ANNUAL_URL or falls back to your live PayPal annual subscription link
+    paypalUrl:
+      process.env.NEXT_PUBLIC_PAYPAL_ANNUAL_URL ||
+      "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-9XX50897WW0998235NKSD4LY",
     // Lemon Squeezy annual product checkout
     lemonSqueezyUrl: process.env.NEXT_PUBLIC_LEMON_SQUEEZY_ANNUAL_URL || "https://mithundas.lemonsqueezy.com/buy/annual-249",
     stripeUrl: process.env.NEXT_PUBLIC_STRIPE_ANNUAL_URL || "https://buy.stripe.com/test_qr_review_annual"
@@ -83,5 +85,5 @@ export function getCheckoutUrl(
 export const PAYPAL_CONFIG = {
   clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "BAAmpQfRc8Hu8Jwp8Knydw-h8f-ve-oVsJzLweqhfBNgG4eFSro1IckOpQEM87jn7NKR_U1fG7imRbXM0g",
   monthlyPlanId: "P-1C0909029J424933WNKSC7RI",
-  annualPlanId: process.env.NEXT_PUBLIC_PAYPAL_ANNUAL_PLAN_ID || "P-ANNUAL_249"
+  annualPlanId: "P-9XX50897WW0998235NKSD4LY"
 };
