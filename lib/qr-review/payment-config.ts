@@ -15,7 +15,7 @@ export interface PricingPlanConfig {
   savingsBadge?: string;
   paypalUrl: string;
   lemonSqueezyUrl: string;
-  stripeUrl?: string;
+  razorpayUrl?: string;
 }
 
 export const QR_REVIEW_PLANS: Record<"monthly" | "annual", PricingPlanConfig> = {
@@ -33,7 +33,7 @@ export const QR_REVIEW_PLANS: Record<"monthly" | "annual", PricingPlanConfig> = 
     lemonSqueezyUrl:
       process.env.NEXT_PUBLIC_LEMON_SQUEEZY_MONTHLY_URL ||
       "https://mithundas.lemonsqueezy.com/checkout/buy/0e8fc160-76a1-4f4b-9b69-b11c9db46edb",
-    stripeUrl: process.env.NEXT_PUBLIC_STRIPE_MONTHLY_URL || "https://buy.stripe.com/test_qr_review_monthly"
+    razorpayUrl: process.env.NEXT_PUBLIC_RAZORPAY_MONTHLY_URL || "https://rzp.io/l/qr-review-monthly"
   },
   annual: {
     id: "annual",
@@ -50,7 +50,7 @@ export const QR_REVIEW_PLANS: Record<"monthly" | "annual", PricingPlanConfig> = 
     lemonSqueezyUrl:
       process.env.NEXT_PUBLIC_LEMON_SQUEEZY_ANNUAL_URL ||
       "https://mithundas.lemonsqueezy.com/checkout/buy/00dd862d-71eb-44e0-ab7b-d524afca1443",
-    stripeUrl: process.env.NEXT_PUBLIC_STRIPE_ANNUAL_URL || "https://buy.stripe.com/test_qr_review_annual"
+    razorpayUrl: process.env.NEXT_PUBLIC_RAZORPAY_ANNUAL_URL || "https://rzp.io/l/qr-review-annual"
   }
 };
 
@@ -59,7 +59,7 @@ export const QR_REVIEW_PLANS: Record<"monthly" | "annual", PricingPlanConfig> = 
  */
 export function getCheckoutUrl(
   plan: "monthly" | "annual",
-  provider: "paypal" | "lemonsqueezy" | "stripe",
+  provider: "paypal" | "lemonsqueezy" | "razorpay",
   businessSlug?: string
 ): string {
   const planConfig = QR_REVIEW_PLANS[plan];
@@ -86,7 +86,16 @@ export function getCheckoutUrl(
     return url;
   }
 
-  return planConfig.stripeUrl || "#";
+  if (provider === "razorpay") {
+    const base = planConfig.razorpayUrl || "#";
+    if (businessSlug && base.startsWith("http")) {
+      const sep = base.includes("?") ? "&" : "?";
+      return `${base}${sep}notes_slug=${encodeURIComponent(businessSlug)}`;
+    }
+    return base;
+  }
+
+  return "#";
 }
 
 export const PAYPAL_CONFIG = {

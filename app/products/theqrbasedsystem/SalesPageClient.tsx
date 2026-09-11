@@ -506,43 +506,26 @@ export default function SalesPageClient() {
                 <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
               </a>
 
-              {/* 3. Stripe Direct */}
+              {/* 3. Razorpay (UPI, NetBanking & Cards) */}
               <a
-                href={getCheckoutUrl(selectedPlan, "stripe")}
+                href={getCheckoutUrl(selectedPlan, "razorpay")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full p-4 rounded-2xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white font-bold flex items-center justify-between text-xs transition-transform active:scale-[0.98] group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-black text-sm">
-                    S
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-black text-sm">
+                    R
                   </div>
                   <div className="text-left">
-                    <p className="text-xs font-bold">Stripe Checkout</p>
+                    <p className="text-xs font-bold">Razorpay (UPI, NetBanking & Cards)</p>
                     <p className="text-[10px] text-slate-400 font-normal">
-                      Direct Visa, Mastercard, American Express
+                      Instant UPI, GPay, PhonePe, RuPay & Global Cards
                     </p>
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
               </a>
-
-              {/* 4. Razorpay International */}
-              <Link
-                href={`/invoice?plan=qr_review_${selectedPlan}&amount=${selectedPlan === "monthly" ? 30 : 249}`}
-                className="w-full p-3.5 rounded-2xl bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 font-semibold flex items-center justify-between text-xs transition-colors"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xs">
-                    R
-                  </div>
-                  <div className="text-left">
-                    <p className="text-[11px] font-medium">Razorpay International / Wire</p>
-                    <p className="text-[10px] text-slate-500">Direct invoice & international card option</p>
-                  </div>
-                </div>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-              </Link>
             </div>
 
             <p className="text-[10px] text-center text-slate-500 pt-1">
