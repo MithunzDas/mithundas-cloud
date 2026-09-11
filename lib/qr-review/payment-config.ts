@@ -29,8 +29,10 @@ export const QR_REVIEW_PLANS: Record<"monthly" | "annual", PricingPlanConfig> = 
     paypalUrl:
       process.env.NEXT_PUBLIC_PAYPAL_MONTHLY_URL ||
       "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-1C0909029J424933WNKSC7RI",
-    // Lemon Squeezy hosted checkout URL (or overlay checkout)
-    lemonSqueezyUrl: process.env.NEXT_PUBLIC_LEMON_SQUEEZY_MONTHLY_URL || "https://mithundas.lemonsqueezy.com/buy/monthly-30",
+    // Lemon Squeezy hosted checkout URL (Credit/Debit Cards & Apple Pay)
+    lemonSqueezyUrl:
+      process.env.NEXT_PUBLIC_LEMON_SQUEEZY_MONTHLY_URL ||
+      "https://mithundas.lemonsqueezy.com/checkout/buy/0e8fc160-76a1-4f4b-9b69-b11c9db46edb",
     stripeUrl: process.env.NEXT_PUBLIC_STRIPE_MONTHLY_URL || "https://buy.stripe.com/test_qr_review_monthly"
   },
   annual: {
