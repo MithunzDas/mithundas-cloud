@@ -21,6 +21,7 @@ import {
   Zap,
   ArrowUpRight
 } from "lucide-react";
+import { getCheckoutUrl } from "@/lib/qr-review/payment-config";
 
 interface BusinessDetails {
   id: string;
@@ -312,7 +313,7 @@ export default function DashboardClient({ business }: DashboardClientProps) {
 
               {/* 1. PayPal (Ranked #1 for Western trust) */}
               <a
-                href={`https://www.paypal.com/checkoutnow?plan=${selectedPlan}&business=${business.slug}`}
+                href={getCheckoutUrl(selectedPlan, "paypal", business.slug)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full p-4 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold flex items-center justify-between text-xs transition-transform active:scale-[0.98] shadow-lg shadow-amber-400/20 group"
@@ -333,7 +334,7 @@ export default function DashboardClient({ business }: DashboardClientProps) {
 
               {/* 2. Lemon Squeezy (Cards & Apple Pay) */}
               <a
-                href={`https://mithundas.lemonsqueezy.com/checkout/buy/${selectedPlan === "monthly" ? "monthly-30" : "annual-249"}?checkout[custom][business_slug]=${business.slug}`}
+                href={getCheckoutUrl(selectedPlan, "lemonsqueezy", business.slug)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full p-4 rounded-2xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white font-bold flex items-center justify-between text-xs transition-transform active:scale-[0.98] group"
@@ -354,7 +355,7 @@ export default function DashboardClient({ business }: DashboardClientProps) {
 
               {/* 3. Stripe Direct (Card) */}
               <a
-                href={`https://buy.stripe.com/test_qr_review_${selectedPlan}?client_reference_id=${business.slug}`}
+                href={getCheckoutUrl(selectedPlan, "stripe", business.slug)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full p-4 rounded-2xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white font-bold flex items-center justify-between text-xs transition-transform active:scale-[0.98] group"

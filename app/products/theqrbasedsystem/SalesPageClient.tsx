@@ -25,6 +25,8 @@ import {
   Globe
 } from "lucide-react";
 import { INDUSTRY_QUESTION_POOLS } from "@/lib/qr-review/question-pools";
+import QuestionPoolExplorer from "@/components/qr-review/QuestionPoolExplorer";
+import { getCheckoutUrl, QR_REVIEW_PLANS } from "@/lib/qr-review/payment-config";
 
 export default function SalesPageClient() {
   const [selectedIndustry, setSelectedIndustry] = useState("DENTIST");
@@ -246,114 +248,9 @@ export default function SalesPageClient() {
         </div>
       </section>
 
-      {/* LIVE INTERACTIVE SIMULATOR */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
-        <div className="text-center space-y-2 mb-8">
-          <span className="text-xs font-bold uppercase tracking-widest text-blue-400">
-            Interactive Test Drive
-          </span>
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-white">
-            Experience the 15-Second Review Assistant
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-400">
-            Pick your industry below and see how your customers will draft their review.
-          </p>
-        </div>
-
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
-          {/* Industry Switcher */}
-          <div className="flex flex-wrap gap-2 justify-center">
-            {Object.values(INDUSTRY_QUESTION_POOLS).map((ind) => (
-              <button
-                key={ind.id}
-                onClick={() => {
-                  setSelectedIndustry(ind.id);
-                  setDemoSelections({});
-                  setDemoDraftedReview(null);
-                }}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all ${
-                  selectedIndustry === ind.id
-                    ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
-                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                }`}
-              >
-                {ind.icon} {ind.name}
-              </button>
-            ))}
-          </div>
-
-          {/* Simulated Questions */}
-          <div className="space-y-4 pt-4 border-t border-slate-800">
-            {activeIndustry.questions.slice(0, 3).map((q, idx) => (
-              <div key={q.id} className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-2.5">
-                <p className="text-xs font-semibold text-slate-200">
-                  {idx + 1}. {q.question}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {q.options.map((opt) => {
-                    const isSelected = demoSelections[q.id] === opt.label;
-                    return (
-                      <button
-                        key={opt.label}
-                        type="button"
-                        onClick={() => handleDemoSelectChip(q.id, opt.label)}
-                        className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${
-                          isSelected
-                            ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                            : "bg-slate-800/80 text-slate-300 hover:bg-slate-800 border border-slate-700/60"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Action to Draft */}
-          <button
-            onClick={handleRunDemoDraft}
-            disabled={isDemoDrafting}
-            className="w-full py-3.5 px-5 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-500 shadow-lg shadow-blue-600/20 text-xs flex items-center justify-center gap-2 active:scale-98 transition-all"
-          >
-            {isDemoDrafting ? (
-              <span>Drafting Human Review with AI...</span>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 text-amber-300" />
-                <span>Simulate AI Review Generation</span>
-              </>
-            )}
-          </button>
-
-          {/* Result Box */}
-          {demoDraftedReview && (
-            <div className="bg-slate-950 border-2 border-emerald-500/40 rounded-2xl p-5 space-y-3 animate-fadeIn">
-              <div className="flex items-center justify-between text-xs text-emerald-400 font-bold">
-                <span className="flex items-center gap-1">
-                  <CheckCircle2 className="w-4 h-4" /> AI Generated Google Review (Human-like):
-                </span>
-                <span className="flex items-center gap-1 text-amber-400">
-                  <Star className="w-3.5 h-3.5 fill-amber-400" /> 5.0 Stars
-                </span>
-              </div>
-              <p className="text-sm text-slate-200 leading-relaxed italic bg-slate-900/60 p-4 rounded-xl border border-slate-800">
-                "{demoDraftedReview}"
-              </p>
-              <div className="flex items-center justify-between text-xs text-slate-500">
-                <span>Customer taps "Copy & Open Google" ➔ pastes in 2 seconds.</span>
-                <Link
-                  href="/products/theqrbasedsystem/onboard"
-                  className="text-blue-400 hover:underline font-semibold"
-                >
-                  Get this for your clinic →
-                </Link>
-              </div>
-            </div>
-          )}
-        </div>
+      {/* TRANSPARENT CATEGORY QUESTION ENGINE & SIMULATOR */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        <QuestionPoolExplorer initialIndustry={selectedIndustry} />
       </section>
 
       {/* PRICING SECTION - $1/DAY HOOK */}
@@ -561,7 +458,7 @@ export default function SalesPageClient() {
             <div className="space-y-3 pt-1">
               {/* 1. PayPal (First position as requested) */}
               <a
-                href={`https://www.paypal.com/checkoutnow?plan=${selectedPlan}`}
+                href={getCheckoutUrl(selectedPlan, "paypal")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full p-4 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold flex items-center justify-between text-xs transition-transform active:scale-[0.98] shadow-lg shadow-amber-400/20 group"
@@ -582,7 +479,7 @@ export default function SalesPageClient() {
 
               {/* 2. Lemon Squeezy (After PayPal as requested) */}
               <a
-                href={`https://mithundas.lemonsqueezy.com/checkout/buy/${selectedPlan === "monthly" ? "monthly-30" : "annual-249"}`}
+                href={getCheckoutUrl(selectedPlan, "lemonsqueezy")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full p-4 rounded-2xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white font-bold flex items-center justify-between text-xs transition-transform active:scale-[0.98] group"
@@ -603,7 +500,7 @@ export default function SalesPageClient() {
 
               {/* 3. Stripe Direct */}
               <a
-                href={`https://buy.stripe.com/test_qr_review_${selectedPlan}`}
+                href={getCheckoutUrl(selectedPlan, "stripe")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full p-4 rounded-2xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white font-bold flex items-center justify-between text-xs transition-transform active:scale-[0.98] group"

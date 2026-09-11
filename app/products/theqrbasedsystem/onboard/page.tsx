@@ -23,9 +23,11 @@ import {
   AlertCircle,
   Loader2,
   Phone,
-  Briefcase
+  Briefcase,
+  Eye
 } from "lucide-react";
-import { INDUSTRY_QUESTION_POOLS } from "@/lib/qr-review/question-pools";
+import { INDUSTRY_QUESTION_POOLS, resolveCategoryKey } from "@/lib/qr-review/question-pools";
+import QuestionPoolExplorer from "@/components/qr-review/QuestionPoolExplorer";
 import {
   extractPlaceIdFromUrl,
   extractBusinessNameFromUrl,
@@ -52,6 +54,7 @@ function OnboardFormContent() {
   const [showColdEmailHelp, setShowColdEmailHelp] = useState(false);
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [autoFillSuccessMsg, setAutoFillSuccessMsg] = useState("");
+  const [showQuestionsModal, setShowQuestionsModal] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [createdBusiness, setCreatedBusiness] = useState<{
@@ -99,10 +102,7 @@ function OnboardFormContent() {
     }
 
     if (pCategory) {
-      const upperCat = pCategory.toUpperCase().replace(/[\s-]+/g, "_");
-      if (INDUSTRY_QUESTION_POOLS[upperCat]) {
-        setCategory(upperCat);
-      }
+      setCategory(resolveCategoryKey(pCategory));
     }
 
     if (pEmail) {
@@ -620,9 +620,19 @@ function OnboardFormContent() {
 
                 {/* 3. INDUSTRY CATEGORY */}
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
-                    Industry Category *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-medium text-slate-300">
+                      Industry Category *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowQuestionsModal(true)}
+                      className="text-[11px] text-blue-400 hover:text-blue-300 font-semibold inline-flex items-center gap-1 transition-colors"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      Preview 30+ Questions
+                    </button>
+                  </div>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
@@ -949,6 +959,19 @@ function OnboardFormContent() {
               Got It, Back to Form
             </button>
           </div>
+        </div>
+      )}
+
+      {/* 30+ QUESTIONS PREVIEW MODAL */}
+      {showQuestionsModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
+          <QuestionPoolExplorer
+            initialIndustry={category}
+            businessName={businessName || "Your Business"}
+            city={city || "Your City"}
+            isModal
+            onClose={() => setShowQuestionsModal(false)}
+          />
         </div>
       )}
     </div>
