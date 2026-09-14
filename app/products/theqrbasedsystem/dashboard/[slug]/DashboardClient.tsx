@@ -360,27 +360,6 @@ export default function DashboardClient({ business }: DashboardClientProps) {
                 </div>
                 <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
               </a>
-
-              {/* 3. Razorpay (UPI, NetBanking & Cards) */}
-              <a
-                href={getCheckoutUrl(selectedPlan, "razorpay", business.slug)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full p-4 rounded-2xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white font-bold flex items-center justify-between text-xs transition-transform active:scale-[0.98] group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-black text-sm">
-                    R
-                  </div>
-                  <div className="text-left">
-                    <p className="text-xs font-bold">Razorpay (UPI, NetBanking & Cards)</p>
-                    <p className="text-[10px] text-slate-400 font-normal">
-                      Instant UPI, GPay, PhonePe, RuPay & International Cards
-                    </p>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
-              </a>
             </div>
 
             <p className="text-[10px] text-center text-slate-500">

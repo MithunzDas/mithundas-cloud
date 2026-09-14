@@ -15,7 +15,6 @@ export interface PricingPlanConfig {
   savingsBadge?: string;
   paypalUrl: string;
   lemonSqueezyUrl: string;
-  razorpayUrl?: string;
 }
 
 export const QR_REVIEW_PLANS: Record<"monthly" | "annual", PricingPlanConfig> = {
@@ -32,8 +31,7 @@ export const QR_REVIEW_PLANS: Record<"monthly" | "annual", PricingPlanConfig> = 
     // Lemon Squeezy hosted checkout URL (Credit/Debit Cards & Apple Pay)
     lemonSqueezyUrl:
       process.env.NEXT_PUBLIC_LEMON_SQUEEZY_MONTHLY_URL ||
-      "https://mithundas.lemonsqueezy.com/checkout/buy/0e8fc160-76a1-4f4b-9b69-b11c9db46edb",
-    razorpayUrl: process.env.NEXT_PUBLIC_RAZORPAY_MONTHLY_URL || "https://rzp.io/l/qr-review-monthly"
+      "https://mithundas.lemonsqueezy.com/checkout/buy/0e8fc160-76a1-4f4b-9b69-b11c9db46edb"
   },
   annual: {
     id: "annual",
@@ -49,8 +47,7 @@ export const QR_REVIEW_PLANS: Record<"monthly" | "annual", PricingPlanConfig> = 
     // Lemon Squeezy annual product checkout
     lemonSqueezyUrl:
       process.env.NEXT_PUBLIC_LEMON_SQUEEZY_ANNUAL_URL ||
-      "https://mithundas.lemonsqueezy.com/checkout/buy/00dd862d-71eb-44e0-ab7b-d524afca1443",
-    razorpayUrl: process.env.NEXT_PUBLIC_RAZORPAY_ANNUAL_URL || "https://rzp.io/l/qr-review-annual"
+      "https://mithundas.lemonsqueezy.com/checkout/buy/00dd862d-71eb-44e0-ab7b-d524afca1443"
   }
 };
 
@@ -59,7 +56,7 @@ export const QR_REVIEW_PLANS: Record<"monthly" | "annual", PricingPlanConfig> = 
  */
 export function getCheckoutUrl(
   plan: "monthly" | "annual",
-  provider: "paypal" | "lemonsqueezy" | "razorpay",
+  provider: "paypal" | "lemonsqueezy",
   businessSlug?: string
 ): string {
   const planConfig = QR_REVIEW_PLANS[plan];
@@ -84,15 +81,6 @@ export function getCheckoutUrl(
       url = `${url}${s}checkout[custom][business_slug]=${encodeURIComponent(businessSlug)}`;
     }
     return url;
-  }
-
-  if (provider === "razorpay") {
-    const base = planConfig.razorpayUrl || "#";
-    if (businessSlug && base.startsWith("http")) {
-      const sep = base.includes("?") ? "&" : "?";
-      return `${base}${sep}notes_slug=${encodeURIComponent(businessSlug)}`;
-    }
-    return base;
   }
 
   return "#";
