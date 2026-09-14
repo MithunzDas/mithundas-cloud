@@ -20,6 +20,7 @@ const footerLinks = {
   legal: [
     { href: "/privacy", label: "Privacy Policy" },
     { href: "/terms", label: "Terms of Service" },
+    { href: "/certificates/udyam-registration-certificate.pdf", label: "MSME Registration", external: true },
   ],
 };
 
@@ -55,6 +56,35 @@ export function Footer() {
                 M.Tech in Systems & Control Engineering, NIT Warangal<br />
                 B.E. in Electronics & Instrumentation, Jadavpur University
               </p>
+            </div>
+
+            {/* Enterprise Registration Trust Signal */}
+            <div className="mt-3 border-t border-border-subtle pt-3">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-text-muted">
+                  Registered Enterprise
+                </span>
+                <span className="inline-flex items-center gap-1 rounded bg-accent-cyan/10 px-1.5 py-0.5 font-mono text-[9px] font-semibold text-accent-cyan uppercase tracking-wider">
+                  MSME • GOI
+                </span>
+              </div>
+              <p className="mt-1 font-mono text-[11px] text-text-secondary">
+                Mithun Das AI Automation
+              </p>
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <span className="font-mono text-[10px] text-text-muted">
+                  UDYAM-WB-14-0303625
+                </span>
+                <a
+                  href="/certificates/udyam-registration-certificate.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 font-mono text-[10px] font-medium text-accent-cyan hover:underline"
+                >
+                  <span>Certificate</span>
+                  <ExternalLink className="h-2.5 w-2.5" />
+                </a>
+              </div>
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
@@ -155,12 +185,24 @@ export function Footer() {
             <ul className="mt-4 flex flex-col gap-2.5">
               {footerLinks.legal.map((link) => (
                 <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="font-sans text-small text-text-secondary transition-colors hover:text-text-primary"
-                  >
-                    {link.label}
-                  </Link>
+                  {'external' in link && link.external ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 font-sans text-small text-text-secondary transition-colors hover:text-text-primary"
+                    >
+                      <span>{link.label}</span>
+                      <ExternalLink className="h-3 w-3 text-text-muted" />
+                    </a>
+                  ) : (
+                    <Link
+                      href={link.href}
+                      className="font-sans text-small text-text-secondary transition-colors hover:text-text-primary"
+                    >
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
@@ -183,9 +225,13 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border-subtle pt-6 sm:flex-row">
-          <p className="font-mono text-label text-text-muted">
-            © {new Date().getFullYear()} Mithun Das. AI Business Automation Engineering.
-          </p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-label text-text-muted">
+            <span>© {new Date().getFullYear()} Mithun Das AI Automation.</span>
+            <span className="text-border-default">•</span>
+            <span>
+              MSME Reg: <span className="text-text-secondary">UDYAM-WB-14-0303625</span>
+            </span>
+          </div>
           <div className="flex items-center gap-4">
             <span className="inline-flex items-center gap-1.5 font-mono text-label text-text-muted">
               <span className="relative flex h-1.5 w-1.5">
