@@ -54,10 +54,11 @@ export default function QuestionPoolExplorer({
   const hasDragged = useRef(false);
   const isMouseDown = useRef(false);
 
-  // Live Simulation state
-  const [simQuestions, setSimQuestions] = useState<PoolQuestion[]>(() =>
-    getRandomQuestionsForCategory(initialIndustry, 4)
-  );
+  // Live Simulation state (deterministic on SSR to prevent hydration mismatch)
+  const [simQuestions, setSimQuestions] = useState<PoolQuestion[]>(() => {
+    const pool = INDUSTRY_QUESTION_POOLS[initialIndustry] || INDUSTRY_QUESTION_POOLS.DENTIST;
+    return pool.questions.slice(0, 4);
+  });
   const [simAnswers, setSimAnswers] = useState<Record<string, string>>({});
   const [simReview, setSimReview] = useState<string>("");
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
