@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Script from "next/script";
+import { useRouter } from "next/navigation";
 import {
   QrCode,
   Star,
@@ -28,8 +29,10 @@ import {
 import { INDUSTRY_QUESTION_POOLS } from "@/lib/qr-review/question-pools";
 import QuestionPoolExplorer from "@/components/qr-review/QuestionPoolExplorer";
 import { getCheckoutUrl, QR_REVIEW_PLANS } from "@/lib/qr-review/payment-config";
+import OwnerAuthModal from "@/components/qr-review/OwnerAuthModal";
 
 export default function SalesPageClient() {
+  const router = useRouter();
   const [selectedIndustry, setSelectedIndustry] = useState("DENTIST");
   const [demoRating, setDemoRating] = useState(5);
   const [demoSelections, setDemoSelections] = useState<Record<string, string>>({});
@@ -40,12 +43,44 @@ export default function SalesPageClient() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "annual">("monthly");
 
+  // Owner Auth State
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [ownerSession, setOwnerSession] = useState<{ email: string; name?: string; slug?: string } | null>(null);
+
+  useEffect(() => {
+    // Check if owner already has active session
+    fetch("/api/qr-review/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated && data.owner?.businesses?.length > 0) {
+          setOwnerSession({
+            email: data.owner.email,
+            name: data.owner.name,
+            slug: data.owner.businesses[0].slug,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (showPaymentModal && typeof window !== "undefined") {
       // @ts-expect-error LemonSqueezy global
       window.createLemonSqueezy?.();
     }
   }, [showPaymentModal]);
+
+  const handleAuthSuccess = (owner: {
+    email: string;
+    name?: string;
+    businesses: Array<{ id: string; slug: string; businessName: string; category?: string; trialStatus: string }>;
+  }) => {
+    if (owner.businesses && owner.businesses.length > 0) {
+      router.push(`/products/theqrbasedsystem/dashboard/${owner.businesses[0].slug}`);
+    } else {
+      router.push("/products/theqrbasedsystem/onboard");
+    }
+  };
 
   const activeIndustry = INDUSTRY_QUESTION_POOLS[selectedIndustry] || INDUSTRY_QUESTION_POOLS.DENTIST;
 
@@ -127,16 +162,36 @@ export default function SalesPageClient() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* BUSINESS PORTAL BUTTON */}
+          {ownerSession?.slug ? (
+            <Link
+              href={`/products/theqrbasedsystem/dashboard/${ownerSession.slug}`}
+              className="px-3 sm:px-3.5 py-2 rounded-xl text-xs font-bold text-slate-200 bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-blue-500/50 flex items-center gap-1.5 sm:gap-2 transition-all shadow-sm"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <Building2 className="w-3.5 h-3.5 text-blue-400" />
+              <span>Business Portal</span>
+            </Link>
+          ) : (
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="px-3 sm:px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 flex items-center gap-1.5 sm:gap-2 transition-all shadow-sm"
+            >
+              <Building2 className="w-3.5 h-3.5 text-blue-400" />
+              <span>Business Portal</span>
+            </button>
+          )}
+
           <Link
             href="/products/theqrbasedsystem/onboard"
-            className="hidden sm:inline-flex px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white transition-colors"
+            className="hidden md:inline-flex px-3.5 py-2 text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors"
           >
             Start Free Trial
           </Link>
           <button
             onClick={() => handleOpenCheckout("monthly")}
-            className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 active:scale-95 transition-all shadow-md shadow-blue-600/20"
+            className="px-3 sm:px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 active:scale-95 transition-all shadow-md shadow-blue-600/20"
           >
             Pricing & Plans ($1/Day)
           </button>
@@ -513,6 +568,13 @@ export default function SalesPageClient() {
           </div>
         </div>
       )}
+
+      {/* OWNER 1-CLICK AUTH MODAL */}
+      <OwnerAuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+      />
 
       {/* LEMON SQUEEZY OVERLAY CHECKOUT SCRIPT */}
       <Script src="https://assets.lemonsqueezy.com/lemon.js" strategy="lazyOnload" />
