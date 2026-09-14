@@ -327,3 +327,14 @@ model PrivateFeedback {
   @@index([businessId])
   @@index([resolved])
 }
+
+model OwnerAuthOtp {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([email, code])
+}
