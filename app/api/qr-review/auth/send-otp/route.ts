@@ -106,9 +106,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Login code dispatched to ${cleanEmail}`,
-      // For local development convenience
-      devCode: process.env.NODE_ENV !== "production" ? code : undefined,
+      message: emailSent
+        ? `Login code dispatched to ${cleanEmail}`
+        : `Email service not connected. Your login code is: ${code}`,
+      emailSent,
+      // If email was not sent or in dev mode, return preview code so owner is never blocked
+      previewCode: !emailSent || process.env.NODE_ENV !== "production" ? code : undefined,
     });
   } catch (err) {
     logger.error("Failed to send owner OTP", "owner_otp_error", err);

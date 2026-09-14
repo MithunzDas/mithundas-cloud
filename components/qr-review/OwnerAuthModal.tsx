@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Script from "next/script";
-import { Mail, ShieldCheck, ArrowRight, Loader2, RefreshCw, KeyRound } from "lucide-react";
+import { Mail, ShieldCheck, ArrowRight, Loader2, RefreshCw, KeyRound, Building2 } from "lucide-react";
 
 interface OwnerAuthModalProps {
   isOpen: boolean;
@@ -29,7 +29,8 @@ export default function OwnerAuthModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(0);
-  const [devOtpHint, setDevOtpHint] = useState<string | null>(null);
+  const [previewOtp, setPreviewOtp] = useState<string | null>(null);
+  const [googleInitialized, setGoogleInitialized] = useState(false);
 
   const otpInputRef = useRef<HTMLInputElement>(null);
 
@@ -54,10 +55,8 @@ export default function OwnerAuthModal({
     }
   }, [step]);
 
-  if (!isOpen) return null;
-
   // Handle Google GIS callback
-  const handleGoogleResponse = async (response: { credential: string }) => {
+  const handleGoogleResponse = useCallback(async (response: { credential: string }) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -77,43 +76,82 @@ export default function OwnerAuthModal({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [onSuccess, onClose]);
 
-  // Google script load handler
-  const handleGoogleScriptLoad = () => {
+  // Initialize Google Identity Services
+  const initGoogleGIS = useCallback(() => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (clientId && typeof window !== "undefined" && (window as unknown as { google?: { accounts: { id: { initialize: (opts: unknown) => void; renderButton: (el: HTMLElement | null, opts: unknown) => void; prompt: () => void } } } }).google) {
-      const google = (window as unknown as { google: { accounts: { id: { initialize: (opts: unknown) => void; renderButton: (el: HTMLElement | null, opts: unknown) => void; prompt: () => void } } } }).google;
-      google.accounts.id.initialize({
-        client_id: clientId,
-        callback: handleGoogleResponse,
-      });
+    if (!clientId) return;
 
-      const btnContainer = document.getElementById("google-signin-btn-container");
-      if (btnContainer) {
-        google.accounts.id.renderButton(btnContainer, {
-          theme: "filled_blue",
-          size: "large",
-          width: "100%",
-          text: "continue_with",
-          shape: "pill",
+    if (typeof window !== "undefined" && (window as unknown as { google?: { accounts: { id: { initialize: (o: unknown) => void; renderButton: (el: HTMLElement | null, o: unknown) => void; prompt: () => void } } } }).google) {
+      const google = (window as unknown as { google: { accounts: { id: { initialize: (o: unknown) => void; renderButton: (el: HTMLElement | null, o: unknown) => void; prompt: () => void } } } }).google;
+      try {
+        google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleGoogleResponse,
+          auto_select: false,
         });
+
+        const btnContainer = document.getElementById("google-signin-btn-container");
+        if (btnContainer) {
+          btnContainer.innerHTML = "";
+          google.accounts.id.renderButton(btnContainer, {
+            theme: "filled_blue",
+            size: "large",
+            width: "340",
+            text: "continue_with",
+            shape: "pill",
+          });
+        }
+        setGoogleInitialized(true);
+      } catch (e) {
+        console.warn("Google GIS init error:", e);
       }
-      google.accounts.id.prompt(); // Trigger Google One-Tap
+    }
+  }, [handleGoogleResponse]);
+
+  // Effect to re-initialize Google whenever modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setTimeout(() => {
+      initGoogleGIS();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [isOpen, initGoogleGIS]);
+
+  // Trigger Google One-Tap / Sign-In on manual button click
+  const triggerGoogleSignIn = () => {
+    const google = typeof window !== "undefined" ? (window as unknown as { google?: { accounts: { id: { prompt: (cb?: unknown) => void } } } }).google : null;
+    if (google?.accounts?.id) {
+      google.accounts.id.prompt((notification: { isNotDisplayed: () => boolean; isSkippedMoment: () => boolean }) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          // If One Tap popup was blocked by browser or cookies, click the rendered Google button
+          const btn = document.querySelector("#google-signin-btn-container div[role=button]") as HTMLElement;
+          if (btn) {
+            btn.click();
+          } else {
+            setError("Google One-Tap is loading or blocked by your browser. Please enter your email below.");
+          }
+        }
+      });
+    } else {
+      initGoogleGIS();
     }
   };
+
+  if (!isOpen) return null;
 
   // Send 6-digit OTP
   const handleSendOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!email || !email.includes("@")) {
-      setError("Please enter a valid work or clinic email address.");
+      setError("Please enter a valid email address.");
       return;
     }
 
     setIsLoading(true);
     setError(null);
-    setDevOtpHint(null);
+    setPreviewOtp(null);
 
     try {
       const res = await fetch("/api/qr-review/auth/send-otp", {
@@ -129,8 +167,10 @@ export default function OwnerAuthModal({
 
       setStep("otp");
       setCountdown(60);
-      if (data.devCode) {
-        setDevOtpHint(data.devCode);
+
+      // If server returned previewCode (e.g. RESEND_API_KEY not configured)
+      if (data.previewCode) {
+        setPreviewOtp(data.previewCode);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to dispatch login code");
@@ -171,13 +211,16 @@ export default function OwnerAuthModal({
     }
   };
 
+  const isGmailUser = email.toLowerCase().includes("@gmail.com") || email.toLowerCase().includes("@googlemail.com");
+
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn">
       {/* Google Identity Services Script */}
       <Script
+        id="google-gis-script"
         src="https://accounts.google.com/gsi/client"
         strategy="afterInteractive"
-        onLoad={handleGoogleScriptLoad}
+        onLoad={initGoogleGIS}
       />
 
       <div className="bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[95vh] overflow-y-auto">
@@ -215,31 +258,49 @@ export default function OwnerAuthModal({
           </div>
         )}
 
-        {/* Dev OTP Helper */}
-        {devOtpHint && (
-          <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs text-center font-mono">
-            Dev Code: <strong>{devOtpHint}</strong>
-          </div>
-        )}
-
-        {/* STEP 1: EMAIL / GOOGLE ONE-TAP */}
+        {/* STEP 1: GOOGLE 1-CLICK OR EMAIL INPUT */}
         {step === "email" ? (
           <div className="space-y-4">
-            {/* Google Container */}
-            <div id="google-signin-btn-container" className="w-full min-h-[44px] flex justify-center"></div>
+            
+            {/* 1. GOOGLE 1-CLICK AUTH BUTTON (PRIMARY FOR GMAIL/GOOGLE USERS) */}
+            <div className="space-y-2">
+              {/* Google Native / Fallback Button */}
+              <button
+                type="button"
+                onClick={triggerGoogleSignIn}
+                className="w-full py-3 px-4 rounded-2xl font-bold text-xs bg-white hover:bg-slate-100 text-slate-900 shadow-md flex items-center justify-center gap-3 transition-transform active:scale-[0.98] border border-slate-200"
+              >
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                </svg>
+                <span>Continue with Google (1-Click)</span>
+              </button>
 
+              {/* Google Render Container (Auto-injected by GIS if supported) */}
+              <div id="google-signin-btn-container" className="flex justify-center empty:hidden"></div>
+
+              <p className="text-[10px] text-center text-slate-500 font-medium">
+                Fastest for Gmail &amp; Google Workspace business accounts
+              </p>
+            </div>
+
+            {/* DIVIDER */}
             <div className="flex items-center gap-3 py-1">
               <div className="h-px bg-slate-800 flex-1"></div>
-              <span className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
-                Or With Work Email
+              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+                Or With Work Email (OTP)
               </span>
               <div className="h-px bg-slate-800 flex-1"></div>
             </div>
 
+            {/* 2. EMAIL OTP FORM (FOR YAHOO, OUTLOOK, HOTMAIL & CUSTOM CLINIC DOMAINS) */}
             <form onSubmit={handleSendOtp} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-300 block">
-                  Clinic / Business Owner Email
+                  Outlook, Yahoo, or Custom Clinic Email
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
@@ -254,6 +315,11 @@ export default function OwnerAuthModal({
                     className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                   />
                 </div>
+                {isGmailUser && (
+                  <p className="text-[10px] text-blue-400 pt-0.5">
+                    💡 Gmail detected! You can use the 1-Click Google button above for instant sign-in.
+                  </p>
+                )}
               </div>
 
               <button
@@ -276,69 +342,110 @@ export default function OwnerAuthModal({
           </div>
         ) : (
           /* STEP 2: 6-DIGIT OTP VERIFICATION */
-          <form onSubmit={handleVerifyOtp} className="space-y-4">
-            <div className="space-y-2 text-center">
-              <label className="text-xs font-semibold text-slate-300 block">
-                Type 6-Digit Code
-              </label>
-              <div className="relative">
-                <input
-                  ref={otpInputRef}
-                  type="text"
-                  maxLength={6}
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                  placeholder="• • • • • •"
-                  className="w-full text-center tracking-[12px] font-mono text-2xl font-black py-3.5 px-4 rounded-xl bg-slate-950 border border-slate-800 text-blue-400 placeholder:text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                  autoComplete="one-time-code"
-                />
+          <div className="space-y-5">
+            {/* Auto-fill banner if preview code returned */}
+            {previewOtp && (
+              <div className="p-3.5 bg-blue-500/10 border border-blue-500/30 rounded-2xl space-y-1.5 animate-fadeIn">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-300 font-semibold">Your Verification Code:</span>
+                  <button
+                    type="button"
+                    onClick={() => setOtp(previewOtp)}
+                    className="text-blue-400 font-bold hover:underline text-xs"
+                  >
+                    Click to Auto-Fill ➔
+                  </button>
+                </div>
+                <div className="text-2xl font-mono font-black text-blue-400 tracking-[8px] text-center py-1">
+                  {previewOtp}
+                </div>
+                <p className="text-[10px] text-slate-400 text-center leading-tight">
+                  (Resend email key not connected on server. Code displayed here for instant access)
+                </p>
               </div>
-            </div>
+            )}
 
-            <button
-              type="submit"
-              disabled={isLoading || otp.length < 6}
-              className="w-full py-3.5 px-4 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-lg shadow-emerald-600/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Verifying...
-                </>
-              ) : (
-                <>
-                  <KeyRound className="w-4 h-4" /> Verify & Access Dashboard
-                </>
-              )}
-            </button>
-
-            <div className="flex items-center justify-between text-xs pt-2">
+            {/* Google alternative button on OTP screen if user prefers */}
+            {isGmailUser && (
               <button
                 type="button"
-                onClick={() => setStep("email")}
-                className="text-slate-400 hover:text-slate-200 transition-colors"
+                onClick={triggerGoogleSignIn}
+                className="w-full py-2.5 px-3 rounded-xl font-bold text-xs bg-white/95 hover:bg-white text-slate-900 flex items-center justify-center gap-2 transition-all shadow-sm"
               >
-                ← Change Email
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                </svg>
+                <span>Or Sign in with 1-Click Google</span>
               </button>
+            )}
+
+            <form onSubmit={handleVerifyOtp} className="space-y-4">
+              <div className="space-y-2 text-center">
+                <label className="text-xs font-semibold text-slate-300 block">
+                  Type 6-Digit Code
+                </label>
+                <div className="relative">
+                  <input
+                    ref={otpInputRef}
+                    type="text"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                    placeholder="• • • • • •"
+                    className="w-full text-center tracking-[12px] font-mono text-2xl font-black py-3.5 px-4 rounded-xl bg-slate-950 border border-slate-800 text-blue-400 placeholder:text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                    autoComplete="one-time-code"
+                  />
+                </div>
+              </div>
 
               <button
-                type="button"
-                disabled={countdown > 0 || isLoading}
-                onClick={() => handleSendOtp()}
-                className="text-blue-400 hover:text-blue-300 disabled:text-slate-600 disabled:cursor-not-allowed flex items-center gap-1 transition-colors font-medium"
+                type="submit"
+                disabled={isLoading || otp.length < 6}
+                className="w-full py-3.5 px-4 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-lg shadow-emerald-600/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
               >
-                <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} />
-                {countdown > 0 ? `Resend in ${countdown}s` : "Resend Code"}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  <>
+                    <KeyRound className="w-4 h-4" /> Verify &amp; Access Dashboard
+                  </>
+                )}
               </button>
-            </div>
-          </form>
+
+              <div className="flex items-center justify-between text-xs pt-1">
+                <button
+                  type="button"
+                  onClick={() => setStep("email")}
+                  className="text-slate-400 hover:text-slate-200 transition-colors"
+                >
+                  ← Change Email
+                </button>
+
+                <button
+                  type="button"
+                  disabled={countdown > 0 || isLoading}
+                  onClick={() => handleSendOtp()}
+                  className="text-blue-400 hover:text-blue-300 disabled:text-slate-600 disabled:cursor-not-allowed flex items-center gap-1 transition-colors font-medium"
+                >
+                  <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} />
+                  {countdown > 0 ? `Resend in ${countdown}s` : "Resend Code"}
+                </button>
+              </div>
+            </form>
+          </div>
         )}
 
         <div className="pt-2 text-center border-t border-slate-800/80">
           <p className="text-[10px] text-slate-500 flex items-center justify-center gap-1">
-            <span>🔒 Bank-Grade 256-Bit SSL</span>
+            <span>🔒 256-Bit Bank-Grade Encryption</span>
             <span>•</span>
-            <span>Passwordless Protection</span>
+            <span>Passwordless Security</span>
           </p>
         </div>
       </div>
