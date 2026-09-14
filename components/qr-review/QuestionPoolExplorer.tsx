@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Sparkles,
   CheckCircle2,
   HelpCircle,
   Copy,
   ExternalLink,
+  ChevronLeft,
   ChevronRight,
   ShieldCheck,
   Zap,
@@ -42,6 +43,17 @@ export default function QuestionPoolExplorer({
   const [selectedSubCat, setSelectedSubCat] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
+  // Horizontal Scroll & Drag-to-Scroll state
+  const categoryScrollRef = useRef<HTMLDivElement>(null);
+  const selectedCategoryBtnRef = useRef<HTMLButtonElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartX = useRef(0);
+  const dragStartScrollLeft = useRef(0);
+  const hasDragged = useRef(false);
+  const isMouseDown = useRef(false);
+
   // Live Simulation state
   const [simQuestions, setSimQuestions] = useState<PoolQuestion[]>(() =>
     getRandomQuestionsForCategory(initialIndustry, 4)
@@ -54,8 +66,96 @@ export default function QuestionPoolExplorer({
   const currentConfig: IndustryConfig =
     INDUSTRY_QUESTION_POOLS[selectedIndustry] || INDUSTRY_QUESTION_POOLS.DENTIST;
 
+  // Check scroll boundary for navigation arrows and gradient fades
+  const updateScrollState = useCallback(() => {
+    const el = categoryScrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 6);
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 6);
+  }, []);
+
+  // Update on mount, resize, and category switch
+  useEffect(() => {
+    updateScrollState();
+    window.addEventListener("resize", updateScrollState);
+    return () => window.removeEventListener("resize", updateScrollState);
+  }, [updateScrollState]);
+
+  // Smooth scroll left / right arrows
+  const scrollCategories = (direction: "left" | "right") => {
+    const el = categoryScrollRef.current;
+    if (!el) return;
+    const scrollOffset = direction === "left" ? -340 : 340;
+    el.scrollBy({ left: scrollOffset, behavior: "smooth" });
+  };
+
+  // Drag-to-scroll handlers for desktop mouse users
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const el = categoryScrollRef.current;
+    if (!el) return;
+    isMouseDown.current = true;
+    dragStartX.current = e.pageX;
+    dragStartScrollLeft.current = el.scrollLeft;
+    hasDragged.current = false;
+    setIsDragging(true);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isMouseDown.current) return;
+    const el = categoryScrollRef.current;
+    if (!el) return;
+    const delta = e.pageX - dragStartX.current;
+    if (Math.abs(delta) > 5) {
+      hasDragged.current = true;
+    }
+    el.scrollLeft = dragStartScrollLeft.current - delta;
+  };
+
+  const handleMouseUpOrLeave = () => {
+    if (isMouseDown.current) {
+      isMouseDown.current = false;
+      setIsDragging(false);
+      setTimeout(() => {
+        hasDragged.current = false;
+      }, 60);
+    }
+  };
+
+  // Convert vertical mouse wheel over category bar to smooth horizontal scroll
+  useEffect(() => {
+    const el = categoryScrollRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        const canScroll =
+          (e.deltaY > 0 && el.scrollLeft + el.clientWidth < el.scrollWidth - 2) ||
+          (e.deltaY < 0 && el.scrollLeft > 2);
+        if (canScroll) {
+          e.preventDefault();
+          el.scrollBy({ left: e.deltaY, behavior: "smooth" });
+        }
+      }
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, []);
+
+  // Auto-center active category pill smoothly
+  useEffect(() => {
+    if (selectedCategoryBtnRef.current) {
+      selectedCategoryBtnRef.current.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest"
+      });
+    }
+  }, [selectedIndustry]);
+
   // Handle switching category
-  const handleSelectIndustry = (key: string) => {
+  const handleSelectIndustry = (key: string, e?: React.MouseEvent<HTMLButtonElement>) => {
     setSelectedIndustry(key);
     setSelectedSubCat("ALL");
     setSearchQuery("");
@@ -63,6 +163,14 @@ export default function QuestionPoolExplorer({
     setSimQuestions(newRandom);
     setSimAnswers({});
     setSimReview("");
+
+    if (e?.currentTarget) {
+      e.currentTarget.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest"
+      });
+    }
   };
 
   // Get unique sub-categories
@@ -164,28 +272,93 @@ export default function QuestionPoolExplorer({
         )}
       </div>
 
-      {/* Category Pills Bar */}
-      <div className="flex items-center gap-2 overflow-x-auto py-4 scrollbar-none border-b border-slate-800/80">
-        {Object.values(INDUSTRY_QUESTION_POOLS).map((cat) => {
-          const isSelected = selectedIndustry === cat.id;
-          return (
-            <button
-              key={cat.id}
-              onClick={() => handleSelectIndustry(cat.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                isSelected
-                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30 ring-2 ring-blue-400/30 scale-105"
-                  : "bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-700/50"
-              }`}
-            >
-              <span className="text-base">{cat.icon}</span>
-              <span>{cat.name.split("/")[0]?.trim()}</span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${isSelected ? "bg-blue-700 text-white" : "bg-slate-900 text-slate-400"}`}>
-                {cat.questions.length}
-              </span>
-            </button>
-          );
-        })}
+      {/* Category Pills Bar with Smooth Horizontal Scrolling, Arrows & Fades */}
+      <div className="relative border-b border-slate-800/80 group/category-nav">
+        {/* Left Edge Gradient Fade */}
+        <div
+          className={`pointer-events-none absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-slate-900 via-slate-900/90 to-transparent z-10 transition-opacity duration-300 ${
+            canScrollLeft ? "opacity-100" : "opacity-0"
+          }`}
+        />
+
+        {/* Right Edge Gradient Fade */}
+        <div
+          className={`pointer-events-none absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-slate-900 via-slate-900/90 to-transparent z-10 transition-opacity duration-300 ${
+            canScrollRight ? "opacity-100" : "opacity-0"
+          }`}
+        />
+
+        {/* Left Scroll Navigation Button */}
+        <button
+          type="button"
+          onClick={() => scrollCategories("left")}
+          aria-label="Scroll categories left"
+          className={`absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-slate-900/95 hover:bg-blue-600 border border-slate-700/80 hover:border-blue-400 text-white flex items-center justify-center shadow-xl shadow-black/50 backdrop-blur-md transition-all duration-200 active:scale-90 ${
+            canScrollLeft
+              ? "opacity-100 translate-x-0 pointer-events-auto"
+              : "opacity-0 -translate-x-2 pointer-events-none"
+          }`}
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+
+        {/* Right Scroll Navigation Button */}
+        <button
+          type="button"
+          onClick={() => scrollCategories("right")}
+          aria-label="Scroll categories right"
+          className={`absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-slate-900/95 hover:bg-blue-600 border border-slate-700/80 hover:border-blue-400 text-white flex items-center justify-center shadow-xl shadow-black/50 backdrop-blur-md transition-all duration-200 active:scale-90 ${
+            canScrollRight
+              ? "opacity-100 translate-x-0 pointer-events-auto"
+              : "opacity-0 translate-x-2 pointer-events-none"
+          }`}
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+
+        {/* Scrollable Pills Container */}
+        <div
+          ref={categoryScrollRef}
+          onScroll={updateScrollState}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUpOrLeave}
+          onMouseLeave={handleMouseUpOrLeave}
+          className={`flex items-center gap-2 overflow-x-auto py-4 px-2 sm:px-4 scroll-smooth scrollbar-none select-none ${
+            isDragging ? "cursor-grabbing" : "cursor-grab"
+          }`}
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
+          {Object.values(INDUSTRY_QUESTION_POOLS).map((cat) => {
+            const isSelected = selectedIndustry === cat.id;
+            return (
+              <button
+                key={cat.id}
+                ref={isSelected ? selectedCategoryBtnRef : undefined}
+                type="button"
+                onClick={(e) => {
+                  if (hasDragged.current) return;
+                  handleSelectIndustry(cat.id, e);
+                }}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+                  isSelected
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30 ring-2 ring-blue-400/30 scale-105 z-10"
+                    : "bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-700/50 hover:border-slate-600"
+                }`}
+              >
+                <span className="text-base pointer-events-none">{cat.icon}</span>
+                <span className="pointer-events-none">{cat.name.split("/")[0]?.trim()}</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-full pointer-events-none ${
+                    isSelected ? "bg-blue-700 text-white" : "bg-slate-900 text-slate-400"
+                  }`}
+                >
+                  {cat.questions.length}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Main Grid: Left Questions List (60%) + Right Live Mobile Simulator (40%) */}
@@ -205,10 +378,10 @@ export default function QuestionPoolExplorer({
               />
             </div>
 
-            <div className="flex items-center gap-1.5 overflow-x-auto w-full pb-1 sm:pb-0 scrollbar-none">
+            <div className="flex items-center gap-1.5 overflow-x-auto w-full pb-1 sm:pb-0 scrollbar-none scroll-smooth">
               <button
                 onClick={() => setSelectedSubCat("ALL")}
-                className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors whitespace-nowrap shrink-0 ${
                   selectedSubCat === "ALL"
                     ? "bg-slate-700 text-white"
                     : "bg-slate-800/60 text-slate-400 hover:text-white"
@@ -220,7 +393,7 @@ export default function QuestionPoolExplorer({
                 <button
                   key={sub.key}
                   onClick={() => setSelectedSubCat(sub.key)}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors whitespace-nowrap ${
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors whitespace-nowrap shrink-0 ${
                     selectedSubCat === sub.key
                       ? "bg-slate-700 text-white"
                       : "bg-slate-800/60 text-slate-400 hover:text-white"
