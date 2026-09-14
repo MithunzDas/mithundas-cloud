@@ -457,17 +457,61 @@ export default function SalesPageClient() {
       </section>
 
       {/* FOOTER */}
-      <footer className="max-w-7xl mx-auto px-4 sm:px-6 py-12 border-t border-slate-900 text-center space-y-4 text-xs text-slate-500">
-        <p>
-          © {new Date().getFullYear()} Mithun Das AI Business Platform • QR-Based AI Review Engine.
-        </p>
-        <div className="flex items-center justify-center gap-4 text-slate-400">
-          <Link href="/privacy" className="hover:underline">Privacy Policy</Link>
-          <span>•</span>
-          <Link href="/terms" className="hover:underline">Terms of Service</Link>
-          <span>•</span>
-          <Link href="/contact" className="hover:underline">Support</Link>
+      <footer className="max-w-7xl mx-auto px-4 sm:px-6 py-12 border-t border-slate-900 text-center space-y-6 text-xs text-slate-500">
+        {/* Enterprise & Security Trust Badges */}
+        <div className="flex flex-wrap items-center justify-center gap-3 text-[11px]">
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-slate-800 bg-slate-900/60 px-3 py-1 text-slate-300">
+            <Lock className="w-3 h-3 text-emerald-400" />
+            <span>256-Bit SSL Encrypted Checkout</span>
+          </div>
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-slate-800 bg-slate-900/60 px-3 py-1 text-slate-300">
+            <span className="flex h-1.5 w-1.5 rounded-full bg-cyan-400" />
+            <span>Govt. of India Registered Enterprise (MSME)</span>
+          </div>
         </div>
+
+        {/* Enterprise & Udyam Details */}
+        <div className="space-y-1.5">
+          <p className="text-slate-300 font-medium">
+            MITHUN DAS AI AUTOMATION
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2 text-slate-400 text-[11px]">
+            <span>Udyam Reg: <strong className="text-slate-300 font-mono">UDYAM-WB-14-0303625</strong> (Micro • Services)</span>
+            <span>•</span>
+            <a
+              href="/certificates/udyam-registration-certificate.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 hover:underline font-medium"
+            >
+              <span>Verify Official Certificate</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        </div>
+
+        {/* Legal & Policy Links */}
+        <div className="flex flex-wrap items-center justify-center gap-4 text-slate-400 pt-2 border-t border-slate-900/80">
+          <Link href="/privacy" className="hover:text-slate-200 transition-colors">Privacy Policy</Link>
+          <span>•</span>
+          <Link href="/terms" className="hover:text-slate-200 transition-colors">Terms of Service</Link>
+          <span>•</span>
+          <Link href="/contact" className="hover:text-slate-200 transition-colors">Support & Inquiries</Link>
+          <span>•</span>
+          <a
+            href="/certificates/udyam-registration-certificate.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-slate-200 transition-colors inline-flex items-center gap-1"
+          >
+            <span>MSME Registration</span>
+            <ExternalLink className="w-2.5 h-2.5" />
+          </a>
+        </div>
+
+        <p className="text-[11px] text-slate-600">
+          © {new Date().getFullYear()} MITHUN DAS AI AUTOMATION. All rights reserved. • QR-Based AI Review Engine
+        </p>
       </footer>
 
       {/* MULTI-GATEWAY CHECKOUT MODAL */}
