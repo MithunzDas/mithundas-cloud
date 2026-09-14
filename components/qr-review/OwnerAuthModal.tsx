@@ -121,21 +121,69 @@ export default function OwnerAuthModal({
 
   // Trigger Google One-Tap / Sign-In on manual button click
   const triggerGoogleSignIn = () => {
-    const google = typeof window !== "undefined" ? (window as unknown as { google?: { accounts: { id: { prompt: (cb?: unknown) => void } } } }).google : null;
-    if (google?.accounts?.id) {
-      google.accounts.id.prompt((notification: { isNotDisplayed: () => boolean; isSkippedMoment: () => boolean }) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          // If One Tap popup was blocked by browser or cookies, click the rendered Google button
-          const btn = document.querySelector("#google-signin-btn-container div[role=button]") as HTMLElement;
-          if (btn) {
-            btn.click();
-          } else {
-            setError("Google One-Tap is loading or blocked by your browser. Please enter your email below.");
-          }
-        }
-      });
+    setIsLoading(true);
+    setError(null);
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+    const win = typeof window !== "undefined"
+      ? (window as unknown as {
+          google?: {
+            accounts?: {
+              oauth2?: {
+                initTokenClient: (o: unknown) => { requestAccessToken: () => void };
+              };
+              id?: { prompt: () => void };
+            };
+          };
+        })
+      : null;
+
+    if (clientId && win?.google?.accounts?.oauth2) {
+      try {
+        const tokenClient = win.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: "email profile openid",
+          callback: async (tokenResponse: { access_token?: string; error?: string }) => {
+            if (tokenResponse.error) {
+              setIsLoading(false);
+              return;
+            }
+            if (tokenResponse.access_token) {
+              try {
+                const res = await fetch("/api/qr-review/auth/google", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ accessToken: tokenResponse.access_token }),
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                  throw new Error(data.error || "Google login failed.");
+                }
+                onSuccess(data.owner);
+                onClose();
+              } catch (err: unknown) {
+                setError(err instanceof Error ? err.message : "Google authentication failed.");
+              } finally {
+                setIsLoading(false);
+              }
+            }
+          },
+        });
+        tokenClient.requestAccessToken();
+        return;
+      } catch (e) {
+        console.warn("OAuth token client failed:", e);
+      }
+    }
+
+    // If GIS script hasn't finished loading yet, try prompt or re-init
+    if (win?.google?.accounts?.id) {
+      win.google.accounts.id.prompt();
+      setIsLoading(false);
     } else {
       initGoogleGIS();
+      setIsLoading(false);
+      setError("Google Sign-In is initializing. Please tap again in a moment or enter your email below.");
     }
   };
 

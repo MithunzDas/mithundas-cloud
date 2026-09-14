@@ -10,39 +10,47 @@ import { logger } from "@/lib/logger";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { credential } = body;
+    const { credential, accessToken } = body;
 
-    if (!credential || typeof credential !== "string") {
+    let email = body.email;
+    let name = body.name;
+    let picture = body.picture;
+
+    // Option A: If Google Access Token provided (via google.accounts.oauth2.initTokenClient)
+    if (accessToken) {
+      const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (userInfoRes.ok) {
+        const profile = await userInfoRes.json();
+        email = profile.email;
+        name = profile.name || name;
+        picture = profile.picture || picture;
+      } else {
+        logger.warn("Google accessToken verification failed", "google_token_invalid");
+      }
+    }
+    // Option B: If Google ID Token credential provided (via Google One-Tap)
+    else if (credential) {
+      const googleRes = await fetch(
+        `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`
+      );
+      if (googleRes.ok) {
+        const payload = await googleRes.json();
+        email = payload.email;
+        name = payload.name || name;
+        picture = payload.picture || picture;
+      }
+    }
+
+    if (!email || typeof email !== "string" || !email.includes("@")) {
       return NextResponse.json(
-        { success: false, error: "Google credential token is required." },
+        { success: false, error: "Valid Google email could not be verified." },
         { status: 400 }
       );
     }
 
-    // Verify token directly with Google's public tokeninfo endpoint
-    const googleRes = await fetch(
-      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`
-    );
-
-    if (!googleRes.ok) {
-      logger.warn("Invalid Google token provided", "google_auth_failed");
-      return NextResponse.json(
-        { success: false, error: "Google authentication failed. Invalid token." },
-        { status: 401 }
-      );
-    }
-
-    const payload = await googleRes.json();
-    const email = payload.email?.trim().toLowerCase();
-    const emailVerified = payload.email_verified === true || payload.email_verified === "true";
-    const name = payload.name;
-
-    if (!email || !emailVerified) {
-      return NextResponse.json(
-        { success: false, error: "Unverified Google account. Please use a verified email." },
-        { status: 400 }
-      );
-    }
+    const cleanEmail = email.trim().toLowerCase();
 
     // Find all businesses matching this owner's email
     const businesses = await prisma.reviewBusiness.findMany({
@@ -73,7 +81,7 @@ export async function POST(req: NextRequest) {
       owner: {
         email,
         name,
-        picture: payload.picture,
+        picture,
         businesses,
       },
     });
