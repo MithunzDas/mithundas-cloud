@@ -613,7 +613,7 @@ export default function DashboardClient({
 
               {/* 2. Lemon Squeezy (Credit/Debit Card & Apple Pay) */}
               <a
-                href={getCheckoutUrl(selectedPlan, "lemonsqueezy", business.slug)}
+                href={getCheckoutUrl(selectedPlan, "lemonsqueezy", business.slug, auth.email || undefined)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="lemonsqueezy-button w-full p-4 rounded-2xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white font-bold flex items-center justify-between text-xs transition-transform active:scale-[0.98] group"

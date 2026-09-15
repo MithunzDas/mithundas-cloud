@@ -57,7 +57,8 @@ export const QR_REVIEW_PLANS: Record<"monthly" | "annual", PricingPlanConfig> = 
 export function getCheckoutUrl(
   plan: "monthly" | "annual",
   provider: "paypal" | "lemonsqueezy",
-  businessSlug?: string
+  businessSlug?: string,
+  customerEmail?: string
 ): string {
   const planConfig = QR_REVIEW_PLANS[plan];
   
@@ -79,6 +80,10 @@ export function getCheckoutUrl(
     if (businessSlug && !url.includes("checkout[custom]")) {
       const s = url.includes("?") ? "&" : "?";
       url = `${url}${s}checkout[custom][business_slug]=${encodeURIComponent(businessSlug)}`;
+    }
+    if (customerEmail && !url.includes("checkout[email]")) {
+      const s = url.includes("?") ? "&" : "?";
+      url = `${url}${s}checkout[email]=${encodeURIComponent(customerEmail)}`;
     }
     return url;
   }

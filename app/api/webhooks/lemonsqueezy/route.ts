@@ -44,9 +44,9 @@ export async function POST(req: NextRequest) {
       eventName,
     });
 
-    const businessSlug = customData.business_slug;
-    const userEmail = attributes.user_email;
-    const status = attributes.status; // "active", "cancelled", "expired", "past_due"
+    const businessSlug = customData.business_slug || customData.slug;
+    const userEmail = attributes.user_email || attributes.customer_email;
+    const status = attributes.status; // "active", "paid", "cancelled", "expired", "past_due"
 
     let business = null;
     if (businessSlug) {
@@ -70,9 +70,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, message: "No matching business found" });
     }
 
-    // Handle Subscription Active
-    if (eventName === "subscription_created" || status === "active") {
-      const isAnnual = attributes.product_name?.toLowerCase().includes("annual") || attributes.first_subscription_item?.price_id;
+    // Handle Active Subscription or Successful Order Payment
+    const isActivePayment =
+      eventName === "subscription_created" ||
+      eventName === "order_created" ||
+      eventName === "subscription_updated" ||
+      eventName === "subscription_payment_success" ||
+      status === "active" ||
+      status === "paid";
+
+    if (isActivePayment) {
+      const productName = (
+        attributes.product_name ||
+        attributes.first_order_item?.product_name ||
+        attributes.first_subscription_item?.product_name ||
+        ""
+      ).toLowerCase();
+
+      const totalCents = Number(attributes.total || attributes.subtotal || 0);
+      const isAnnual =
+        productName.includes("annual") ||
+        productName.includes("249") ||
+        totalCents >= 10000;
 
       await prisma.reviewBusiness.update({
         where: { id: business.id },
