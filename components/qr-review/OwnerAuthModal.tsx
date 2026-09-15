@@ -265,7 +265,7 @@ export default function OwnerAuthModal({
       const res = await fetch("/api/qr-review/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, businessName }),
       });
       const data = await res.json();
 

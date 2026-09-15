@@ -1,0 +1,75 @@
+{
+  "name": "QR Review System - Owner OTP Email Dispatcher",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "qr-owner-otp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger-otp",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [220, 300],
+      "webhookId": "qr-owner-otp"
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $json.body.from || 'Mithun Das AI <support@mithundas.cloud>' }}",
+        "toEmail": "={{ $json.body.to }}",
+        "subject": "={{ $json.body.subject || ('Your Login Code: ' + $json.body.code + ' — Business Owner Portal') }}",
+        "html": "={{ $json.body.html }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "email-node-otp",
+      "name": "Send Email via Hostinger SMTP",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": true,\n  \"message\": \"OTP email sent successfully via n8n Hostinger workflow\"\n}",
+        "options": {}
+      },
+      "id": "respond-to-webhook-otp",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [700, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send Email via Hostinger SMTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email via Hostinger SMTP": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

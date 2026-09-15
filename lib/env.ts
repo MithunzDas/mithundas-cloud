@@ -25,5 +25,13 @@ export const env = {
   NEXT_PUBLIC_RAZORPAY_KEY_ID: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || "",
   RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || "",
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || "",
+  // Hostinger / Custom SMTP Settings
+  SMTP_HOST: process.env.SMTP_HOST || "smtp.hostinger.com",
+  SMTP_PORT: parseInt(process.env.SMTP_PORT || "465", 10),
+  SMTP_SECURE: process.env.SMTP_SECURE !== "false",
+  SMTP_USER: process.env.SMTP_USER || "",
+  SMTP_PASS: process.env.SMTP_PASS || "",
+  // Self-Hosted n8n Webhook for OTP
+  N8N_OTP_WEBHOOK_URL: process.env.N8N_OTP_WEBHOOK_URL || "",
 };
 
