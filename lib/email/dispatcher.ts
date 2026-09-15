@@ -16,67 +16,124 @@ interface DispatchResult {
 }
 
 /**
- * Builds responsive dark-themed HTML email template for 6-digit OTP verification.
+ * Builds clean, professional Hostinger-style HTML verification email template.
  */
-function buildOtpEmailHtml(code: string, businessName?: string): string {
-  const subtitle = businessName
-    ? `Owner verification for ${businessName}`
-    : "Business Owner Verification Code";
-
+function buildOtpEmailHtml(code: string): string {
   return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Verification Code</title>
+  <title>Your verification code</title>
 </head>
-<body style="margin:0;padding:0;background-color:#090d16;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#f8fafc;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#090d16;padding:40px 16px;">
+<body style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #111827; -webkit-font-smoothing: antialiased;">
+  <!-- Hidden preheader text for inbox preview snippet -->
+  <div style="display: none; font-size: 1px; color: #ffffff; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
+    Your verification code is ${code} - Verify it's you to stay secure.
+  </div>
+
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; padding: 40px 16px 60px 16px;">
     <tr>
       <td align="center">
-        <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#0f172a;border-radius:16px;border:1px solid #1e293b;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,0.5);">
+        <table width="520" cellpadding="0" cellspacing="0" border="0" style="max-width: 520px; width: 100%; text-align: center;">
           
-          <!-- Header Banner -->
+          <!-- Logo Header -->
           <tr>
-            <td style="background:linear-gradient(135deg,#0284c7 0%,#4f46e5 100%);padding:28px 32px;">
-              <div style="font-size:11px;font-family:monospace;letter-spacing:1.5px;color:rgba(255,255,255,0.85);text-transform:uppercase;margin-bottom:4px;">
-                15-SECOND QR REVIEW PLATFORM
-              </div>
-              <h1 style="margin:0;font-size:20px;font-weight:800;color:#ffffff;">
-                ${subtitle}
+            <td align="center" style="padding-bottom: 28px;">
+              <table cellpadding="0" cellspacing="0" border="0" align="center">
+                <tr>
+                  <td align="center">
+                    <span style="font-size: 20px; font-weight: 900; letter-spacing: 2px; color: #4f46e5; text-transform: uppercase; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                      ✦ MITHUN DAS
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Main Heading -->
+          <tr>
+            <td align="center" style="padding-bottom: 24px;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #111827; letter-spacing: -0.5px; line-height: 1.3;">
+                Here is your verification code:
               </h1>
             </td>
           </tr>
 
-          <!-- Content -->
+          <!-- OTP Card Box -->
           <tr>
-            <td style="padding:32px;">
-              <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#cbd5e1;">
-                Use the 6-digit one-time code below to log in to your business growth analytics dashboard:
+            <td align="center" style="padding-bottom: 24px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 28px 20px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);">
+                <tr>
+                  <td align="center">
+                    <span style="font-size: 42px; font-weight: 800; letter-spacing: 8px; color: #4f46e5; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; display: inline-block; line-height: 1; padding-left: 8px;">
+                      ${code}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Disclaimer / Advisory -->
+          <tr>
+            <td align="center" style="padding-bottom: 32px;">
+              <p style="margin: 0 0 10px 0; font-size: 14px; color: #374151; line-height: 1.5;">
+                Please make sure you never share this code with anyone.
               </p>
-
-              <!-- Code Box -->
-              <div style="background-color:#080b11;border:1px solid #0284c7;border-radius:12px;padding:24px;text-align:center;margin:24px 0;">
-                <span style="font-size:38px;font-weight:900;letter-spacing:10px;color:#38bdf8;font-family:monospace;display:inline-block;">
-                  ${code}
-                </span>
-                <p style="margin:10px 0 0;font-size:12px;color:#94a3b8;">
-                  Valid for 10 minutes. For your security, do not share this code.
-                </p>
-              </div>
-
-              <p style="margin:0;font-size:13px;line-height:1.6;color:#64748b;">
-                If you did not request this login code, you can safely ignore this email.
+              <p style="margin: 0; font-size: 13px; color: #4b5563; line-height: 1.5;">
+                <strong style="color: #111827;">Note:</strong> The code will expire in 10 minutes.
               </p>
             </td>
           </tr>
 
-          <!-- Footer -->
+          <!-- Divider -->
           <tr>
-            <td style="padding:16px 32px;border-top:1px solid #1e293b;background-color:#080b11;text-align:center;">
-              <p style="margin:0;font-size:11px;color:#475569;font-family:monospace;">
-                Mithun Das Cloud • Automated Business Intelligence Platform
+            <td style="border-top: 1px solid #e5e7eb; padding-bottom: 32px; font-size: 0; line-height: 0;">&nbsp;</td>
+          </tr>
+
+          <!-- Footer Brand -->
+          <tr>
+            <td align="center" style="padding-bottom: 14px;">
+              <span style="font-size: 15px; font-weight: 800; letter-spacing: 1.5px; color: #4f46e5; text-transform: uppercase;">
+                ✦ MITHUN DAS
+              </span>
+            </td>
+          </tr>
+
+          <!-- Footer Notice -->
+          <tr>
+            <td align="center" style="padding-bottom: 18px;">
+              <p style="margin: 0; font-size: 12px; color: #6b7280; line-height: 1.6; max-width: 440px;">
+                You have received this email because you requested access to your business account at Mithun Das Cloud, to ensure the implementation of our Terms of Service and for other legitimate matters.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer Links -->
+          <tr>
+            <td align="center" style="padding-bottom: 18px;">
+              <table cellpadding="0" cellspacing="0" border="0" align="center">
+                <tr>
+                  <td>
+                    <a href="https://www.mithundas.cloud/privacy" style="font-size: 12px; color: #4f46e5; text-decoration: underline; margin-right: 8px;">Privacy policy</a>
+                  </td>
+                  <td style="color: #9ca3af; font-size: 12px;">|</td>
+                  <td>
+                    <a href="https://www.mithundas.cloud" style="font-size: 12px; color: #4f46e5; text-decoration: underline; margin-left: 8px;">Help center</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Copyright -->
+          <tr>
+            <td align="center">
+              <p style="margin: 0; font-size: 11px; color: #9ca3af; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
+                © 2026 Mithun Das Cloud. All rights reserved.
               </p>
             </td>
           </tr>
@@ -98,13 +155,17 @@ function buildOtpEmailHtml(code: string, businessName?: string): string {
  */
 export async function sendOtpEmail({ to, code, businessName }: SendOtpParams): Promise<DispatchResult> {
   const cleanEmail = to.trim().toLowerCase();
-  const subject = `Your Login Code: ${code} — Business Owner Portal | Mithun Das AI`;
-  const html = buildOtpEmailHtml(code, businessName);
-  const text = `Your login verification code is: ${code}. Valid for 10 minutes. Use this code to sign in to your business owner portal at Mithun Das Cloud.`;
+  const subject = "Your verification code - Verify it's you to stay secure";
+  const html = buildOtpEmailHtml(code);
+  const text = `Here is your verification code: ${code}\n\nPlease make sure you never share this code with anyone.\nNote: The code will expire in 10 minutes.\n\n— Mithun Das Cloud`;
 
-  const fromAddress =
-    env.EMAIL_FROM ||
-    (env.SMTP_USER ? `Mithun Das AI <${env.SMTP_USER}>` : "Mithun Das AI <support@mithundas.cloud>");
+  // Hostinger SMTP strictly requires sender to match the authenticated mailbox (mithun@mithundas.cloud)
+  let fromAddress = env.EMAIL_FROM || "Mithun Das AI <mithun@mithundas.cloud>";
+  if (fromAddress.includes("no-reply@")) {
+    fromAddress = "Mithun Das AI <mithun@mithundas.cloud>";
+  } else if (env.SMTP_USER) {
+    fromAddress = `Mithun Das AI <${env.SMTP_USER}>`;
+  }
 
   // ──────────────────────────────────────────────────────────────────────────
   // CHANNEL 1: Direct Hostinger / Custom SMTP (Fastest, zero 3rd party dependency)

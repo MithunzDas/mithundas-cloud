@@ -19,7 +19,7 @@
       "parameters": {
         "fromEmail": "={{ $json.body.from || 'Mithun Das AI Automation <mithun@mithundas.cloud>' }}",
         "toEmail": "={{ $json.body.to }}",
-        "subject": "={{ $json.body.subject || ('Your Login Code: ' + $json.body.code + ' — Business Owner Portal') }}",
+        "subject": "={{ $json.body.subject || \"Your verification code - Verify it's you to stay secure\" }}",
         "emailFormat": "html",
         "html": "={{ $json.body.html }}",
         "options": {
