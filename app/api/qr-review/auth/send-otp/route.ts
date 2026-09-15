@@ -118,12 +118,23 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (!resend) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Email service is not yet configured on server (RESEND_API_KEY missing). Please sign in using Google above or contact the administrator.",
+        },
+        { status: 500 }
+      );
+    }
+
     if (!emailSent) {
       return NextResponse.json(
         {
           success: false,
           error:
-            "Unable to dispatch verification email to this address. Please ensure email service is configured or use Google 1-Click sign-in.",
+            "Unable to deliver verification email to this address. Please ensure email address is correct or use Google sign-in above.",
         },
         { status: 500 }
       );

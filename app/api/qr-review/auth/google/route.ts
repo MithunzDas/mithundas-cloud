@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Sign session token and set HTTP-only cookie
-    const token = signOwnerToken({ email: cleanEmail, name });
+    const token = signOwnerToken({ email: cleanEmail, name, picture });
     await setOwnerSessionCookie(token);
 
     logger.info(`Owner logged in via Google: ${cleanEmail}`, "google_auth_success", {

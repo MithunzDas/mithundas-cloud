@@ -9,6 +9,7 @@ interface OwnerAuthModalProps {
   onSuccess: (owner: {
     email: string;
     name?: string;
+    picture?: string;
     businesses: Array<{ id: string; slug: string; businessName: string; category?: string; trialStatus: string }>;
   }) => void;
   defaultEmail?: string;
@@ -339,7 +340,7 @@ export default function OwnerAuthModal({
           <p className="text-xs text-slate-400 leading-relaxed px-2">
             {step === "email"
               ? businessName
-                ? `1-Click verification for ${businessName} owners`
+                ? `Owner verification for ${businessName}`
                 : "Instant access to your growth dashboard and review stats"
               : `We sent a 6-digit code to ${email}`}
           </p>
@@ -371,7 +372,7 @@ export default function OwnerAuthModal({
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                 </svg>
-                <span>Continue with Google (1-Click)</span>
+                <span>Continue with Google</span>
               </button>
 
               {/* Google Render Container (Auto-injected by GIS if supported) */}
@@ -412,7 +413,7 @@ export default function OwnerAuthModal({
                 </div>
                 {isGmailUser && (
                   <p className="text-[10px] text-blue-400 pt-0.5">
-                    💡 Gmail detected! You can use the 1-Click Google button above for instant sign-in.
+                    💡 Gmail detected! You can use Continue with Google above for instant sign-in.
                   </p>
                 )}
               </div>
@@ -452,7 +453,7 @@ export default function OwnerAuthModal({
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                 </svg>
-                <span>Or Sign in with 1-Click Google</span>
+                <span>Or Sign in with Google</span>
               </button>
             )}
 

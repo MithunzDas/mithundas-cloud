@@ -11,18 +11,20 @@ const SECRET_KEY =
 export interface OwnerSessionPayload {
   email: string;
   name?: string;
+  picture?: string;
   exp: number; // Unix timestamp in seconds
 }
 
 /**
  * Signs a payload into a secure HMAC-SHA256 token: base64(payload).base64(hmac)
  */
-export function signOwnerToken(payload: { email: string; name?: string }): string {
+export function signOwnerToken(payload: { email: string; name?: string; picture?: string }): string {
   // 30-day session expiry
   const exp = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
   const fullPayload: OwnerSessionPayload = {
     email: payload.email.trim().toLowerCase(),
     name: payload.name?.trim(),
+    picture: payload.picture?.trim(),
     exp,
   };
 

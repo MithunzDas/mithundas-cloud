@@ -181,6 +181,7 @@ export default async function DashboardPage({ params }: PageProps) {
     isAuthenticated: isOwnerAuthenticated,
     email: session?.email,
     name: session?.name,
+    picture: session?.picture,
     otherBusinesses,
   };
 

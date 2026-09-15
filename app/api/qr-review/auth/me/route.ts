@@ -37,6 +37,7 @@ export async function GET() {
       owner: {
         email: session.email,
         name: session.name,
+        picture: session.picture,
         businesses,
       },
     });

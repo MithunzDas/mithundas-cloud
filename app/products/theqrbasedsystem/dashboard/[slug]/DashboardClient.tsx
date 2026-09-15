@@ -67,6 +67,7 @@ interface OwnerAuthInfo {
   isAuthenticated: boolean;
   email?: string;
   name?: string;
+  picture?: string;
   otherBusinesses?: Array<{ slug: string; businessName: string; category: string }>;
 }
 
@@ -113,6 +114,7 @@ export default function DashboardClient({
   const handleAuthSuccess = (owner: {
     email: string;
     name?: string;
+    picture?: string;
     businesses: Array<{ id: string; slug: string; businessName: string; category?: string; trialStatus: string }>;
   }) => {
     const isOwner = owner.email.toLowerCase() === business.ownerEmail.toLowerCase();
@@ -124,6 +126,7 @@ export default function DashboardClient({
       isAuthenticated: isOwner,
       email: owner.email,
       name: owner.name,
+      picture: owner.picture,
       otherBusinesses: otherClinics,
     });
     router.refresh();
@@ -170,42 +173,68 @@ export default function DashboardClient({
 
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-between md:justify-end">
             {auth.isAuthenticated ? (
-              <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-xs">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span className="text-emerald-300 font-semibold">Verified Owner:</span>
-                <span className="text-slate-200 font-mono text-[11px] truncate max-w-[150px] sm:max-w-[200px]">
-                  {auth.email}
-                </span>
+              <div className="flex items-center gap-2.5">
+                {/* Verified Owner Profile Card */}
+                <div className="flex items-center gap-2.5 bg-slate-900 border border-slate-700/90 hover:border-slate-600 px-3 py-1.5 rounded-2xl shadow-md transition-all">
+                  {/* Google Profile Avatar Photo */}
+                  {auth.picture ? (
+                    <img
+                      src={auth.picture}
+                      alt={auth.name || "Owner Profile"}
+                      className="w-8 h-8 rounded-full object-cover ring-2 ring-emerald-500/60 shadow-sm shrink-0"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-black text-xs flex items-center justify-center shadow-sm ring-2 ring-emerald-500/40 shrink-0">
+                      {auth.name ? auth.name.charAt(0).toUpperCase() : auth.email ? auth.email.charAt(0).toUpperCase() : "O"}
+                    </div>
+                  )}
 
-                {/* Multi-Clinic Switcher Dropdown (if owner has >1 clinic) */}
-                {auth.otherBusinesses && auth.otherBusinesses.length > 0 && (
-                  <div className="relative inline-block ml-1">
-                    <select
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          router.push(`/products/theqrbasedsystem/dashboard/${e.target.value}`);
-                        }
-                      }}
-                      defaultValue=""
-                      className="bg-slate-800 text-slate-200 border border-slate-700 rounded-lg text-[11px] px-2 py-0.5 focus:outline-none focus:border-blue-500"
-                    >
-                      <option value="" disabled>Switch Clinic ▾</option>
-                      {auth.otherBusinesses.map((b) => (
-                        <option key={b.slug} value={b.slug}>
-                          {b.businessName}
-                        </option>
-                      ))}
-                    </select>
+                  {/* Owner Name & Email */}
+                  <div className="flex flex-col text-left leading-tight min-w-0 max-w-[150px] sm:max-w-[200px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-white truncate">
+                        {auth.name || auth.email?.split("@")[0] || "Owner"}
+                      </span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse" title="Verified Owner"></span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-mono truncate">
+                      {auth.email}
+                    </span>
                   </div>
-                )}
 
-                <button
-                  onClick={handleLogout}
-                  title="Sign out of owner portal"
-                  className="ml-1 text-slate-400 hover:text-rose-400 p-1 rounded transition-colors"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                </button>
+                  {/* Multi-Clinic Switcher Dropdown (if owner has >1 clinic) */}
+                  {auth.otherBusinesses && auth.otherBusinesses.length > 0 && (
+                    <div className="relative inline-block ml-1 pl-1 border-l border-slate-800">
+                      <select
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            router.push(`/products/theqrbasedsystem/dashboard/${e.target.value}`);
+                          }
+                        }}
+                        defaultValue=""
+                        className="bg-slate-800 text-slate-200 border border-slate-700 rounded-lg text-[10px] px-1.5 py-0.5 focus:outline-none focus:border-blue-500 cursor-pointer"
+                        title="Switch Location"
+                      >
+                        <option value="" disabled>Switch Clinic ▾</option>
+                        {auth.otherBusinesses.map((b) => (
+                          <option key={b.slug} value={b.slug}>
+                            {b.businessName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Sign Out Button */}
+                  <button
+                    onClick={handleLogout}
+                    title="Sign out of owner portal"
+                    className="ml-1 text-slate-400 hover:text-rose-400 p-1 rounded-lg hover:bg-rose-500/10 transition-colors"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
@@ -214,9 +243,9 @@ export default function DashboardClient({
                 </span>
                 <button
                   onClick={() => setShowAuthModal(true)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/20 flex items-center gap-1.5 transition-all"
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-md shadow-blue-600/25 flex items-center gap-2 transition-all active:scale-[0.98]"
                 >
-                  <Building2 className="w-3.5 h-3.5" /> Owner 1-Click Login
+                  <Building2 className="w-3.5 h-3.5" /> Business Owner Login
                 </button>
               </div>
             )}
@@ -499,7 +528,7 @@ export default function DashboardClient({
               </div>
               <h2 className="text-2xl font-black text-white">Select Your Plan</h2>
               <p className="text-xs text-slate-400">
-                Cancel anytime with 1-click. Automated recurring SaaS billing.
+                Cancel anytime. Automated recurring SaaS billing.
               </p>
             </div>
 
@@ -555,7 +584,7 @@ export default function DashboardClient({
                   <div className="text-left">
                     <p className="text-xs font-black">PayPal Auto-Pay Subscription</p>
                     <p className="text-[10px] text-slate-800 font-medium">
-                      Fast 1-click recurring setup • Loved in US, UK & Canada
+                      Fast secure recurring setup • Loved in US, UK & Canada
                     </p>
                   </div>
                 </div>

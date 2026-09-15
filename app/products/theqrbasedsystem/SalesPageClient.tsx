@@ -375,7 +375,7 @@ export default function SalesPageClient() {
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>Cancel anytime with 1-click</span>
+                  <span>Cancel anytime without penalties</span>
                 </li>
               </ul>
             </div>
@@ -707,7 +707,7 @@ export default function SalesPageClient() {
                   <div className="text-left">
                     <p className="text-xs font-black">PayPal Auto-Renew</p>
                     <p className="text-[10px] text-slate-800 font-medium">
-                      Fast 1-click subscription • Most popular in US & UK
+                      Fast secure subscription • Most popular in US & UK
                     </p>
                   </div>
                 </div>
@@ -737,7 +737,7 @@ export default function SalesPageClient() {
             </div>
 
             <p className="text-[10px] text-center text-slate-500 pt-1">
-              🔒 256-Bit SSL Encrypted • Cancel Anytime with 1-Click
+              🔒 256-Bit SSL Encrypted • Cancel Anytime
             </p>
           </div>
         </div>
