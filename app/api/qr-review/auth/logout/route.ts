@@ -7,5 +7,17 @@ import { clearOwnerSessionCookie } from "@/lib/qr-review/auth-session";
  */
 export async function POST() {
   await clearOwnerSessionCookie();
-  return NextResponse.json({ success: true, message: "Logged out successfully" });
+  const response = NextResponse.json({ success: true, message: "Logged out successfully" });
+  response.cookies.set("qr_owner_token", "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+    expires: new Date(0),
+  });
+  try {
+    response.cookies.delete("qr_owner_token");
+  } catch {}
+  return response;
 }

@@ -103,5 +103,21 @@ export async function getOwnerSession(): Promise<OwnerSessionPayload | null> {
  */
 export async function clearOwnerSessionCookie(): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.delete(SESSION_COOKIE_NAME);
+  cookieStore.set(SESSION_COOKIE_NAME, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+    expires: new Date(0),
+  });
+  try {
+    cookieStore.delete({
+      name: SESSION_COOKIE_NAME,
+      path: "/",
+    });
+  } catch {
+    // Some next/headers versions take string name
+    cookieStore.delete(SESSION_COOKIE_NAME);
+  }
 }

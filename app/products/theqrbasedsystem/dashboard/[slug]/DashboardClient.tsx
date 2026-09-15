@@ -24,7 +24,8 @@ import {
   Calendar,
   BarChart3,
   Sparkles,
-  Globe
+  Globe,
+  Loader2,
 } from "lucide-react";
 import { getCheckoutUrl } from "@/lib/qr-review/payment-config";
 import OwnerAuthModal from "@/components/qr-review/OwnerAuthModal";
@@ -87,6 +88,7 @@ export default function DashboardClient({
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "annual">("monthly");
   const [copiedLink, setCopiedLink] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Dynamic Auth State
   const [auth, setAuth] = useState<OwnerAuthInfo>(initialAuth);
@@ -133,12 +135,23 @@ export default function DashboardClient({
   };
 
   const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
     try {
-      await fetch("/api/qr-review/auth/logout", { method: "POST" });
-      setAuth({ isAuthenticated: false });
-      router.refresh();
+      await fetch("/api/qr-review/auth/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
     } catch (e) {
       console.error("Logout failed:", e);
+    } finally {
+      // Clear non-httpOnly fallback cookie if present
+      try {
+        document.cookie = "qr_owner_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      } catch {}
+      setAuth({ isAuthenticated: false, email: undefined, name: undefined, picture: undefined });
+      // Redirect to the main product page: https://www.mithundas.cloud/products/theqrbasedsystem
+      window.location.href = "/products/theqrbasedsystem";
     }
   };
 
@@ -229,10 +242,17 @@ export default function DashboardClient({
                   {/* Sign Out Button */}
                   <button
                     onClick={handleLogout}
-                    title="Sign out of owner portal"
-                    className="ml-1 text-slate-400 hover:text-rose-400 p-1 rounded-lg hover:bg-rose-500/10 transition-colors"
+                    disabled={isLoggingOut}
+                    title="Sign out of business portal"
+                    className="ml-1 flex items-center gap-1.5 text-slate-400 hover:text-rose-400 px-2 py-1 rounded-lg hover:bg-rose-500/10 transition-colors disabled:opacity-50 cursor-pointer"
+                    aria-label="Sign out of business portal"
                   >
-                    <LogOut className="w-3.5 h-3.5" />
+                    {isLoggingOut ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-400" />
+                    ) : (
+                      <LogOut className="w-3.5 h-3.5" />
+                    )}
+                    <span className="text-[11px] hidden sm:inline font-medium">Sign Out</span>
                   </button>
                 </div>
               </div>

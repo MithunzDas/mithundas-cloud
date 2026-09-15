@@ -32,6 +32,8 @@ export default async function ReviewPage({ params }: PageProps) {
         placeId: true,
         googleReviewUrl: true,
         logoUrl: true,
+        trialStatus: true,
+        trialEndsAt: true,
       },
     });
   } catch (err) {
@@ -55,8 +57,38 @@ export default async function ReviewPage({ params }: PageProps) {
       placeId: "ChIJN1t_tDeuEmsRUsoyG83frY4",
       googleReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4",
       logoUrl: null,
+      trialStatus: "TRIAL_ACTIVE",
+      trialEndsAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
     };
   }
 
-  return <ReviewClient business={business} />;
+  const now = new Date();
+  const isSubscribed = business.trialStatus === "SUBSCRIBED";
+  const isTrialExpired = Boolean(
+    business.id !== "demo-id" &&
+    !isSubscribed &&
+    business.trialEndsAt &&
+    new Date(business.trialEndsAt) <= now
+  );
+
+  // Sync EXPIRED status to DB if trial ended
+  if (isTrialExpired && business.id !== "demo-id" && business.trialStatus !== "EXPIRED") {
+    try {
+      await prisma.reviewBusiness.update({
+        where: { id: business.id },
+        data: { trialStatus: "EXPIRED" },
+      });
+    } catch (e) {
+      console.error("Failed to mark business as EXPIRED:", e);
+    }
+  }
+
+  return (
+    <ReviewClient
+      business={{
+        ...business,
+        isTrialExpired,
+      }}
+    />
+  );
 }

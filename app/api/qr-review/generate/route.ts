@@ -22,6 +22,29 @@ export async function POST(request: Request) {
       );
     }
 
+    // Enforce 3-day trial limit: if businessId provided and trial expired, block review generation
+    if (businessId) {
+      try {
+        const biz = await prisma.reviewBusiness.findUnique({
+          where: { id: businessId },
+          select: { trialStatus: true, trialEndsAt: true },
+        });
+
+        if (biz && biz.trialStatus !== "SUBSCRIBED" && biz.trialEndsAt && new Date(biz.trialEndsAt) <= new Date()) {
+          return NextResponse.json(
+            {
+              success: false,
+              trialExpired: true,
+              error: "This location's 3-day preview trial has ended. Please activate a growth subscription to continue AI review generation.",
+            },
+            { status: 403 }
+          );
+        }
+      } catch (checkErr) {
+        logger.warn("Could not verify business trial status", "qr_trial_check_warn", { error: String(checkErr) });
+      }
+    }
+
     const reviewText = await generateHumanReview({
       businessName,
       category,

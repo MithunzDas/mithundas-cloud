@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   Star,
   Sparkles,
@@ -13,9 +14,13 @@ import {
   ShieldCheck,
   RefreshCw,
   Building2,
-  ArrowRight
+  ArrowRight,
+  Clock,
+  CreditCard,
+  Lock
 } from "lucide-react";
 import { PoolQuestion, getRandomQuestionsForCategory } from "@/lib/qr-review/question-pools";
+import { getCheckoutUrl } from "@/lib/qr-review/payment-config";
 
 interface BusinessData {
   id: string;
@@ -27,6 +32,7 @@ interface BusinessData {
   placeId?: string | null;
   googleReviewUrl: string;
   logoUrl?: string | null;
+  isTrialExpired?: boolean;
 }
 
 interface ReviewClientProps {
@@ -172,6 +178,150 @@ export default function ReviewClient({ business }: ReviewClientProps) {
       setFeedbackSubmitted(true);
     }
   };
+
+  // IF 3-DAY FREE TRIAL HAS EXPIRED:
+  if (business.isTrialExpired) {
+    return (
+      <div className="flex flex-col h-full justify-between gap-5 py-2 animate-fadeIn">
+        {/* Header with Business Branding */}
+        <header className="flex items-center justify-between pb-3.5 border-b border-slate-800/80">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/20 shrink-0">
+              {business.logoUrl ? (
+                <img src={business.logoUrl} alt={business.businessName} className="w-full h-full object-cover rounded-xl" />
+              ) : (
+                <Building2 className="w-5 h-5" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <h1 className="font-semibold text-slate-100 text-base leading-tight tracking-tight truncate">
+                {business.businessName}
+              </h1>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {business.city || "Customer Review Assistant"}
+              </p>
+            </div>
+          </div>
+
+          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/25 shrink-0 flex items-center gap-1">
+            <Clock className="w-3 h-3" /> Service Paused
+          </span>
+        </header>
+
+        {/* PROMPT / NOTICE (Discreet & Professional) */}
+        <div className="space-y-4 flex-1 my-auto py-2">
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 text-center shadow-xl space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500/20 to-blue-500/20 text-amber-400 mx-auto flex items-center justify-center border border-amber-500/30 shadow-inner">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-lg sm:text-xl font-bold text-white">
+                Interactive Review Standee Paused
+              </h2>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+                This counter standee&apos;s 15-second AI review generation is awaiting active plan renewal.
+              </p>
+            </div>
+          </div>
+
+          {/* PAYMENT & UPGRADE SECTION FOR BUSINESS OWNER / CLINIC MANAGER */}
+          <div className="bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border border-blue-500/30 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-blue-300">
+                <CreditCard className="w-4 h-4 text-blue-400" />
+                <span>Business Owner / Manager Activation</span>
+              </div>
+              <span className="text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-full font-semibold">
+                Instant Auto-Renew
+              </span>
+            </div>
+
+            <p className="text-[11px] text-slate-300 leading-snug">
+              Re-activate 15-second customer review generation and automated rating routing immediately:
+            </p>
+
+            {/* Direct Plan Options */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+              {/* Monthly Plan */}
+              <a
+                href={getCheckoutUrl("monthly", "lemonsqueezy", business.slug)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-3.5 rounded-xl bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 hover:border-blue-500/50 text-white flex flex-col justify-between transition-all group active:scale-[0.98]"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-black text-white">Monthly Plan</span>
+                  <span className="text-xs font-bold text-blue-400">$30/mo</span>
+                </div>
+                <p className="text-[10px] text-slate-400 leading-tight mb-2">
+                  $1/day • Cancel anytime
+                </p>
+                <span className="text-[11px] font-bold text-blue-400 group-hover:text-blue-300 flex items-center gap-1">
+                  Activate Monthly <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                </span>
+              </a>
+
+              {/* Annual Plan (VIP) */}
+              <a
+                href={getCheckoutUrl("annual", "lemonsqueezy", business.slug)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-3.5 rounded-xl bg-gradient-to-tr from-blue-900/40 to-indigo-900/40 hover:from-blue-900/60 hover:to-indigo-900/60 border border-blue-500/40 text-white flex flex-col justify-between transition-all group active:scale-[0.98] relative overflow-hidden"
+              >
+                <div className="absolute top-1 right-1 bg-amber-400 text-slate-950 font-black text-[8px] px-1.5 py-0.2 rounded-full uppercase">
+                  Save 30%
+                </div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-black text-white">Annual Plan</span>
+                  <span className="text-xs font-bold text-emerald-400">$249/yr</span>
+                </div>
+                <p className="text-[10px] text-slate-300 leading-tight mb-2">
+                  Full 12 months • Standees included
+                </p>
+                <span className="text-[11px] font-bold text-emerald-400 group-hover:text-emerald-300 flex items-center gap-1">
+                  Activate Annual <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                </span>
+              </a>
+            </div>
+
+            {/* Link to Dashboard */}
+            <div className="pt-1 text-center">
+              <Link
+                href={`/products/theqrbasedsystem/dashboard/${business.slug}`}
+                className="text-[11px] text-slate-400 hover:text-white underline underline-offset-2 transition-colors inline-flex items-center gap-1"
+              >
+                <span>Or log in to your business dashboard</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
+
+          {/* PATIENT / VISITING CUSTOMER FALLBACK */}
+          <div className="text-center pt-2">
+            <p className="text-[11px] text-slate-400 mb-2">
+              Visiting patient or customer looking to write a Google review?
+            </p>
+            <a
+              href={business.googleReviewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors shadow-sm"
+            >
+              <span>Write Standard Google Review on Google Maps</span>
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+            </a>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <footer className="pt-3 border-t border-slate-800/60 text-center">
+          <p className="text-[10px] text-slate-400 font-mono">
+            Powered by Mithun Das AI • 15-Second Review SaaS
+          </p>
+        </footer>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full justify-between gap-6 py-2">
