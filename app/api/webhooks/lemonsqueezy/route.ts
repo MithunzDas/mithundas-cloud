@@ -75,6 +75,8 @@ export async function POST(req: NextRequest) {
       eventName === "subscription_created" ||
       eventName === "order_created" ||
       eventName === "subscription_updated" ||
+      eventName === "subscription_resumed" ||
+      eventName === "subscription_unpaused" ||
       eventName === "subscription_payment_success" ||
       status === "active" ||
       status === "paid";
