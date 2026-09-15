@@ -40,12 +40,12 @@ function buildOtpEmailHtml(code: string): string {
           
           <!-- Logo Header -->
           <tr>
-            <td align="center" style="padding-bottom: 28px;">
+            <td align="center" style="padding-bottom: 26px;">
               <table cellpadding="0" cellspacing="0" border="0" align="center">
                 <tr>
-                  <td align="center">
-                    <span style="font-size: 20px; font-weight: 900; letter-spacing: 2px; color: #4f46e5; text-transform: uppercase; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-                      ✦ MITHUN DAS
+                  <td align="center" style="background-color: #f0f9ff; border: 1.5px solid #bae6fd; border-radius: 9999px; padding: 8px 22px;">
+                    <span style="font-size: 15px; font-weight: 800; letter-spacing: 2px; color: #0284c7; text-transform: uppercase; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                      <span style="color: #0ea5e9; font-size: 16px; margin-right: 4px;">✦</span> MITHUN DAS
                     </span>
                   </td>
                 </tr>
@@ -65,10 +65,10 @@ function buildOtpEmailHtml(code: string): string {
           <!-- OTP Card Box -->
           <tr>
             <td align="center" style="padding-bottom: 24px;">
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 28px 20px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8fafc; border: 1.5px solid #e0f2fe; border-radius: 16px; padding: 28px 20px; box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.06), 0 2px 4px -2px rgba(2, 132, 199, 0.06);">
                 <tr>
                   <td align="center">
-                    <span style="font-size: 42px; font-weight: 800; letter-spacing: 8px; color: #4f46e5; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; display: inline-block; line-height: 1; padding-left: 8px;">
+                    <span style="font-size: 44px; font-weight: 800; letter-spacing: 10px; color: #0284c7; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; display: inline-block; line-height: 1; padding-left: 10px;">
                       ${code}
                     </span>
                   </td>
@@ -84,21 +84,21 @@ function buildOtpEmailHtml(code: string): string {
                 Please make sure you never share this code with anyone.
               </p>
               <p style="margin: 0; font-size: 13px; color: #4b5563; line-height: 1.5;">
-                <strong style="color: #111827;">Note:</strong> The code will expire in 10 minutes.
+                <strong style="color: #0284c7;">Note:</strong> The code will expire in 10 minutes.
               </p>
             </td>
           </tr>
 
           <!-- Divider -->
           <tr>
-            <td style="border-top: 1px solid #e5e7eb; padding-bottom: 32px; font-size: 0; line-height: 0;">&nbsp;</td>
+            <td style="border-top: 1px solid #e2e8f0; padding-bottom: 32px; font-size: 0; line-height: 0;">&nbsp;</td>
           </tr>
 
           <!-- Footer Brand -->
           <tr>
-            <td align="center" style="padding-bottom: 14px;">
-              <span style="font-size: 15px; font-weight: 800; letter-spacing: 1.5px; color: #4f46e5; text-transform: uppercase;">
-                ✦ MITHUN DAS
+            <td align="center" style="padding-bottom: 12px;">
+              <span style="font-size: 14px; font-weight: 800; letter-spacing: 1.5px; color: #0284c7; text-transform: uppercase;">
+                ✦ MITHUN DAS AI AUTOMATION
               </span>
             </td>
           </tr>
@@ -107,8 +107,48 @@ function buildOtpEmailHtml(code: string): string {
           <tr>
             <td align="center" style="padding-bottom: 18px;">
               <p style="margin: 0; font-size: 12px; color: #6b7280; line-height: 1.6; max-width: 440px;">
-                You have received this email because you requested access to your business account at Mithun Das Cloud, to ensure the implementation of our Terms of Service and for other legitimate matters.
+                You have received this email because you requested access to your business account at Mithun Das AI Automation, to ensure the implementation of our Terms of Service and for other legitimate matters.
               </p>
+            </td>
+          </tr>
+
+          <!-- Social Media Icons Row -->
+          <tr>
+            <td align="center" style="padding-bottom: 20px;">
+              <table cellpadding="0" cellspacing="0" border="0" align="center">
+                <tr>
+                  <!-- LinkedIn -->
+                  <td align="center" style="padding: 0 4px;">
+                    <a href="https://www.linkedin.com/in/mithun-das-46347a239/" target="_blank" rel="noopener noreferrer" style="display: inline-block; width: 32px; height: 32px; line-height: 32px; text-align: center; border-radius: 50%; background-color: #f1f5f9; border: 1px solid #cbd5e1; text-decoration: none; color: #0a66c2; font-size: 12px; font-weight: 800; font-family: -apple-system, BlinkMacSystemFont, sans-serif;" title="LinkedIn">
+                      in
+                    </a>
+                  </td>
+                  <!-- WhatsApp -->
+                  <td align="center" style="padding: 0 4px;">
+                    <a href="https://wa.me/918768138086" target="_blank" rel="noopener noreferrer" style="display: inline-block; width: 32px; height: 32px; line-height: 32px; text-align: center; border-radius: 50%; background-color: #f1f5f9; border: 1px solid #cbd5e1; text-decoration: none; color: #16a34a; font-size: 13px; font-weight: 800; font-family: -apple-system, BlinkMacSystemFont, sans-serif;" title="WhatsApp">
+                      wa
+                    </a>
+                  </td>
+                  <!-- X / Twitter -->
+                  <td align="center" style="padding: 0 4px;">
+                    <a href="https://x.com/MithunzDas" target="_blank" rel="noopener noreferrer" style="display: inline-block; width: 32px; height: 32px; line-height: 32px; text-align: center; border-radius: 50%; background-color: #f1f5f9; border: 1px solid #cbd5e1; text-decoration: none; color: #0f172a; font-size: 13px; font-weight: 800; font-family: -apple-system, BlinkMacSystemFont, sans-serif;" title="X (Twitter)">
+                      𝕏
+                    </a>
+                  </td>
+                  <!-- Gmail -->
+                  <td align="center" style="padding: 0 4px;">
+                    <a href="mailto:mithun@mithundas.cloud" style="display: inline-block; width: 32px; height: 32px; line-height: 32px; text-align: center; border-radius: 50%; background-color: #f1f5f9; border: 1px solid #cbd5e1; text-decoration: none; color: #dc2626; font-size: 13px; font-weight: 700; font-family: -apple-system, BlinkMacSystemFont, sans-serif;" title="Email">
+                      ✉
+                    </a>
+                  </td>
+                  <!-- GitHub -->
+                  <td align="center" style="padding: 0 4px;">
+                    <a href="https://github.com/MithunzDas" target="_blank" rel="noopener noreferrer" style="display: inline-block; width: 32px; height: 32px; line-height: 32px; text-align: center; border-radius: 50%; background-color: #f1f5f9; border: 1px solid #cbd5e1; text-decoration: none; color: #334155; font-size: 11px; font-weight: 800; font-family: -apple-system, BlinkMacSystemFont, sans-serif;" title="GitHub">
+                      git
+                    </a>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
@@ -118,11 +158,11 @@ function buildOtpEmailHtml(code: string): string {
               <table cellpadding="0" cellspacing="0" border="0" align="center">
                 <tr>
                   <td>
-                    <a href="https://www.mithundas.cloud/privacy" style="font-size: 12px; color: #4f46e5; text-decoration: underline; margin-right: 8px;">Privacy policy</a>
+                    <a href="https://www.mithundas.cloud/privacy" style="font-size: 12px; color: #0284c7; text-decoration: underline; margin-right: 8px;">Privacy policy</a>
                   </td>
                   <td style="color: #9ca3af; font-size: 12px;">|</td>
                   <td>
-                    <a href="https://www.mithundas.cloud" style="font-size: 12px; color: #4f46e5; text-decoration: underline; margin-left: 8px;">Help center</a>
+                    <a href="https://www.mithundas.cloud" style="font-size: 12px; color: #0284c7; text-decoration: underline; margin-left: 8px;">Help center</a>
                   </td>
                 </tr>
               </table>
@@ -133,7 +173,7 @@ function buildOtpEmailHtml(code: string): string {
           <tr>
             <td align="center">
               <p style="margin: 0; font-size: 11px; color: #9ca3af; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
-                © 2026 Mithun Das Cloud. All rights reserved.
+                © 2026 Mithun Das AI Automation. All rights reserved.
               </p>
             </td>
           </tr>
@@ -157,14 +197,14 @@ export async function sendOtpEmail({ to, code, businessName }: SendOtpParams): P
   const cleanEmail = to.trim().toLowerCase();
   const subject = "Your verification code - Verify it's you to stay secure";
   const html = buildOtpEmailHtml(code);
-  const text = `Here is your verification code: ${code}\n\nPlease make sure you never share this code with anyone.\nNote: The code will expire in 10 minutes.\n\n— Mithun Das Cloud`;
+  const text = `Here is your verification code: ${code}\n\nPlease make sure you never share this code with anyone.\nNote: The code will expire in 10 minutes.\n\n— Mithun Das AI Automation`;
 
   // Hostinger SMTP strictly requires sender to match the authenticated mailbox (mithun@mithundas.cloud)
-  let fromAddress = env.EMAIL_FROM || "Mithun Das AI <mithun@mithundas.cloud>";
+  let fromAddress = env.EMAIL_FROM || "Mithun Das AI Automation <mithun@mithundas.cloud>";
   if (fromAddress.includes("no-reply@")) {
-    fromAddress = "Mithun Das AI <mithun@mithundas.cloud>";
+    fromAddress = "Mithun Das AI Automation <mithun@mithundas.cloud>";
   } else if (env.SMTP_USER) {
-    fromAddress = `Mithun Das AI <${env.SMTP_USER}>`;
+    fromAddress = `Mithun Das AI Automation <${env.SMTP_USER}>`;
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -203,9 +243,13 @@ export async function sendOtpEmail({ to, code, businessName }: SendOtpParams): P
   // ──────────────────────────────────────────────────────────────────────────
   // CHANNEL 2: Self-Hosted n8n Webhook on Hostinger VPS
   // ──────────────────────────────────────────────────────────────────────────
-  if (env.N8N_OTP_WEBHOOK_URL) {
+  const n8nWebhookUrl =
+    env.N8N_OTP_WEBHOOK_URL ||
+    "https://n8n.srv1594654.hstgr.cloud/webhook/qr-owner-otp";
+
+  if (n8nWebhookUrl) {
     try {
-      const n8nRes = await fetch(env.N8N_OTP_WEBHOOK_URL, {
+      const n8nRes = await fetch(n8nWebhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

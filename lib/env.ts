@@ -32,6 +32,8 @@ export const env = {
   SMTP_USER: process.env.SMTP_USER || "",
   SMTP_PASS: process.env.SMTP_PASS || "",
   // Self-Hosted n8n Webhook for OTP
-  N8N_OTP_WEBHOOK_URL: process.env.N8N_OTP_WEBHOOK_URL || "",
+  N8N_OTP_WEBHOOK_URL:
+    process.env.N8N_OTP_WEBHOOK_URL ||
+    "https://n8n.srv1594654.hstgr.cloud/webhook/qr-owner-otp",
 };
 
