@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { env } from "@/lib/env";
+
+/** Verify admin secret from x-admin-secret header */
+function verifyAdmin(req: NextRequest): boolean {
+  const authHeader = req.headers.get("x-admin-secret");
+  const expectedSecret = env.ADMIN_AUTH_SECRET || "mithundas_admin_secret_2026";
+  return authHeader === expectedSecret;
+}
 
 // 1. GET: Fetch Batches, Leads, and Live Metrics
 export async function GET(req: NextRequest) {
+  if (!verifyAdmin(req)) {
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const { searchParams } = new URL(req.url);
     const batchId = searchParams.get("batchId");
@@ -75,6 +86,9 @@ export async function GET(req: NextRequest) {
 
 // 2. POST: Smart Batch Grouping Ingestion (Groups all leads of the same search into ONE single batch)
 export async function POST(req: NextRequest) {
+  if (!verifyAdmin(req)) {
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const body = await req.json();
     
@@ -283,6 +297,9 @@ export async function POST(req: NextRequest) {
 
 // 3. PATCH: Update Outreach Status
 export async function PATCH(req: NextRequest) {
+  if (!verifyAdmin(req)) {
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const body = await req.json();
     const { leadIds, outreachStatus, lastReplyMessage } = body;
@@ -318,6 +335,9 @@ export async function PATCH(req: NextRequest) {
 
 // 4. DELETE: Batch or Selected Leads
 export async function DELETE(req: NextRequest) {
+  if (!verifyAdmin(req)) {
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const { searchParams } = new URL(req.url);
     const batchId = searchParams.get("batchId");

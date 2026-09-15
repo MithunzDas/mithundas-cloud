@@ -26,7 +26,10 @@ import {
   X,
   Clock,
   CheckCheck,
-  Sparkles
+  Sparkles,
+  Star,
+  RotateCcw,
+  Filter
 } from "lucide-react";
 
 interface LeadItem {
@@ -58,6 +61,7 @@ interface LeadItem {
 interface LeadDataTableProps {
   leads: LeadItem[];
   onRefresh: () => void;
+  adminSecret?: string;
 }
 
 /**
@@ -212,7 +216,7 @@ export const getPersonalizedDemoUrl = (rawUrl: string, item: LeadItem) => {
   return rawUrl;
 };
 
-export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
+export function LeadDataTable({ leads, onRefresh, adminSecret }: LeadDataTableProps) {
   // View Modes: "outreach" (focused 7-col) vs "full" (all 11-col)
   const [viewMode, setViewMode] = useState<"outreach" | "full">("outreach");
 
@@ -231,6 +235,41 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
   const [copiedModalText, setCopiedModalText] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<"dental_clinic_demo_outreach_v1" | "client_followup_checkin" | "local_business_starter">("dental_clinic_demo_outreach_v1");
 
+  // Advanced Column Filters
+  const [filterWebsite, setFilterWebsite] = useState("all");
+  const [filterEmail, setFilterEmail] = useState("all");
+  const [filterRating, setFilterRating] = useState("all");
+  const [customRatingMin, setCustomRatingMin] = useState("");
+  const [customRatingMax, setCustomRatingMax] = useState("");
+  const [filterReviews, setFilterReviews] = useState("all");
+  const [customReviewMin, setCustomReviewMin] = useState("");
+  const [customReviewMax, setCustomReviewMax] = useState("");
+
+  // Helper: get admin headers for fetch
+  const getAdminHeaders = (extra?: Record<string, string>): Record<string, string> => {
+    const headers: Record<string, string> = { ...extra };
+    const secret = adminSecret || (typeof window !== "undefined" ? localStorage.getItem("mithundas_admin_secret") || "" : "");
+    if (secret) headers["x-admin-secret"] = secret;
+    return headers;
+  };
+
+  // Count active advanced filters
+  const activeFilterCount = [filterWebsite, filterEmail, filterRating, filterReviews].filter(f => f !== "all").length;
+
+  const resetAllFilters = () => {
+    setFilterWebsite("all");
+    setFilterEmail("all");
+    setFilterRating("all");
+    setCustomRatingMin("");
+    setCustomRatingMax("");
+    setFilterReviews("all");
+    setCustomReviewMin("");
+    setCustomReviewMax("");
+    setFilterTier("all");
+    setFilterStatus("all");
+    setSearchTerm("");
+  };
+
   // Filter Leads
   const filteredLeads = leads.filter((lead) => {
     const matchSearch =
@@ -248,7 +287,54 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
 
     const matchStatus = filterStatus === "all" || lead.outreachStatus === filterStatus;
 
-    return matchSearch && matchTier && matchStatus;
+    // Website filter
+    let matchWebsite = true;
+    if (filterWebsite === "yes") {
+      matchWebsite = Boolean(lead.hasWebsite || (lead.website && lead.website.length > 3 && !lead.website.toLowerCase().includes("no website")));
+    } else if (filterWebsite === "no") {
+      matchWebsite = !lead.hasWebsite && (!lead.website || lead.website.length <= 3 || lead.website.toLowerCase().includes("no website"));
+    }
+
+    // Email filter
+    let matchEmail = true;
+    if (filterEmail === "yes") {
+      matchEmail = Boolean(lead.email && lead.email.includes("@") && lead.email.includes("."));
+    } else if (filterEmail === "no") {
+      matchEmail = !lead.email || !lead.email.includes("@");
+    }
+
+    // Rating filter
+    let matchRatingFilter = true;
+    const r = lead.rating || 0;
+    if (filterRating === "5.0") matchRatingFilter = r >= 4.95;
+    else if (filterRating === "4.9") matchRatingFilter = r >= 4.85 && r < 4.95;
+    else if (filterRating === "4.8") matchRatingFilter = r >= 4.75 && r < 4.85;
+    else if (filterRating === "4.5-5.0") matchRatingFilter = r >= 4.5 && r <= 5.0;
+    else if (filterRating === "4.0-4.5") matchRatingFilter = r >= 4.0 && r < 4.5;
+    else if (filterRating === "4.0-4.2") matchRatingFilter = r >= 4.0 && r <= 4.2;
+    else if (filterRating === "<4.0") matchRatingFilter = r > 0 && r < 4.0;
+    else if (filterRating === "custom") {
+      const min = parseFloat(customRatingMin) || 0;
+      const max = parseFloat(customRatingMax) || 5.0;
+      matchRatingFilter = r >= min && r <= max;
+    }
+
+    // Review count filter
+    let matchReviewFilter = true;
+    const rc = lead.reviewCount || 0;
+    if (filterReviews === "<50") matchReviewFilter = rc < 50;
+    else if (filterReviews === "<100") matchReviewFilter = rc < 100;
+    else if (filterReviews === "<150") matchReviewFilter = rc < 150;
+    else if (filterReviews === ">150") matchReviewFilter = rc > 150;
+    else if (filterReviews === ">200") matchReviewFilter = rc > 200;
+    else if (filterReviews === ">500") matchReviewFilter = rc > 500;
+    else if (filterReviews === "custom") {
+      const min = parseInt(customReviewMin) || 0;
+      const max = parseInt(customReviewMax) || 999999;
+      matchReviewFilter = rc >= min && rc <= max;
+    }
+
+    return matchSearch && matchTier && matchStatus && matchWebsite && matchEmail && matchRatingFilter && matchReviewFilter;
   });
 
   // Count unread replies
@@ -285,7 +371,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
     try {
       const res = await fetch("/api/admin/lead-generation/leads", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ leadIds: selectedLeadIds })
       });
 
@@ -313,7 +399,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
     try {
       const res = await fetch("/api/admin/lead-generation/leads", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ leadIds: [leadId] })
       });
       const data = await res.json();
@@ -330,7 +416,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
     try {
       const res = await fetch("/api/admin/lead-generation/leads", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           leadIds: [leadId],
           outreachStatus: newStatus
@@ -355,7 +441,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
     try {
       const res = await fetch("/api/admin/lead-generation/sync-sheet", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({})
       });
 
@@ -396,7 +482,7 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
     try {
       const res = await fetch("/api/admin/lead-generation/outreach", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           leadIds: ids,
           templateName: selectedTemplate
@@ -601,6 +687,23 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
 
         {/* Right: Bulk Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
+
+          {/* Active Filter Count + Reset */}
+          {activeFilterCount > 0 && (
+            <button
+              onClick={resetAllFilters}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-xs text-amber-400 hover:bg-amber-500/25 transition-all font-mono font-medium shadow-sm"
+              title="Clear all active filters"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset ({activeFilterCount})</span>
+            </button>
+          )}
+
+          {/* Results Counter */}
+          <span className="text-[10px] font-mono text-slate-500 px-2 py-1 bg-slate-900/50 rounded-lg border border-slate-800/50 whitespace-nowrap">
+            {filteredLeads.length} / {leads.length} leads
+          </span>
           {selectedLeadIds.length > 0 && (
             <button
               onClick={handleDeleteSelected}
@@ -664,6 +767,134 @@ export function LeadDataTable({ leads, onRefresh }: LeadDataTableProps) {
             </span>
           </button>
         </div>
+      </div>
+
+      {/* 2. ADVANCED COLUMN FILTERS ROW */}
+      <div className="flex flex-wrap items-center gap-2 mb-4 pb-3 border-b border-border-app/40">
+        <span className="flex items-center gap-1 text-[10px] text-slate-500 font-mono uppercase tracking-wide">
+          <Filter className="w-3 h-3" /> Column Filters:
+        </span>
+
+        {/* Website Filter */}
+        <select
+          value={filterWebsite}
+          onChange={(e) => setFilterWebsite(e.target.value)}
+          className={`bg-[#0b0f17] border rounded-lg px-2.5 py-1.5 text-[11px] focus:outline-none cursor-pointer transition-colors ${
+            filterWebsite !== "all"
+              ? "border-cyan-500/50 text-cyan-300"
+              : "border-border-app text-text-secondary"
+          }`}
+        >
+          <option value="all">🌐 All Websites</option>
+          <option value="yes">🌐 Has Website (Yes)</option>
+          <option value="no">❌ No Website (No)</option>
+        </select>
+
+        {/* Email Filter */}
+        <select
+          value={filterEmail}
+          onChange={(e) => setFilterEmail(e.target.value)}
+          className={`bg-[#0b0f17] border rounded-lg px-2.5 py-1.5 text-[11px] focus:outline-none cursor-pointer transition-colors ${
+            filterEmail !== "all"
+              ? "border-cyan-500/50 text-cyan-300"
+              : "border-border-app text-text-secondary"
+          }`}
+        >
+          <option value="all">✉️ All Emails</option>
+          <option value="yes">✉️ Has Email (Yes)</option>
+          <option value="no">❌ No Email (No)</option>
+        </select>
+
+        {/* Rating Filter */}
+        <select
+          value={filterRating}
+          onChange={(e) => setFilterRating(e.target.value)}
+          className={`bg-[#0b0f17] border rounded-lg px-2.5 py-1.5 text-[11px] focus:outline-none cursor-pointer transition-colors ${
+            filterRating !== "all"
+              ? "border-amber-500/50 text-amber-300"
+              : "border-border-app text-text-secondary"
+          }`}
+        >
+          <option value="all">⭐ All Ratings</option>
+          <option value="5.0">⭐ 5.0 Stars Only</option>
+          <option value="4.9">⭐ 4.9 Stars</option>
+          <option value="4.8">⭐ 4.8 Stars</option>
+          <option value="4.5-5.0">⭐ 4.5 - 5.0 Stars</option>
+          <option value="4.0-4.5">⭐ 4.0 - 4.5 Stars</option>
+          <option value="4.0-4.2">⭐ 4.0 - 4.2 Stars</option>
+          <option value="<4.0">⭐ &lt; 4.0 Stars</option>
+          <option value="custom">⭐ Custom Range...</option>
+        </select>
+
+        {/* Custom Rating Range Inputs */}
+        {filterRating === "custom" && (
+          <div className="flex items-center gap-1.5">
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              max="5"
+              value={customRatingMin}
+              onChange={(e) => setCustomRatingMin(e.target.value)}
+              placeholder="Min"
+              className="w-16 bg-[#0b0f17] border border-amber-500/40 rounded-lg px-2 py-1.5 text-[11px] text-amber-300 placeholder:text-slate-600 focus:outline-none focus:border-amber-400"
+            />
+            <span className="text-[10px] text-slate-500">to</span>
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              max="5"
+              value={customRatingMax}
+              onChange={(e) => setCustomRatingMax(e.target.value)}
+              placeholder="Max"
+              className="w-16 bg-[#0b0f17] border border-amber-500/40 rounded-lg px-2 py-1.5 text-[11px] text-amber-300 placeholder:text-slate-600 focus:outline-none focus:border-amber-400"
+            />
+          </div>
+        )}
+
+        {/* Review Count Filter */}
+        <select
+          value={filterReviews}
+          onChange={(e) => setFilterReviews(e.target.value)}
+          className={`bg-[#0b0f17] border rounded-lg px-2.5 py-1.5 text-[11px] focus:outline-none cursor-pointer transition-colors ${
+            filterReviews !== "all"
+              ? "border-emerald-500/50 text-emerald-300"
+              : "border-border-app text-text-secondary"
+          }`}
+        >
+          <option value="all">💬 All Reviews</option>
+          <option value="<50">💬 Under 50 Reviews</option>
+          <option value="<100">💬 Under 100 Reviews</option>
+          <option value="<150">💬 Under 150 Reviews</option>
+          <option value=">150">💬 Greater than 150</option>
+          <option value=">200">💬 Greater than 200</option>
+          <option value=">500">💬 Greater than 500</option>
+          <option value="custom">💬 Custom Range...</option>
+        </select>
+
+        {/* Custom Review Range Inputs */}
+        {filterReviews === "custom" && (
+          <div className="flex items-center gap-1.5">
+            <input
+              type="number"
+              min="0"
+              value={customReviewMin}
+              onChange={(e) => setCustomReviewMin(e.target.value)}
+              placeholder="Min"
+              className="w-16 bg-[#0b0f17] border border-emerald-500/40 rounded-lg px-2 py-1.5 text-[11px] text-emerald-300 placeholder:text-slate-600 focus:outline-none focus:border-emerald-400"
+            />
+            <span className="text-[10px] text-slate-500">to</span>
+            <input
+              type="number"
+              min="0"
+              value={customReviewMax}
+              onChange={(e) => setCustomReviewMax(e.target.value)}
+              placeholder="Max"
+              className="w-16 bg-[#0b0f17] border border-emerald-500/40 rounded-lg px-2 py-1.5 text-[11px] text-emerald-300 placeholder:text-slate-600 focus:outline-none focus:border-emerald-400"
+            />
+          </div>
+        )}
       </div>
 
       {/* Action Notification Alert Bar */}

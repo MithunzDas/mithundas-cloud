@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { env } from "@/lib/env";
 
 // Hierarchy of outreach status priority
 const STATUS_PRIORITY: Record<string, number> = {
@@ -8,10 +9,15 @@ const STATUS_PRIORITY: Record<string, number> = {
   DELIVERED: 3,
   SENT: 2,
   NEW: 1,
-  FAILED: 0
+  FAILED: 0,
 };
 
 export async function POST(req: NextRequest) {
+  const authHeader = req.headers.get("x-admin-secret");
+  const expectedSecret = env.ADMIN_AUTH_SECRET || "mithundas_admin_secret_2026";
+  if (authHeader !== expectedSecret) {
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
   try {
     console.log("[Deduplication] Starting global phone deduplication scan...");
 
