@@ -56,8 +56,71 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate clean unique slug
-    let baseSlug = businessName
+    const cleanBizName = businessName.trim();
+    const cleanEmail = ownerEmail.trim().toLowerCase();
+    const cleanPlaceId = placeId ? (extractPlaceIdFromUrl(placeId) || placeId.trim()) : null;
+
+    // PREVENT FREE TRIAL LOOPHOLE: Check if a business already exists for this placeId OR owner email + name
+    let existingBusiness = null;
+
+    if (cleanPlaceId) {
+      existingBusiness = await prisma.reviewBusiness.findFirst({
+        where: { placeId: cleanPlaceId },
+        orderBy: { createdAt: "asc" }, // Primary/original registration
+      });
+    }
+
+    if (!existingBusiness) {
+      existingBusiness = await prisma.reviewBusiness.findFirst({
+        where: {
+          ownerEmail: { equals: cleanEmail, mode: "insensitive" },
+          businessName: { equals: cleanBizName, mode: "insensitive" },
+        },
+        orderBy: { createdAt: "asc" },
+      });
+    }
+
+    // If business already exists, DO NOT grant another free trial and DO NOT create duplicate slugs!
+    if (existingBusiness) {
+      const now = new Date();
+      const isSubscribed = existingBusiness.trialStatus === "SUBSCRIBED";
+      const isTrialExpired = existingBusiness.trialEndsAt <= now;
+
+      // Ensure status is marked EXPIRED if trial time has elapsed
+      if (isTrialExpired && !isSubscribed && existingBusiness.trialStatus !== "EXPIRED") {
+        existingBusiness = await prisma.reviewBusiness.update({
+          where: { id: existingBusiness.id },
+          data: { trialStatus: "EXPIRED" },
+        });
+      }
+
+      // Update owner phone or contact info if newly provided
+      if (ownerPhone && !existingBusiness.ownerPhone) {
+        existingBusiness = await prisma.reviewBusiness.update({
+          where: { id: existingBusiness.id },
+          data: { ownerPhone },
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        isExisting: true,
+        trialExpired: isTrialExpired && !isSubscribed,
+        isSubscribed,
+        business: existingBusiness,
+        reviewUrl: `/r/${existingBusiness.slug}`,
+        standeeUrl: `/products/theqrbasedsystem/standee/${existingBusiness.slug}`,
+        dashboardUrl: `/products/theqrbasedsystem/dashboard/${existingBusiness.slug}`,
+        message: isSubscribed
+          ? "This business profile is already active on a subscription plan."
+          : isTrialExpired
+          ? "Your 3-day free trial for this location has ended. Please log in to activate your plan and continue collecting reviews."
+          : "Welcome back! Continuing your active 3-day free trial.",
+      });
+    }
+
+    // Generate clean unique slug for NEW business
+    let baseSlug = cleanBizName
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
@@ -71,20 +134,18 @@ export async function POST(request: Request) {
       counter++;
     }
 
-    // Generate clean Google Place ID & Review URL
-    const cleanPlaceId = placeId ? (extractPlaceIdFromUrl(placeId) || placeId) : null;
-    const googleReviewUrl = getGoogleReviewDeepLink(cleanPlaceId, businessName, city);
+    const googleReviewUrl = getGoogleReviewDeepLink(cleanPlaceId, cleanBizName, city);
 
-    // 3-Day Free Trial
+    // 3-Day Free Trial (granted ONLY once for new locations)
     const trialEndsAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
     const activationToken = crypto.randomBytes(16).toString("hex");
 
     const business = await prisma.reviewBusiness.create({
       data: {
         slug,
-        businessName,
-        ownerEmail,
-        ownerName,
+        businessName: cleanBizName,
+        ownerEmail: cleanEmail,
+        ownerName: ownerName ? ownerName.trim() : null,
         ownerPhone: ownerPhone || null,
         category,
         placeId: cleanPlaceId,
@@ -99,6 +160,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
+      isExisting: false,
+      trialExpired: false,
+      isSubscribed: false,
       business,
       reviewUrl: `/r/${business.slug}`,
       standeeUrl: `/products/theqrbasedsystem/standee/${business.slug}`,

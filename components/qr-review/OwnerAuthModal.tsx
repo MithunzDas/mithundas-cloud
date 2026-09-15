@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import Script from "next/script";
 import { Mail, ShieldCheck, ArrowRight, Loader2, RefreshCw, KeyRound, Building2 } from "lucide-react";
 
 interface OwnerAuthModalProps {
@@ -16,6 +15,10 @@ interface OwnerAuthModalProps {
   businessName?: string;
 }
 
+const GOOGLE_CLIENT_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+  "1081676413092-m2bl2lsl3n8qshk8jc2fqdktamn9qk18.apps.googleusercontent.com";
+
 export default function OwnerAuthModal({
   isOpen,
   onClose,
@@ -29,7 +32,6 @@ export default function OwnerAuthModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(0);
-  const [previewOtp, setPreviewOtp] = useState<string | null>(null);
   const [googleInitialized, setGoogleInitialized] = useState(false);
 
   const otpInputRef = useRef<HTMLInputElement>(null);
@@ -55,7 +57,7 @@ export default function OwnerAuthModal({
     }
   }, [step]);
 
-  // Handle Google GIS callback
+  // Handle Google GIS callback (ID Token from One-Tap or button)
   const handleGoogleResponse = useCallback(async (response: { credential: string }) => {
     setIsLoading(true);
     setError(null);
@@ -80,13 +82,24 @@ export default function OwnerAuthModal({
 
   // Initialize Google Identity Services
   const initGoogleGIS = useCallback(() => {
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (!clientId) return;
+    const clientId = GOOGLE_CLIENT_ID;
+    if (!clientId || typeof window === "undefined") return;
 
-    if (typeof window !== "undefined" && (window as unknown as { google?: { accounts: { id: { initialize: (o: unknown) => void; renderButton: (el: HTMLElement | null, o: unknown) => void; prompt: () => void } } } }).google) {
-      const google = (window as unknown as { google: { accounts: { id: { initialize: (o: unknown) => void; renderButton: (el: HTMLElement | null, o: unknown) => void; prompt: () => void } } } }).google;
+    const win = window as unknown as {
+      google?: {
+        accounts?: {
+          id?: {
+            initialize: (o: unknown) => void;
+            renderButton: (el: HTMLElement | null, o: unknown) => void;
+            prompt: () => void;
+          };
+        };
+      };
+    };
+
+    if (win?.google?.accounts?.id) {
       try {
-        google.accounts.id.initialize({
+        win.google.accounts.id.initialize({
           client_id: clientId,
           callback: handleGoogleResponse,
           auto_select: false,
@@ -95,10 +108,10 @@ export default function OwnerAuthModal({
         const btnContainer = document.getElementById("google-signin-btn-container");
         if (btnContainer) {
           btnContainer.innerHTML = "";
-          google.accounts.id.renderButton(btnContainer, {
+          win.google.accounts.id.renderButton(btnContainer, {
             theme: "filled_blue",
             size: "large",
-            width: "340",
+            width: "320",
             text: "continue_with",
             shape: "pill",
           });
@@ -110,20 +123,47 @@ export default function OwnerAuthModal({
     }
   }, [handleGoogleResponse]);
 
-  // Effect to re-initialize Google whenever modal opens
+  // Ensure Google Identity Services script is loaded reliably
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const win = window as unknown as { google?: { accounts?: unknown } };
+    if (win?.google?.accounts) {
+      initGoogleGIS();
+      return;
+    }
+
+    const scriptId = "google-gis-sdk";
+    let script = document.getElementById(scriptId) as HTMLScriptElement | null;
+    if (!script) {
+      script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        initGoogleGIS();
+      };
+      document.head.appendChild(script);
+    } else {
+      script.addEventListener("load", () => initGoogleGIS(), { once: true });
+    }
+  }, [initGoogleGIS]);
+
+  // Re-render Google button whenever modal opens
   useEffect(() => {
     if (!isOpen) return;
     const timer = setTimeout(() => {
       initGoogleGIS();
-    }, 100);
+    }, 150);
     return () => clearTimeout(timer);
   }, [isOpen, initGoogleGIS]);
 
-  // Trigger Google One-Tap / Sign-In on manual button click
+  // Trigger Google Sign-In on button click
   const triggerGoogleSignIn = () => {
     setIsLoading(true);
     setError(null);
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    const clientId = GOOGLE_CLIENT_ID;
 
     const win = typeof window !== "undefined"
       ? (window as unknown as {
@@ -143,9 +183,13 @@ export default function OwnerAuthModal({
         const tokenClient = win.google.accounts.oauth2.initTokenClient({
           client_id: clientId,
           scope: "email profile openid",
-          callback: async (tokenResponse: { access_token?: string; error?: string }) => {
+          callback: async (tokenResponse: { access_token?: string; error?: string; error_description?: string }) => {
             if (tokenResponse.error) {
               setIsLoading(false);
+              setError(
+                tokenResponse.error_description ||
+                  `Google authentication was not completed (${tokenResponse.error}).`
+              );
               return;
             }
             if (tokenResponse.access_token) {
@@ -168,17 +212,33 @@ export default function OwnerAuthModal({
               }
             }
           },
+          error_callback: (err: { type?: string; message?: string }) => {
+            setIsLoading(false);
+            console.warn("Google OAuth error_callback:", err);
+            if (err?.type === "popup_closed") {
+              setError("Sign-in popup was closed. Please try again or use your work email below.");
+            } else if (err?.type === "popup_blocked") {
+              setError("Sign-in popup was blocked by browser. Please allow popups or use your email below.");
+            } else {
+              setError(err?.message || "Google Sign-In was cancelled. You can sign in using work email below.");
+            }
+          },
         });
         tokenClient.requestAccessToken();
         return;
       } catch (e) {
         console.warn("OAuth token client failed:", e);
+        setIsLoading(false);
       }
     }
 
-    // If GIS script hasn't finished loading yet, try prompt or re-init
+    // Fallback: try One-Tap prompt if token client is unavailable
     if (win?.google?.accounts?.id) {
-      win.google.accounts.id.prompt();
+      try {
+        win.google.accounts.id.prompt();
+      } catch (e) {
+        console.warn("Google One-Tap prompt error:", e);
+      }
       setIsLoading(false);
     } else {
       initGoogleGIS();
@@ -199,7 +259,6 @@ export default function OwnerAuthModal({
 
     setIsLoading(true);
     setError(null);
-    setPreviewOtp(null);
 
     try {
       const res = await fetch("/api/qr-review/auth/send-otp", {
@@ -215,11 +274,6 @@ export default function OwnerAuthModal({
 
       setStep("otp");
       setCountdown(60);
-
-      // If server returned previewCode (e.g. RESEND_API_KEY not configured)
-      if (data.previewCode) {
-        setPreviewOtp(data.previewCode);
-      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to dispatch login code");
     } finally {
@@ -263,13 +317,6 @@ export default function OwnerAuthModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn">
-      {/* Google Identity Services Script */}
-      <Script
-        id="google-gis-script"
-        src="https://accounts.google.com/gsi/client"
-        strategy="afterInteractive"
-        onLoad={initGoogleGIS}
-      />
 
       <div className="bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[95vh] overflow-y-auto">
         {/* Close Button */}
@@ -391,27 +438,6 @@ export default function OwnerAuthModal({
         ) : (
           /* STEP 2: 6-DIGIT OTP VERIFICATION */
           <div className="space-y-5">
-            {/* Auto-fill banner if preview code returned */}
-            {previewOtp && (
-              <div className="p-3.5 bg-blue-500/10 border border-blue-500/30 rounded-2xl space-y-1.5 animate-fadeIn">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-300 font-semibold">Your Verification Code:</span>
-                  <button
-                    type="button"
-                    onClick={() => setOtp(previewOtp)}
-                    className="text-blue-400 font-bold hover:underline text-xs"
-                  >
-                    Click to Auto-Fill ➔
-                  </button>
-                </div>
-                <div className="text-2xl font-mono font-black text-blue-400 tracking-[8px] text-center py-1">
-                  {previewOtp}
-                </div>
-                <p className="text-[10px] text-slate-400 text-center leading-tight">
-                  (Resend email key not connected on server. Code displayed here for instant access)
-                </p>
-              </div>
-            )}
 
             {/* Google alternative button on OTP screen if user prefers */}
             {isGmailUser && (

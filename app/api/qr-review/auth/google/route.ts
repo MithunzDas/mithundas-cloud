@@ -52,9 +52,11 @@ export async function POST(req: NextRequest) {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // Find all businesses matching this owner's email
+    // Find all businesses matching this owner's email (case-insensitive)
     const businesses = await prisma.reviewBusiness.findMany({
-      where: { ownerEmail: email },
+      where: {
+        ownerEmail: { equals: cleanEmail, mode: "insensitive" },
+      },
       select: {
         id: true,
         slug: true,
@@ -68,10 +70,10 @@ export async function POST(req: NextRequest) {
     });
 
     // Sign session token and set HTTP-only cookie
-    const token = signOwnerToken({ email, name });
+    const token = signOwnerToken({ email: cleanEmail, name });
     await setOwnerSessionCookie(token);
 
-    logger.info(`Owner logged in via Google One-Tap: ${email}`, "google_auth_success", {
+    logger.info(`Owner logged in via Google: ${cleanEmail}`, "google_auth_success", {
       businessCount: businesses.length,
     });
 
@@ -79,7 +81,7 @@ export async function POST(req: NextRequest) {
       success: true,
       message: "Google authentication successful",
       owner: {
-        email,
+        email: cleanEmail,
         name,
         picture,
         businesses,

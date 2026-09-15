@@ -62,6 +62,10 @@ function OnboardFormContent() {
     reviewUrl: string;
     standeeUrl: string;
     dashboardUrl: string;
+    isExisting?: boolean;
+    trialExpired?: boolean;
+    isSubscribed?: boolean;
+    message?: string;
   } | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -374,6 +378,10 @@ function OnboardFormContent() {
           reviewUrl: data.reviewUrl,
           standeeUrl: data.standeeUrl,
           dashboardUrl: data.dashboardUrl,
+          isExisting: data.isExisting,
+          trialExpired: data.trialExpired,
+          isSubscribed: data.isSubscribed,
+          message: data.message,
         });
       } else {
         setErrorMsg(data.error || "Failed to create business profile.");
@@ -446,17 +454,45 @@ function OnboardFormContent() {
         )}
 
         {createdBusiness ? (
-          /* SUCCESS STATE */
+          /* SUCCESS OR EXISTING ACCOUNT STATE */
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 space-y-6 shadow-2xl animate-fadeIn">
-            <div className="text-center space-y-2">
-              <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center">
-                <CheckCircle2 className="w-8 h-8" />
+            {createdBusiness.trialExpired ? (
+              /* TRIAL EXPIRED NOTICE */
+              <div className="text-center space-y-3">
+                <div className="w-14 h-14 rounded-full bg-amber-500/20 text-amber-400 mx-auto flex items-center justify-center">
+                  <AlertCircle className="w-8 h-8" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">Account Found: Free Trial Expired</h2>
+                <p className="text-sm text-amber-300/90 max-w-lg mx-auto leading-relaxed">
+                  This location (<span className="font-semibold text-white">{businessName}</span>) has already claimed its 3-day free trial. Your counter standee, review history, and QR configurations are saved.
+                </p>
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-xs text-amber-200">
+                  ⚡ Please open your dashboard to choose a monthly or annual growth plan and re-activate live customer review capture.
+                </div>
               </div>
-              <h2 className="text-2xl font-bold text-white">Your QR Review System is Live!</h2>
-              <p className="text-sm text-slate-400">
-                Your 3-day free trial has been activated. No card was charged.
-              </p>
-            </div>
+            ) : createdBusiness.isExisting ? (
+              /* EXISTING ACTIVE TRIAL / SUBSCRIBED */
+              <div className="text-center space-y-2">
+                <div className="w-14 h-14 rounded-full bg-blue-500/20 text-blue-400 mx-auto flex items-center justify-center">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">Welcome Back! Location Already Registered</h2>
+                <p className="text-sm text-slate-300">
+                  {createdBusiness.message || "Your existing QR standee and growth analytics are active."}
+                </p>
+              </div>
+            ) : (
+              /* FRESH TRIAL CREATED */
+              <div className="text-center space-y-2">
+                <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">Your QR Review System is Live!</h2>
+                <p className="text-sm text-slate-400">
+                  Your 3-day free trial has been activated. No card was charged.
+                </p>
+              </div>
+            )}
 
             {/* Quick Action Links */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
@@ -480,18 +516,26 @@ function OnboardFormContent() {
 
               <Link
                 href={createdBusiness.dashboardUrl}
-                className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700 p-5 rounded-2xl flex flex-col justify-between space-y-4 text-slate-100 shadow-xl group transition-all"
+                className={`p-5 rounded-2xl flex flex-col justify-between space-y-4 shadow-xl group transition-all ${
+                  createdBusiness.trialExpired
+                    ? "bg-gradient-to-tr from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white"
+                    : "bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-slate-100"
+                }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-2.5 rounded-xl bg-slate-700">
-                    <Sparkles className="w-6 h-6 text-amber-400" />
+                  <div className="p-2.5 rounded-xl bg-white/10">
+                    <Sparkles className="w-6 h-6 text-amber-300" />
                   </div>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-base">Open Business Dashboard</h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Track live QR scans, generated reviews, and customer feedback.
+                  <h3 className="font-bold text-base">
+                    {createdBusiness.trialExpired ? "Activate Growth Plan in Dashboard" : "Open Business Dashboard"}
+                  </h3>
+                  <p className="text-xs mt-1 opacity-90">
+                    {createdBusiness.trialExpired
+                      ? "Choose monthly or annual plan to keep reviews and smart routing active."
+                      : "Track live QR scans, generated reviews, and customer feedback."}
                   </p>
                 </div>
               </Link>

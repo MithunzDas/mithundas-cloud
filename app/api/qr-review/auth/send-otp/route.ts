@@ -43,12 +43,7 @@ export async function POST(req: NextRequest) {
     const fromAddress = env.EMAIL_FROM || "Mithun Das AI <no-reply@mithundas.cloud>";
 
     if (resend) {
-      try {
-        const { error: resendError } = await resend.emails.send({
-          from: fromAddress,
-          to: cleanEmail,
-          subject: `Your Login Code: ${code} — Business Owner Portal | Mithun Das AI`,
-          html: `
+      const emailHtml = `
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -60,7 +55,7 @@ export async function POST(req: NextRequest) {
   <!-- Header Banner -->
   <tr><td style="background:linear-gradient(135deg,#0284c7 0%,#4f46e5 100%);padding:28px 32px;">
     <div style="font-size:11px;font-family:monospace;letter-spacing:1.5px;color:rgba(255,255,255,0.85);text-transform:uppercase;margin-bottom:4px;">15-SECOND QR REVIEW SAAS</div>
-    <h1 style="margin:0;font-size:20px;font-weight:800;color:#ffffff;">Business Owner 1-Click Verification</h1>
+    <h1 style="margin:0;font-size:20px;font-weight:800;color:#ffffff;">Business Owner Verification Code</h1>
   </td></tr>
 
   <!-- Content -->
@@ -91,8 +86,27 @@ export async function POST(req: NextRequest) {
 </td></tr>
 </table>
 </body></html>
-          `,
+      `;
+
+      try {
+        let { error: resendError } = await resend.emails.send({
+          from: fromAddress,
+          to: cleanEmail,
+          subject: `Your Login Code: ${code} — Business Owner Portal | Mithun Das AI`,
+          html: emailHtml,
         });
+
+        // If custom domain unverified, fallback to onboarding@resend.dev
+        if (resendError && fromAddress !== "onboarding@resend.dev") {
+          logger.warn("Retrying OTP email with onboarding@resend.dev fallback", "resend_fallback", { resendError });
+          const retryRes = await resend.emails.send({
+            from: "Mithun Das AI <onboarding@resend.dev>",
+            to: cleanEmail,
+            subject: `Your Login Code: ${code} — Business Owner Portal | Mithun Das AI`,
+            html: emailHtml,
+          });
+          resendError = retryRes.error;
+        }
 
         if (!resendError) {
           emailSent = true;
@@ -104,14 +118,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (!emailSent) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Unable to dispatch verification email to this address. Please ensure email service is configured or use Google 1-Click sign-in.",
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
-      message: emailSent
-        ? `Login code dispatched to ${cleanEmail}`
-        : `Email service not connected. Your login code is: ${code}`,
-      emailSent,
-      // If email was not sent or in dev mode, return preview code so owner is never blocked
-      previewCode: !emailSent || process.env.NODE_ENV !== "production" ? code : undefined,
+      message: `A 6-digit verification code has been dispatched to ${cleanEmail}. Please check your inbox.`,
+      emailSent: true,
     });
   } catch (err) {
     logger.error("Failed to send owner OTP", "owner_otp_error", err);
