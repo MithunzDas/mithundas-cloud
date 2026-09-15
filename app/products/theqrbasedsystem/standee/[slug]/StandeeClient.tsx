@@ -18,19 +18,306 @@ import {
 interface StandeeClientProps {
   slug: string;
   businessName: string;
+  ownerName?: string | null;
   category: string;
   city?: string | null;
+}
+
+interface StaffScriptConfig {
+  roleSubtitle: string;
+  contextPrompt: string;
+  defaultBeneficiary: string;
+  scriptText: (name: string) => string;
+  bullet1: { title: string; desc: string };
+  bullet2: { title: string; desc: string };
+  bullet3: { title: string; desc: string };
+}
+
+function resolveStaffTrainingScript(
+  category: string,
+  businessName: string,
+  ownerName?: string | null
+): StaffScriptConfig {
+  const catUpper = (category || "").toUpperCase().trim();
+  const nameLower = (businessName || "").toLowerCase();
+
+  const getDoctorFormattedName = (): string => {
+    if (ownerName && ownerName.trim()) {
+      const clean = ownerName.trim();
+      return /^dr\.?\s+/i.test(clean) ? clean : `Dr. ${clean}`;
+    }
+    const drMatch = businessName.match(/Dr\.?\s+([A-Za-z]+)/i);
+    if (drMatch) return `Dr. ${drMatch[1]}`;
+    return "our doctor & medical team";
+  };
+
+  // 1. HOTEL / HOSPITALITY / RESORT
+  if (
+    catUpper.includes("HOTEL") ||
+    catUpper.includes("RESORT") ||
+    catUpper.includes("HOSPITALITY") ||
+    nameLower.includes("hotel") ||
+    nameLower.includes("resort") ||
+    nameLower.includes("inn") ||
+    nameLower.includes("suites") ||
+    nameLower.includes("lodge") ||
+    nameLower.includes("hospitality")
+  ) {
+    const beneficiary = ownerName?.trim() ? `${ownerName.trim()} & our hotel team` : "our hotel team";
+    return {
+      roleSubtitle: `For ${businessName} Front-Desk, Reception & Hospitality Staff`,
+      contextPrompt: "WHEN CHECKING OUT A GUEST OR HANDING OVER THEIR ROOM INVOICE & RECEIPT, SAY THIS:",
+      defaultBeneficiary: beneficiary,
+      scriptText: (name) => `"While your receipt is printing, could you tap this QR code on the counter? It takes 10 seconds and helps ${name} immensely!"`,
+      bullet1: {
+        title: "Zero Friction",
+        desc: "Guests already have their smartphones in hand while settling bills at reception.",
+      },
+      bullet2: {
+        title: "Time Anchor",
+        desc: "Saying '10 seconds' eliminates hesitation and the fear of a tedious hotel survey.",
+      },
+      bullet3: {
+        title: "Personal Connection",
+        desc: "Mentioning the team or front-desk host by name triggers genuine guest empathy and 5-star ratings.",
+      },
+    };
+  }
+
+  // 2. RESTAURANT / CAFE / DINING
+  if (
+    catUpper.includes("RESTAU") ||
+    catUpper.includes("CAFE") ||
+    catUpper.includes("DINING") ||
+    catUpper.includes("BISTRO") ||
+    catUpper.includes("BAKER") ||
+    catUpper.includes("FOOD") ||
+    nameLower.includes("restaurant") ||
+    nameLower.includes("cafe") ||
+    nameLower.includes("bistro") ||
+    nameLower.includes("bakery") ||
+    nameLower.includes("kitchen") ||
+    nameLower.includes("diner") ||
+    nameLower.includes("grill")
+  ) {
+    const beneficiary = ownerName?.trim() ? `${ownerName.trim()} & our culinary team` : "our chef & serving team";
+    return {
+      roleSubtitle: `For ${businessName} Hosts, Servers & Front-of-House Staff`,
+      contextPrompt: "WHEN PRESENTING THE BILL FOLDER OR TENDERED RECEIPT TO THE GUEST, SAY THIS:",
+      defaultBeneficiary: beneficiary,
+      scriptText: (name) => `"While your bill is processing, could you tap this QR code on the table? It takes 10 seconds and helps ${name} immensely!"`,
+      bullet1: {
+        title: "Zero Friction",
+        desc: "Diners naturally look at their phones while waiting for card payments to clear.",
+      },
+      bullet2: {
+        title: "Time Anchor",
+        desc: "Saying '10 seconds' assures diners they won't be stuck filling long forms.",
+      },
+      bullet3: {
+        title: "Personal Connection",
+        desc: "Mentioning the chef, server, or kitchen team by name connects great dining to real people.",
+      },
+    };
+  }
+
+  // 3. SALON / SPA / BEAUTY / BARBERSHOP
+  if (
+    catUpper.includes("SALON") ||
+    catUpper.includes("SPA") ||
+    catUpper.includes("BEAUTY") ||
+    catUpper.includes("HAIR") ||
+    catUpper.includes("BARBER") ||
+    nameLower.includes("salon") ||
+    nameLower.includes("spa") ||
+    nameLower.includes("barber") ||
+    nameLower.includes("hair") ||
+    nameLower.includes("beauty") ||
+    nameLower.includes("nails")
+  ) {
+    const beneficiary = ownerName?.trim() ? `${ownerName.trim()} & our styling team` : "your stylist & our team";
+    return {
+      roleSubtitle: `For ${businessName} Receptionists, Stylists & Therapists`,
+      contextPrompt: "WHEN RINGING UP THE CLIENT AT THE CHECKOUT REGISTER OR WRAPPING UP THEIR VISIT, SAY THIS:",
+      defaultBeneficiary: beneficiary,
+      scriptText: (name) => `"While your receipt is printing, could you tap this QR code on the counter? It takes 10 seconds and helps ${name} immensely!"`,
+      bullet1: {
+        title: "Zero Friction",
+        desc: "Clients have their phones in hand while settling the bill after their service.",
+      },
+      bullet2: {
+        title: "Time Anchor",
+        desc: "Saying '10 seconds' removes hesitation before they step out the door.",
+      },
+      bullet3: {
+        title: "Personal Connection",
+        desc: "Mentioning your stylist, barber, or therapist by name locks in personal loyalty and empathy.",
+      },
+    };
+  }
+
+  // 4. DENTIST / DENTAL CLINIC
+  if (
+    catUpper.includes("DENT") ||
+    nameLower.includes("dent") ||
+    nameLower.includes("orthodont") ||
+    nameLower.includes("teeth") ||
+    nameLower.includes("smile")
+  ) {
+    const docName = getDoctorFormattedName();
+    return {
+      roleSubtitle: `For ${businessName} Front-Desk, Receptionists & Dental Staff`,
+      contextPrompt: "WHEN SCHEDULING THE NEXT APPOINTMENT OR HANDING THE PATIENT THEIR RECEIPT, SAY THIS:",
+      defaultBeneficiary: docName,
+      scriptText: (name) => `"While your receipt is printing, could you tap this QR code on the counter? It takes 10 seconds and helps ${name} immensely!"`,
+      bullet1: {
+        title: "Zero Friction",
+        desc: "Patients already have their phones out to mark their calendar for the next checkup.",
+      },
+      bullet2: {
+        title: "Time Anchor",
+        desc: "Saying '10 seconds' removes any fear of clinical paperwork or long questionnaires.",
+      },
+      bullet3: {
+        title: "Personal Connection",
+        desc: `Mentioning ${docName} by name relieves anxiety and triggers deep patient gratitude.`,
+      },
+    };
+  }
+
+  // 5. CLINIC / MEDICAL DOCTOR / SPECIALISTS / HEALTHCARE
+  if (
+    catUpper.includes("DOCTOR") ||
+    catUpper.includes("CLINIC") ||
+    catUpper.includes("MED") ||
+    catUpper.includes("HEALTH") ||
+    catUpper.includes("ENDOCRIN") ||
+    nameLower.includes("clinic") ||
+    nameLower.includes("doctor") ||
+    nameLower.includes("hospital") ||
+    nameLower.includes("health") ||
+    nameLower.includes("medical")
+  ) {
+    const docName = getDoctorFormattedName();
+    return {
+      roleSubtitle: `For ${businessName} Front-Desk, Clinic Receptionists & Care Staff`,
+      contextPrompt: "WHEN HANDING THE PATIENT THEIR PRESCRIPTION, RECEIPT, OR FOLLOW-UP SLIP, SAY THIS:",
+      defaultBeneficiary: docName,
+      scriptText: (name) => `"While your receipt is printing, could you tap this QR code on the counter? It takes 10 seconds and helps ${name} immensely!"`,
+      bullet1: {
+        title: "Zero Friction",
+        desc: "Patients already have their phones in hand while checking prescription notes.",
+      },
+      bullet2: {
+        title: "Time Anchor",
+        desc: "Saying '10 seconds' guarantees a friction-free, quick 4-tap feedback flow.",
+      },
+      bullet3: {
+        title: "Personal Connection",
+        desc: `Mentioning ${docName} by name inspires genuine patient trust and 5-star Google reviews.`,
+      },
+    };
+  }
+
+  // 6. GYM / FITNESS
+  if (
+    catUpper.includes("GYM") ||
+    catUpper.includes("FIT") ||
+    nameLower.includes("gym") ||
+    nameLower.includes("fitness") ||
+    nameLower.includes("crossfit") ||
+    nameLower.includes("workout")
+  ) {
+    const beneficiary = ownerName?.trim() ? `${ownerName.trim()} & our trainers` : "our coaching team";
+    return {
+      roleSubtitle: `For ${businessName} Front-Desk, Coaches & Fitness Staff`,
+      contextPrompt: "WHEN CHECKING OUT A MEMBER OR SAYING GOODBYE AT THE FRONT COUNTER, SAY THIS:",
+      defaultBeneficiary: beneficiary,
+      scriptText: (name) => `"Before you head out, could you tap this QR code on the desk? It takes 10 seconds and helps ${name} immensely!"`,
+      bullet1: {
+        title: "Zero Friction",
+        desc: "Members are already putting away their workout earphones and checking their phones.",
+      },
+      bullet2: {
+        title: "Time Anchor",
+        desc: "Saying '10 seconds' gets an immediate enthusiastic tap on the counter standee.",
+      },
+      bullet3: {
+        title: "Personal Connection",
+        desc: "Mentioning your trainers or gym team by name inspires member community and loyalty.",
+      },
+    };
+  }
+
+  // 7. AUTO REPAIR / MECHANIC
+  if (
+    catUpper.includes("AUTO") ||
+    catUpper.includes("MECHANIC") ||
+    catUpper.includes("CAR") ||
+    catUpper.includes("GARAGE") ||
+    nameLower.includes("auto") ||
+    nameLower.includes("mechanic") ||
+    nameLower.includes("garage") ||
+    nameLower.includes("tire") ||
+    nameLower.includes("motor")
+  ) {
+    const beneficiary = ownerName?.trim() ? `${ownerName.trim()} & our mechanics` : "our technicians & mechanics";
+    return {
+      roleSubtitle: `For ${businessName} Service Advisors, Cashiers & Front Counter Staff`,
+      contextPrompt: "WHEN HANDING OVER THE VEHICLE KEYS, WORK ORDER, AND INVOICE, SAY THIS:",
+      defaultBeneficiary: beneficiary,
+      scriptText: (name) => `"While I grab your keys, could you tap this QR code on the counter? It takes 10 seconds and helps ${name} immensely!"`,
+      bullet1: {
+        title: "Zero Friction",
+        desc: "Vehicle owners wait at the counter while keys and final invoice are prepared.",
+      },
+      bullet2: {
+        title: "Time Anchor",
+        desc: "Saying '10 seconds' ensures they finish the quick review before walking to their car.",
+      },
+      bullet3: {
+        title: "Personal Connection",
+        desc: "Mentioning the technician or service advisor by name turns repairs into trusted relationships.",
+      },
+    };
+  }
+
+  // 8. GENERAL SERVICES FALLBACK
+  const defaultBeneficiary = ownerName?.trim() ? `${ownerName.trim()} & our team` : "our team";
+  return {
+    roleSubtitle: `For ${businessName} Front-Desk, Receptionists & Customer Staff`,
+    contextPrompt: "WHEN HANDING THE CUSTOMER THEIR RECEIPT, BILL, OR INVOICE, SAY THIS:",
+    defaultBeneficiary,
+    scriptText: (name) => `"While your receipt is printing, could you tap this QR code on the counter? It takes 10 seconds and helps ${name} immensely!"`,
+    bullet1: {
+      title: "Zero Friction",
+      desc: "Customers already have their phones in hand at the counter checkout.",
+    },
+    bullet2: {
+      title: "Time Anchor",
+      desc: "Saying '10 seconds' removes the fear of a long or boring survey.",
+    },
+    bullet3: {
+      title: "Personal Connection",
+      desc: "Mentioning the team or specialist by name triggers personal empathy and high ratings.",
+    },
+  };
 }
 
 export default function StandeeClient({
   slug,
   businessName,
+  ownerName,
   category,
   city,
 }: StandeeClientProps) {
   const [format, setFormat] = useState<"a5" | "tent" | "script">("a5");
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [isLoadingQr, setIsLoadingQr] = useState<boolean>(true);
+  const [customPersonName, setCustomPersonName] = useState<string>("");
+
+  const scriptConfig = resolveStaffTrainingScript(category, businessName, ownerName);
+  const activeBeneficiary = customPersonName.trim() || scriptConfig.defaultBeneficiary;
 
   // Full URL that the QR code will open
   const fullReviewUrl = typeof window !== "undefined"
@@ -113,6 +400,35 @@ export default function StandeeClient({
           </button>
         </div>
 
+        {/* Dynamic Personalization Customizer for Staff Script */}
+        {format === "script" && (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-xs text-amber-300">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>
+                <strong>Personalize Script:</strong> Edit who the script asks customers to help (preview updates live below):
+              </span>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <input
+                type="text"
+                value={customPersonName}
+                onChange={(e) => setCustomPersonName(e.target.value)}
+                placeholder={scriptConfig.defaultBeneficiary}
+                className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 w-full sm:w-60"
+              />
+              {customPersonName && (
+                <button
+                  onClick={() => setCustomPersonName("")}
+                  className="text-[11px] text-slate-400 hover:text-white underline whitespace-nowrap"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 flex items-center justify-between text-xs text-blue-300">
           <span>
             💡 <strong>Printing Tip:</strong> In your browser print dialog, set layout to <strong>Portrait</strong> and margins to <strong>None / Minimum</strong> for best results.
@@ -134,17 +450,17 @@ export default function StandeeClient({
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-1">
                   The Front-Desk 7-Word Review Script
                 </h2>
-                <p className="text-xs text-slate-500">For {businessName} Receptionists & Staff</p>
+                <p className="text-xs text-slate-500">{scriptConfig.roleSubtitle}</p>
               </div>
               <Star className="w-8 h-8 text-amber-500 fill-amber-400" />
             </div>
 
             <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 space-y-2">
               <p className="text-xs font-bold uppercase tracking-wider text-amber-800">
-                When handing the patient/customer their receipt or bill, SAY THIS:
+                {scriptConfig.contextPrompt}
               </p>
               <blockquote className="text-base sm:text-lg font-extrabold text-slate-900 italic leading-snug">
-                "While your receipt is printing, could you tap this QR code on the counter? It takes 10 seconds and helps Dr. Smith immensely!"
+                {scriptConfig.scriptText(activeBeneficiary)}
               </blockquote>
             </div>
 
@@ -155,22 +471,22 @@ export default function StandeeClient({
               <ul className="space-y-2">
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Zero Friction:</strong> Customers have their phones already in hand at checkout.</span>
+                  <span><strong>{scriptConfig.bullet1.title}:</strong> {scriptConfig.bullet1.desc}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Time Anchor:</strong> Saying "10 seconds" removes the fear of a long survey.</span>
+                  <span><strong>{scriptConfig.bullet2.title}:</strong> {scriptConfig.bullet2.desc}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Personal Connection:</strong> Mentioning the doctor or stylist by name triggers empathy.</span>
+                  <span><strong>{scriptConfig.bullet3.title}:</strong> {scriptConfig.bullet3.desc}</span>
                 </li>
               </ul>
             </div>
 
             <div className="pt-4 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-400">
-              <span>Mithun Das AI Business Platform • QR Review System</span>
-              <span>Keep this printed sheet behind the reception desk!</span>
+              <span>MITHUN DAS AI AUTOMATION • QR Review System</span>
+              <span>Keep this printed sheet behind the front desk!</span>
             </div>
           </div>
         ) : (

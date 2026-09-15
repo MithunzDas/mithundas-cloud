@@ -25,6 +25,7 @@ export default async function StandeePage({ params }: PageProps) {
         id: true,
         slug: true,
         businessName: true,
+        ownerName: true,
         category: true,
         city: true,
       },
@@ -44,6 +45,7 @@ export default async function StandeePage({ params }: PageProps) {
       id: "demo",
       slug,
       businessName: formattedName || "Apex Dental Studio",
+      ownerName: null,
       category: "DENTIST",
       city: "London / New York",
     };
@@ -53,6 +55,7 @@ export default async function StandeePage({ params }: PageProps) {
     <StandeeClient
       slug={business.slug}
       businessName={business.businessName}
+      ownerName={business.ownerName}
       category={business.category}
       city={business.city}
     />
