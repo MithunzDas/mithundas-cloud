@@ -17,9 +17,10 @@
     },
     {
       "parameters": {
-        "fromEmail": "={{ $json.body.from || 'Mithun Das AI <support@mithundas.cloud>' }}",
+        "fromEmail": "={{ $json.body.from || 'Mithun Das AI Automation <mithun@mithundas.cloud>' }}",
         "toEmail": "={{ $json.body.to }}",
         "subject": "={{ $json.body.subject || ('Your Login Code: ' + $json.body.code + ' — Business Owner Portal') }}",
+        "emailFormat": "html",
         "html": "={{ $json.body.html }}",
         "options": {
           "allowUnauthorizedCerts": true
@@ -29,7 +30,13 @@
       "name": "Send Email via Hostinger SMTP",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
-      "position": [460, 300]
+      "position": [460, 300],
+      "credentials": {
+        "smtp": {
+          "id": "T56D8v7zIgHOFpXD",
+          "name": "SMTP account"
+        }
+      }
     },
     {
       "parameters": {
