@@ -23,7 +23,8 @@ import {
   Building2,
   Calendar,
   BarChart3,
-  Sparkles
+  Sparkles,
+  Globe
 } from "lucide-react";
 import { getCheckoutUrl } from "@/lib/qr-review/payment-config";
 import OwnerAuthModal from "@/components/qr-review/OwnerAuthModal";
@@ -151,6 +152,15 @@ export default function DashboardClient({
         {/* TOP OWNER AUTH & BREADCRUMB BAR */}
         <div className="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-3 sm:p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-lg">
           <div className="flex items-center gap-2 text-xs text-slate-400">
+            <Link
+              href="/"
+              className="hover:text-cyan-400 text-slate-300 transition-colors flex items-center gap-1 font-semibold"
+              title="Visit Main Agency Website: mithundas.cloud"
+            >
+              <Globe className="w-3.5 h-3.5 text-cyan-400" />
+              <span>mithundas.cloud</span>
+            </Link>
+            <span>/</span>
             <Link href="/products/theqrbasedsystem" className="hover:text-slate-200 transition-colors">
               QR Review System
             </Link>

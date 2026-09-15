@@ -24,7 +24,10 @@ import {
   DollarSign,
   HelpCircle,
   CreditCard,
-  Globe
+  Globe,
+  Mail,
+  GraduationCap,
+  Award
 } from "lucide-react";
 import { INDUSTRY_QUESTION_POOLS } from "@/lib/qr-review/question-pools";
 import QuestionPoolExplorer from "@/components/qr-review/QuestionPoolExplorer";
@@ -147,53 +150,66 @@ export default function SalesPageClient() {
       </div>
 
       {/* NAVIGATION BAR */}
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-between border-b border-slate-900">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-black text-white shadow-lg shadow-blue-500/25">
-            <QrCode className="w-5 h-5" />
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between border-b border-slate-900">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-black text-white shadow-lg shadow-blue-500/25 shrink-0">
+            <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div>
-            <span className="font-extrabold text-base tracking-tight text-white block leading-tight">
+            <span className="font-extrabold text-xs sm:text-base tracking-tight text-white block leading-tight">
               15-Second QR Review Engine
             </span>
-            <span className="text-[11px] text-slate-400 font-medium">
-              By Mithun Das AI Platforms
+            <span className="text-[9px] sm:text-[10px] text-slate-400 font-medium">
+              By Mithun Das AI Automation
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-2.5">
+          {/* SINGLE CLEAN MAIN WEBSITE NAVIGATION OPTION */}
+          <Link
+            href="/"
+            className="px-2.5 sm:px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 flex items-center gap-1.5 transition-all shadow-sm"
+            title="Visit Main Website: mithundas.cloud"
+          >
+            <Globe className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Main Website</span>
+          </Link>
+
           {/* BUSINESS PORTAL BUTTON */}
           {ownerSession?.slug ? (
             <Link
               href={`/products/theqrbasedsystem/dashboard/${ownerSession.slug}`}
-              className="px-3 sm:px-3.5 py-2 rounded-xl text-xs font-bold text-slate-200 bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-blue-500/50 flex items-center gap-1.5 sm:gap-2 transition-all shadow-sm"
+              className="px-2.5 sm:px-3 py-2 rounded-xl text-xs font-bold text-slate-200 bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-blue-500/50 flex items-center gap-1.5 transition-all shadow-sm"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
               <Building2 className="w-3.5 h-3.5 text-blue-400" />
-              <span>Business Portal</span>
+              <span className="hidden md:inline">Business Portal</span>
+              <span className="md:hidden">Portal</span>
             </Link>
           ) : (
             <button
               onClick={() => setShowAuthModal(true)}
-              className="px-3 sm:px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 flex items-center gap-1.5 sm:gap-2 transition-all shadow-sm"
+              className="px-2.5 sm:px-3 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 flex items-center gap-1.5 transition-all shadow-sm"
             >
               <Building2 className="w-3.5 h-3.5 text-blue-400" />
-              <span>Business Portal</span>
+              <span className="hidden md:inline">Business Portal</span>
+              <span className="md:hidden">Portal</span>
             </button>
           )}
 
           <Link
             href="/products/theqrbasedsystem/onboard"
-            className="hidden md:inline-flex px-3.5 py-2 text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors"
+            className="hidden lg:inline-flex px-3 py-2 text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors"
           >
             Start Free Trial
           </Link>
           <button
             onClick={() => handleOpenCheckout("monthly")}
-            className="px-3 sm:px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 active:scale-95 transition-all shadow-md shadow-blue-600/20"
+            className="px-2.5 sm:px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 active:scale-95 transition-all shadow-md shadow-blue-600/20 shrink-0"
           >
-            Pricing & Plans ($1/Day)
+            <span className="hidden sm:inline">Pricing & Plans ($1/Day)</span>
+            <span className="sm:hidden">Plans ($1/Day)</span>
           </button>
         </div>
       </nav>
@@ -456,6 +472,188 @@ export default function SalesPageClient() {
         </div>
       </section>
 
+      {/* MEET THE FOUNDER & AGENCY TRUST SECTION */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-14 border-t border-slate-900">
+        <div className="relative rounded-3xl border border-slate-800 bg-gradient-to-b from-slate-900/90 via-slate-950/90 to-slate-900/90 p-6 sm:p-10 shadow-2xl overflow-hidden">
+          {/* Subtle Ambient Background Gradients */}
+          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10">
+            {/* Header Badge */}
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-8 pb-6 border-b border-slate-800/80">
+              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3.5 py-1 text-xs font-semibold text-cyan-400">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                FOUNDER & AI AUTOMATION ARCHITECT
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-400 font-mono">
+                <span>Govt. Registered Enterprise</span>
+                <span className="text-slate-600">•</span>
+                <span className="text-cyan-400 font-semibold">UDYAM-WB-14-0303625</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              {/* Left Column: Founder Identity Card */}
+              <div className="lg:col-span-5 space-y-5">
+                <div className="flex items-center gap-4">
+                  <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-slate-950 border-2 border-cyan-500/40 p-1 shadow-lg shadow-cyan-500/20 shrink-0">
+                    <img
+                      src="/logo.png"
+                      alt="Mithun Das AI Automation"
+                      className="w-full h-full object-cover rounded-xl"
+                    />
+                    <div className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-slate-950" title="Direct founder support online" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                      Mithun Das
+                    </h3>
+                    <p className="text-xs font-bold text-cyan-400">
+                      AI Business Automation Engineer
+                    </p>
+                    <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                      Founder, Mithun Das AI Automation
+                    </p>
+                  </div>
+                </div>
+
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  I engineer operational AI systems for local businesses, clinics, hospitality, and growing enterprises. When you deploy the 15-Second QR Review Engine, you get direct, hands-on engineering support directly from me — no middleman support tickets or abandoned scripts.
+                </p>
+
+                {/* Primary CTA to Main Agency Website */}
+                <div className="pt-1">
+                  <Link
+                    href="/"
+                    className="w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm text-slate-950 bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-400 hover:from-cyan-300 hover:to-blue-300 shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 transition-all active:scale-[0.98] group"
+                  >
+                    <Globe className="w-4 h-4 text-slate-950 group-hover:rotate-12 transition-transform" />
+                    <span>Explore Main Agency Website (mithundas.cloud)</span>
+                    <ArrowRight className="w-4 h-4 text-slate-950 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                </div>
+
+                {/* Direct Reach Channels */}
+                <div className="space-y-2 pt-1">
+                  <p className="text-[10px] uppercase font-mono tracking-wider text-slate-500 font-semibold">
+                    Direct Contact Channels
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <a
+                      href="https://wa.me/918768138086"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-emerald-500/50 text-slate-300 hover:text-white flex items-center gap-2 transition-all group"
+                    >
+                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                      <span className="font-semibold text-[11px]">WhatsApp</span>
+                      <ExternalLink className="w-3 h-3 text-slate-600 group-hover:text-emerald-400 ml-auto" />
+                    </a>
+                    <a
+                      href="mailto:hello@mithundas.cloud"
+                      className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-cyan-500/50 text-slate-300 hover:text-white flex items-center gap-2 transition-all group"
+                    >
+                      <Mail className="w-3.5 h-3.5 text-cyan-400" />
+                      <span className="font-semibold text-[11px]">Email</span>
+                      <ExternalLink className="w-3 h-3 text-slate-600 group-hover:text-cyan-400 ml-auto" />
+                    </a>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <a
+                      href="https://www.linkedin.com/in/mithun-das-46347a239/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900/60 text-slate-400 hover:text-slate-200 text-[11px] font-medium transition-colors"
+                    >
+                      LinkedIn
+                    </a>
+                    <a
+                      href="https://github.com/MithunzDas"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900/60 text-slate-400 hover:text-slate-200 text-[11px] font-medium transition-colors"
+                    >
+                      GitHub
+                    </a>
+                    <a
+                      href="https://x.com/MithunzDas"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900/60 text-slate-400 hover:text-slate-200 text-[11px] font-medium transition-colors"
+                    >
+                      X (Twitter)
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Engineering Background & Guarantees */}
+              <div className="lg:col-span-7 space-y-4 lg:pl-6 lg:border-l lg:border-slate-800/80">
+                <div className="space-y-1.5">
+                  <h4 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                    Engineering Rigor & Verification
+                  </h4>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Designed for business owners who demand accountability. Officially registered with the Government of India and backed by rigorous engineering credentials.
+                  </p>
+                </div>
+
+                {/* Academic Credentials */}
+                <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-cyan-400" />
+                    <span className="text-xs font-bold text-slate-200">Formal Engineering Qualifications</span>
+                  </div>
+                  <ul className="text-[11px] text-slate-400 space-y-1 font-mono pl-6 list-disc">
+                    <li><strong className="text-slate-300">M.Tech in Systems & Control Engineering</strong> — NIT Warangal</li>
+                    <li><strong className="text-slate-300">B.E. in Electronics & Instrumentation</strong> — Jadavpur University</li>
+                  </ul>
+                </div>
+
+                {/* Registered Enterprise Details */}
+                <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Award className="w-4 h-4 text-amber-400" />
+                      <span className="text-xs font-bold text-slate-200">Government Registered Enterprise</span>
+                    </div>
+                    <span className="inline-flex items-center gap-1 rounded bg-cyan-400/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-cyan-400 uppercase tracking-wider">
+                      MSME • GOI
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Operating officially under <strong className="text-slate-300 font-mono">Mithun Das AI Automation</strong> (Udyam: <span className="font-mono text-cyan-400 font-bold">UDYAM-WB-14-0303625</span>).
+                  </p>
+                  <a
+                    href="/certificates/udyam-registration-certificate.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 hover:underline font-medium pt-0.5"
+                  >
+                    <span>View Official Government Certificate (PDF)</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+
+                {/* 1-on-1 Implementation Commitment */}
+                <div className="p-3.5 rounded-2xl bg-blue-950/20 border border-blue-500/20 space-y-1.5">
+                  <span className="text-xs font-bold text-blue-300 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-blue-400" />
+                    White-Glove Implementation Guarantee
+                  </span>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    Every active client receives direct WhatsApp setup assistance. I will personally review your Google Place ID, fine-tune the review question pool for your exact specialization, and ensure your counter standee is formatted to your reception desk.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* FOOTER */}
       <footer className="max-w-7xl mx-auto px-4 sm:px-6 py-12 border-t border-slate-900 text-center space-y-6 text-xs text-slate-500">
         {/* Enterprise & Security Trust Badges */}
@@ -492,6 +690,11 @@ export default function SalesPageClient() {
 
         {/* Legal & Policy Links */}
         <div className="flex flex-wrap items-center justify-center gap-4 text-slate-400 pt-2 border-t border-slate-900/80">
+          <Link href="/" className="hover:text-cyan-400 transition-colors inline-flex items-center gap-1 font-medium text-slate-300">
+            <Globe className="w-3 h-3 text-cyan-400" />
+            <span>Main Platform (mithundas.cloud)</span>
+          </Link>
+          <span>•</span>
           <Link href="/privacy" className="hover:text-slate-200 transition-colors">Privacy Policy</Link>
           <span>•</span>
           <Link href="/terms" className="hover:text-slate-200 transition-colors">Terms of Service</Link>

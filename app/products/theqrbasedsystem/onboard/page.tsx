@@ -389,15 +389,49 @@ function OnboardFormContent() {
     <div className="min-h-screen bg-slate-950 text-slate-100 py-12 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto space-y-8">
         {/* Navigation Header */}
-        <div className="flex items-center justify-between pb-6 border-b border-slate-800">
-          <Link
-            href="/products/theqrbasedsystem"
-            className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
-          >
-            ← Back to QR Review System
-          </Link>
-          <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full text-xs font-semibold text-emerald-400">
-            <Zap className="w-3.5 h-3.5" /> 3-Day Free Trial (No Credit Card)
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2.5 group"
+              title="Visit Mithun Das AI Automation (mithundas.cloud)"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden bg-slate-900 border border-slate-800 group-hover:border-cyan-500/60 transition-all">
+                <img src="/logo.png" alt="Mithun Das AI Logo" className="h-full w-full object-cover" />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-xs font-bold text-white group-hover:text-cyan-400 transition-colors flex items-center gap-1">
+                  mithundas.cloud
+                  <ExternalLink className="w-2.5 h-2.5 text-slate-500 group-hover:text-cyan-400" />
+                </span>
+                <span className="text-[9px] font-mono text-cyan-400 uppercase tracking-wider font-semibold">
+                  AI Automation
+                </span>
+              </div>
+            </Link>
+
+            <span className="text-slate-700">/</span>
+
+            <Link
+              href="/products/theqrbasedsystem"
+              className="text-xs text-slate-400 hover:text-white transition-colors"
+            >
+              QR Review Engine
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/80 hover:bg-slate-850 hover:border-cyan-500/40 text-slate-300 hover:text-cyan-400 text-xs font-semibold transition-all shadow-sm group"
+              title="Visit Main Website: mithundas.cloud"
+            >
+              <Globe className="w-3.5 h-3.5 text-cyan-400 group-hover:rotate-12 transition-transform" />
+              <span>Main Website</span>
+            </Link>
+            <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full text-xs font-semibold text-emerald-400">
+              <Zap className="w-3.5 h-3.5" /> 3-Day Free Trial
+            </div>
           </div>
         </div>
 
@@ -893,6 +927,62 @@ function OnboardFormContent() {
             </div>
           </form>
         )}
+
+        {/* ONBOARD PAGE FOOTER */}
+        <footer className="pt-8 pb-4 border-t border-slate-900 text-center space-y-4 text-xs text-slate-500">
+          <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] text-slate-400">
+            <span>Engineered by</span>
+            <Link
+              href="/"
+              className="font-semibold text-slate-200 hover:text-cyan-400 inline-flex items-center gap-1 transition-colors"
+            >
+              <span>Mithun Das AI Automation</span>
+              <span className="text-cyan-400 font-mono text-[10px]">(mithundas.cloud)</span>
+            </Link>
+            <span>•</span>
+            <span className="text-slate-400">Govt. MSME: <strong className="font-mono text-slate-300">UDYAM-WB-14-0303625</strong></span>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-3.5 text-slate-400 text-xs">
+            <Link
+              href="/"
+              className="px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 hover:text-white hover:bg-cyan-500/20 transition-all font-semibold inline-flex items-center gap-1.5"
+            >
+              <Globe className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Main Agency (mithundas.cloud)</span>
+            </Link>
+            <span>•</span>
+            <Link href="/products/theqrbasedsystem" className="hover:text-slate-200 transition-colors">
+              Product Overview
+            </Link>
+            <span>•</span>
+            <Link href="/privacy" className="hover:text-slate-200 transition-colors">
+              Privacy Policy
+            </Link>
+            <span>•</span>
+            <Link href="/terms" className="hover:text-slate-200 transition-colors">
+              Terms of Service
+            </Link>
+            <span>•</span>
+            <a
+              href="/certificates/udyam-registration-certificate.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-slate-200 transition-colors inline-flex items-center gap-1"
+            >
+              <span>MSME Certificate</span>
+              <ExternalLink className="w-2.5 h-2.5" />
+            </a>
+            <span>•</span>
+            <Link href="/contact" className="hover:text-slate-200 transition-colors">
+              Support
+            </Link>
+          </div>
+
+          <p className="text-[11px] text-slate-600">
+            © {new Date().getFullYear()} MITHUN DAS AI AUTOMATION. Systems & Control Engineering, NIT Warangal.
+          </p>
+        </footer>
       </div>
 
       {/* MODAL: HOW TO FIND YOUR GOOGLE PLACE ID / REVIEW LINK */}
